@@ -1,117 +1,77 @@
 import "./EditorReview.css";
 
-export default function EditorReview({ review, iteration }) {
-  if (!review) {
-    return null;
-  }
+export default function EditorReview({ review }) {
+  if (!review) return null;
 
-  const approved = review.decision === "approved";
+  const isApproved = review.decision === "approved";
 
   return (
-    <section className="card editor-review">
-      <div className="editor-review-header">
+    <section className="card editor-section">
+      <div className="editor-header">
         <div>
-          <h2>Editor Agent Review</h2>
-          {iteration && (
-            <span className="iteration-tag">Iteration {iteration}</span>
-          )}
-          <p className="editor-summary">{review.summary}</p>
+          <h2>Editor Review</h2>
+          <p className="review-summary">{review.summary}</p>
         </div>
-
-        <div
-          className={`decision-badge ${
-            approved ? "approved" : "needs-revision"
-          }`}
-        >
-          <strong>{approved ? "Approved" : "Needs Revision"}</strong>
+        <div className={`decision-badge ${review.decision}`}>
+          <strong>{isApproved ? "Approved" : "Needs Revision"}</strong>
           <span>{review.qualityScore}/100</span>
         </div>
       </div>
 
       <div className="review-grid">
-        <div>
+        <div className="review-column">
           <h3>Strengths</h3>
-
-          {review.strengths?.length ? (
-            <ul>
-              {review.strengths.map((strength, index) => (
-                <li key={index}>{strength}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No strengths returned.</p>
-          )}
+          <ul>
+            {review.strengths?.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
         </div>
-
-        <div>
+        <div className="review-column">
           <h3>Missing Points</h3>
-
-          {review.missingPoints?.length ? (
-            <ul>
-              {review.missingPoints.map((point, index) => (
-                <li key={index}>{point}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No major missing points found.</p>
-          )}
+          <ul>
+            {review.missingPoints?.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      <h3>Weaknesses and Improvements</h3>
-
-      {review.weaknesses?.length ? (
-        <div className="weakness-list">
-          {review.weaknesses.map((item, index) => (
-            <article className="weakness-item" key={index}>
-              <div className="weakness-title">
-                <strong>{item.section || "General"}</strong>
-
-                <span className={`severity ${item.severity || "low"}`}>
-                  {item.severity || "low"}
-                </span>
+      {review.weaknesses?.length > 0 && (
+        <>
+          <h3>Weaknesses</h3>
+          <div className="weakness-list">
+            {review.weaknesses.map((item, i) => (
+              <div key={i} className="weakness-item">
+                <div className="weakness-header">
+                  <strong>{item.section || "General"}</strong>
+                  <span className={`severity ${item.severity}`}>{item.severity}</span>
+                </div>
+                <p><strong>Issue:</strong> {item.issue}</p>
+                <p><strong>Suggestion:</strong> {item.suggestion}</p>
               </div>
-
-              <p>
-                <strong>Issue:</strong> {item.issue}
-              </p>
-
-              <p>
-                <strong>Improvement:</strong> {item.suggestion}
-              </p>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <p>No major weaknesses found.</p>
+            ))}
+          </div>
+        </>
       )}
 
-      <h3>Revision Instructions</h3>
-
-      {review.revisionInstructions?.length ? (
-        <ol>
-          {review.revisionInstructions.map((instruction, index) => (
-            <li key={index}>{instruction}</li>
-          ))}
-        </ol>
-      ) : approved ? (
-        <p className="approved-message">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          No revisions needed. Content is approved!
-        </p>
-      ) : (
-        <p>No revision instructions provided.</p>
+      {review.revisionInstructions?.length > 0 && (
+        <>
+          <h3>Revision Instructions</h3>
+          <ol className="revision-list">
+            {review.revisionInstructions.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ol>
+        </>
       )}
 
       {review.factCheckWarnings?.length > 0 && (
         <>
-          <h3>Fact-Check Warnings</h3>
-
-          <ul className="fact-warnings">
-            {review.factCheckWarnings.map((warning, index) => (
-              <li key={index}>{warning}</li>
+          <h3>Fact Check Warnings</h3>
+          <ul className="warnings-list">
+            {review.factCheckWarnings.map((item, i) => (
+              <li key={i}>{item}</li>
             ))}
           </ul>
         </>

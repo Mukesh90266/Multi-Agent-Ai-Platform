@@ -1,14 +1,18 @@
 import "./AgentStatus.css";
+
 export default function AgentStatus({ statuses = {} }) {
   const agents = ["researcher", "writer", "editor"];
+
   return (
-    <section className="card">
-      <h2>Agent status</h2>
-      <div className="agent-list">
+    <section className="card agent-status-section">
+      <h2>Agent Status</h2>
+      <div className="status-grid">
         {agents.map((a) => (
-          <div key={a} className={`agent ${statuses[a] || "waiting"}`}>
-            <b>{a}</b>
-            <span>{(statuses[a] || "waiting").replaceAll("_", " ")}</span>
+          <div key={a} className={`status-item ${statuses[a] || "waiting"}`}>
+            <span className="agent-label">{a}</span>
+            <span className="status-value">
+              {statuses[a]?.replace(/_/g, " ") || "waiting"}
+            </span>
           </div>
         ))}
       </div>

@@ -1,4 +1,4 @@
-.writer-output {
+.writer-section {
   line-height: 1.7;
 }
 
@@ -9,31 +9,24 @@
   margin-bottom: 16px;
 }
 
-.draft-note {
-  padding: 10px 14px;
-  background: #fff7ed;
-  color: #9a3412;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 500;
+.writer-header h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
 }
 
-.draft-note.revision {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.draft-note svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
+.word-count-badge {
+  background: #f0fdf4;
+  color: #16a34a;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .draft-content {
   white-space: pre-wrap;
-  margin-top: 18px;
   font-size: 0.95rem;
-  line-height: 1.8;
+  color: #334155;
 }

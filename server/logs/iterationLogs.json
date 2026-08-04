@@ -1,5 +1,96 @@
 [
   {
+    "runId": "8486cee6-8a0b-4ace-aa2d-08094d7c8f85",
+    "createdAt": "2026-08-04T05:56:46.327Z",
+    "status": "approved",
+    "iteration": 1,
+    "iterations": [
+      {
+        "iteration": 1,
+        "agent": "researcher",
+        "status": "completed",
+        "output": {
+          "topic": "Benefits of AI in Healthcare",
+          "summary": "A research brief on Benefits of AI in Healthcare, prepared for General audience. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of Benefits of AI in Healthcare.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving Benefits of AI in Healthcare.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        }
+      },
+      {
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "output": {
+          "content": "# Benefits of AI in Healthcare\n\n## Introduction\n\nWelcome to this comprehensive guide on Benefits of AI in Healthcare. In this article, we'll explore the key aspects and provide valuable insights for General audience.\n\n## Key Concepts\n\nUnderstanding Benefits of AI in Healthcare is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nBenefits of AI in Healthcare offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Benefits of AI in Healthcare, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nBenefits of AI in Healthcare is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "isRevision": false
+      },
+      {
+        "iteration": 1,
+        "agent": "editor",
+        "status": "approved",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 85,
+          "summary": "The demo draft covers the topic adequately. In production with a real LLM, the Editor Agent would provide detailed feedback on the content quality, structure, and completeness.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [
+            "Could benefit from more specific examples",
+            "More detailed explanations would improve clarity"
+          ],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        }
+      }
+    ]
+  },
+  {
     "runId": "9a9fd485-17a6-476c-b3fe-5514b5ac0956",
     "createdAt": "2026-08-04T05:41:03.454Z",
     "status": "approved",

@@ -1,160 +1,125 @@
-.topic-form {
+.topic-section {
   background: #fff;
-  padding: 24px;
-  border-radius: 14px;
-  box-shadow: 0 5px 24px #102a4320;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   margin-bottom: 20px;
 }
 
-.form-header {
-  margin-bottom: 20px;
-}
-
-.form-header h2 {
-  margin: 0 0 6px 0;
-  font-size: 1.2rem;
+.topic-section h2 {
+  font-size: 1rem;
+  font-weight: 700;
   color: #1e293b;
+  margin: 0 0 16px 0;
 }
 
-.form-header p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.9rem;
+.form-group {
+  margin-bottom: 14px;
 }
 
-.topic-form label {
-  display: grid;
-  gap: 7px;
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #27364d;
+  color: #475569;
+  margin-bottom: 6px;
 }
 
-.topic-form textarea,
-.topic-form input,
-.topic-form select {
-  font: inherit;
-  padding: 10px 14px;
-  border: 1px solid #c8d2df;
-  border-radius: 7px;
+.form-group textarea,
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
+  background: white;
 }
 
-.topic-form textarea:focus,
-.topic-form input:focus,
-.topic-form select:focus {
+.form-group textarea:focus,
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.topic-form textarea:disabled,
-.topic-form input:disabled,
-.topic-form select:disabled {
+.form-group textarea:disabled,
+.form-group input:disabled,
+.form-group select:disabled {
   background: #f8fafc;
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.topic-form textarea {
-  min-height: 95px;
+.form-group textarea {
+  min-height: 80px;
   resize: vertical;
 }
 
-.main-topic textarea {
-  font-size: 1rem;
-  min-height: 100px;
-}
-
-.form-grid {
+.form-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin: 16px 0;
+  gap: 12px;
 }
 
-.word-count-label {
-  margin-bottom: 16px;
-}
-
-.word-count-label input[type="range"] {
+.word-count-group input[type="range"] {
   width: 100%;
-  margin-top: 8px;
   height: 6px;
   border-radius: 3px;
   background: #e2e8f0;
   -webkit-appearance: none;
   appearance: none;
+  padding: 0;
+  border: none;
 }
 
-.word-count-label input[type="range"]::-webkit-slider-thumb {
+.word-count-group input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
   width: 18px;
   height: 18px;
   border-radius: 50%;
   background: #3b82f6;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
-.word-count-label input[type="range"]::-moz-range-thumb {
+.word-count-group input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
   background: #3b82f6;
   cursor: pointer;
   border: none;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
 }
 
-.word-count-value {
-  display: inline-block;
-  margin-left: 12px;
-  font-weight: 700;
-  color: #3b82f6;
-}
-
-.topic-form button {
-  border: 0;
-  border-radius: 8px;
+.topic-section button {
+  width: 100%;
+  padding: 12px 24px;
   background: #2563eb;
   color: white;
-  font-weight: 700;
-  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  font-size: 1rem;
-  transition: background 0.2s, transform 0.1s;
+  transition: background 0.2s;
+  margin-top: 8px;
 }
 
-.topic-form button:hover:not(:disabled) {
+.topic-section button:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
-.topic-form button:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.topic-form button:disabled {
-  opacity: 0.65;
+.topic-section button:disabled {
+  background: #94a3b8;
   cursor: not-allowed;
 }
 
-.topic-form button svg {
-  width: 20px;
-  height: 20px;
-}
-
-@media (max-width: 650px) {
-  .form-grid {
+@media (max-width: 600px) {
+  .form-row {
     grid-template-columns: 1fr;
-  }
-
-  .topic-form button {
-    margin-top: 8px;
   }
 }

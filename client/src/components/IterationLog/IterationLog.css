@@ -1,43 +1,19 @@
-.iteration-log {
-  padding: 20px;
-}
-
-.iteration-log h2 {
-  margin: 0 0 16px 0;
-  font-size: 1.1rem;
-  color: #27364d;
-}
-
-.no-logs {
-  color: #64748b;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.iteration-summary {
-  margin-bottom: 16px;
-}
-
-.total-iterations {
-  display: inline-block;
-  background: #e0e7ff;
-  color: #4338ca;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+.iteration-section h2 {
+  font-size: 1rem;
   font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
 }
 
 .iteration-group {
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   margin-bottom: 12px;
   overflow: hidden;
 }
 
-.iteration-group.revision {
-  border-color: #fbbf24;
-  background: #fffbeb;
+.iteration-group:last-child {
+  margin-bottom: 0;
 }
 
 .iteration-header {
@@ -49,32 +25,19 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.iteration-group.revision .iteration-header {
-  background: #fef3c7;
-  border-bottom-color: #fcd34d;
-}
-
-.iteration-number {
-  font-weight: 700;
+.iteration-label {
+  font-weight: 600;
   color: #1e293b;
   font-size: 0.9rem;
 }
 
-.revision-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #f59e0b;
-  color: white;
+.revision-tag {
+  background: #fef3c7;
+  color: #b45309;
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.revision-badge svg {
-  width: 12px;
-  height: 12px;
+  font-weight: 600;
 }
 
 .iteration-items {
@@ -85,7 +48,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: 6px;
   margin-bottom: 4px;
 }
@@ -107,37 +70,6 @@
 }
 
 .log-agent {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-icon {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.status-icon svg {
-  width: 12px;
-  height: 12px;
-}
-
-.status-icon.completed,
-.status-icon.approved {
-  background: #16a34a;
-  color: white;
-}
-
-.status-icon.needs_revision {
-  background: #f59e0b;
-  color: white;
-}
-
-.agent-name {
   font-weight: 600;
   color: #1e293b;
   text-transform: capitalize;
@@ -145,17 +77,16 @@
 }
 
 .log-status {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   padding: 4px 10px;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .log-status.completed {
-  background: #dcfce7;
-  color: #166534;
+  background: #22c55e;
+  color: white;
 }
 
 .log-status.approved {
@@ -164,23 +95,14 @@
 }
 
 .log-status.needs_revision {
-  background: #fef3c7;
-  color: #92400e;
+  background: #f59e0b;
+  color: white;
 }
 
-.log-status.running {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-@media (max-width: 500px) {
+@media (max-width: 400px) {
   .log-item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
-  }
-
-  .log-status {
-    margin-left: 28px;
+    gap: 4px;
   }
 }

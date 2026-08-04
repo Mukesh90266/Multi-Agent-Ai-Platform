@@ -1,13 +1,6 @@
 import { useState } from "react";
 import "./TopicInput.css";
 
-const SendIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="22" y1="2" x2="11" y2="13" />
-    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-  </svg>
-);
-
 export default function TopicInput({ onSubmit, disabled }) {
   const [form, setForm] = useState({
     topic: "",
@@ -27,57 +20,54 @@ export default function TopicInput({ onSubmit, disabled }) {
   };
 
   return (
-    <form className="topic-form" onSubmit={handleSubmit}>
-      <div className="form-header">
-        <h2>Enter Your Research Topic</h2>
-        <p>Provide details about the content you want to create</p>
-      </div>
-
-      <label className="main-topic">
-        Research topic
+    <form className="topic-section" onSubmit={handleSubmit}>
+      <h2>Research Topic</h2>
+      
+      <div className="form-group">
+        <label>Topic</label>
         <textarea
           required
           minLength="3"
           name="topic"
           value={form.topic}
           onChange={change}
-          placeholder="Example: Benefits and limitations of the MERN stack for web development"
+          placeholder="Enter your research topic here..."
           disabled={disabled}
         />
-      </label>
+      </div>
 
-      <div className="form-grid">
-        <label>
-          Content type
+      <div className="form-row">
+        <div className="form-group">
+          <label>Content Type</label>
           <input
             name="contentType"
             value={form.contentType}
             onChange={change}
             disabled={disabled}
           />
-        </label>
-        <label>
-          Target audience
+        </div>
+        <div className="form-group">
+          <label>Audience</label>
           <input 
             name="audience" 
             value={form.audience} 
             onChange={change}
             disabled={disabled}
           />
-        </label>
-        <label>
-          Tone
+        </div>
+        <div className="form-group">
+          <label>Tone</label>
           <select name="tone" value={form.tone} onChange={change} disabled={disabled}>
             <option>Educational</option>
             <option>Professional</option>
             <option>Conversational</option>
             <option>Formal</option>
           </select>
-        </label>
+        </div>
       </div>
 
-      <label className="word-count-label">
-        Target word count
+      <div className="form-group word-count-group">
+        <label>Word Count: {form.wordCount} words</label>
         <input
           type="range"
           name="wordCount"
@@ -88,12 +78,10 @@ export default function TopicInput({ onSubmit, disabled }) {
           onChange={change}
           disabled={disabled}
         />
-        <span className="word-count-value">{form.wordCount} words</span>
-      </label>
+      </div>
 
       <button type="submit" disabled={disabled || form.topic.trim().length < 3}>
-        <SendIcon />
-        {disabled ? "Processing..." : "Start Pipeline"}
+        {disabled ? "Processing..." : "Submit"}
       </button>
     </form>
   );

@@ -7,59 +7,45 @@ import IterationLog from "../components/IterationLog/IterationLog";
 import FinalOutput from "../components/FinalOutput/FinalOutput";
 import WriterOutput from "../components/WriterOutput/WriterOutput";
 import EditorReview from "../components/EditorReview/EditorReview";
-import Loader from "../components/Loader/Loader";
-import { usePipeline } from "../hooks/usePipeline";
 import "./Home.css";
 
 export default function Home() {
-  const { result, loading, error, run } = usePipeline();
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [currentAgent, setCurrentAgent] = useState(null);
-  const [pollInterval, setPollInterval] = useState(null);
 
-  // Simulate real-time agent status updates during loading
-  useEffect(() => {
-    if (loading) {
-      const agents = ["researcher", "writer", "editor"];
-      let index = 0;
-      
-      const interval = setInterval(() => {
-        if (index < agents.length) {
-          setCurrentAgent(agents[index]);
-          index++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 3000);
-
-      setPollInterval(interval);
-      setCurrentAgent("researcher");
-
-      return () => clearInterval(interval);
-    } else {
-      setCurrentAgent(null);
-      if (pollInterval) clearInterval(pollInterval);
-    }
-  }, [loading]);
-
-  // Clear current agent when result is ready
-  useEffect(() => {
-    if (result && !loading) {
-      setCurrentAgent(null);
-    }
-  }, [result, loading]);
-
-  const statuses = loading
-    ? {
-        researcher: currentAgent === "researcher" ? "running" : (result?.agentStatus?.researcher || "waiting"),
-        writer: currentAgent === "writer" ? "running" : (result?.agentStatus?.writer || "waiting"),
-        editor: currentAgent === "editor" ? "running" : (result?.agentStatus?.editor || "waiting"),
-      }
-    : result?.agentStatus;
-
-  const handleRun = async (formData) => {
+  const run = async (formData) => {
+    setLoading(true);
+    setError("");
+    setResult(null);
     setCurrentAgent("researcher");
-    await run(formData);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/pipeline/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setResult(data);
+      } else {
+        setError(data.message || "Pipeline failed");
+      }
+    } catch (e) {
+      setError("Could not contact the server.");
+    } finally {
+      setLoading(false);
+      setCurrentAgent(null);
+    }
   };
+
+  const statuses = result?.agentStatus || {};
 
   const getCurrentIteration = () => {
     if (!result?.iterations) return 1;
@@ -71,76 +57,58 @@ export default function Home() {
     <main>
       <header>
         <p className="eyebrow">MULTI-AGENT AI PLATFORM</p>
-
-        <h1>Researcher, Writer & Editor Agents</h1>
-
-        <p>
-          Enter a topic to start the pipeline. The Researcher Agent gathers 
-          information, the Writer Agent creates content, and the Editor Agent 
-          reviews it. If revisions are needed, the content goes back to the 
-          Writer for improvements until the Editor approves it.
+        <h1>Research, Write & Edit Agents</h1>
+        <p className="subtitle">
+          Enter a topic to start the pipeline. The Researcher Agent gathers information, 
+          the Writer Agent creates content, and the Editor Agent reviews it.
         </p>
       </header>
 
-      {/* Visual Workflow Diagram */}
+      {/* Workflow Diagram */}
       <WorkflowDiagram 
         currentAgent={currentAgent}
         agentStatus={statuses}
-        editorDecision={result?.editorReview?.decision}
-        currentIteration={getCurrentIteration()}
       />
 
-      {/* Topic Input Form */}
-      <TopicInput onSubmit={handleRun} disabled={loading} />
+      {/* Topic Input */}
+      <TopicInput onSubmit={run} disabled={loading} />
 
-      {error && <p className="error">{error}</p>}
+      {/* Error Message */}
+      {error && <div className="error-message">{error}</div>}
 
-      {loading && <Loader />}
-
-      {/* Pipeline Runner with Agent Cards */}
+      {/* Pipeline Runner */}
       <PipelineRunner
         agentStatus={statuses}
         currentAgent={currentAgent}
         currentIteration={getCurrentIteration()}
         maxIterations={5}
         loading={loading}
-        onRun={handleRun}
-        disabled={loading}
+        onRun={() => {}}
       />
 
-      {/* Traditional Agent Status List */}
-      <AgentStatus statuses={statuses} />
+      {/* Loading Indicator */}
+      {loading && (
+        <div className="loading-indicator">
+          <div className="spinner"></div>
+          <span>Processing...</span>
+        </div>
+      )}
 
-      {/* Iteration Log */}
-      <IterationLog iterations={result?.iterations} />
+      {/* Results Section */}
+      {result && !loading && (
+        <div className="results-section">
+          {/* Iteration Log */}
+          <IterationLog iterations={result?.iterations} />
 
-      {/* Research Output */}
-      <FinalOutput research={result?.research} />
+          {/* Research Output */}
+          <FinalOutput research={result?.research} />
 
-      {/* Writer Draft */}
-      <WriterOutput draft={result?.draft} showRevisionNote={result?.iterations?.some(i => i.isRevision)} />
+          {/* Writer Output */}
+          <WriterOutput draft={result?.draft} />
 
-      {/* Editor Review */}
-      <EditorReview review={result?.editorReview} />
-
-      {/* Final Approval Message */}
-      {result?.approved && (
-        <section className="approval-banner">
-          <div className="approval-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            <div>
-              <h3>Content Approved!</h3>
-              <p>
-                The Editor Agent has approved the content after {getCurrentIteration()} 
-                {getCurrentIteration() === 1 ? ' iteration' : ' iterations'}.
-                Your content is ready for publication.
-              </p>
-            </div>
-          </div>
-        </section>
+          {/* Editor Review */}
+          <EditorReview review={result?.editorReview} />
+        </div>
       )}
     </main>
   );
