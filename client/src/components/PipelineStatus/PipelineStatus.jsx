@@ -41,6 +41,14 @@ const LoaderIcon = () => (
   </svg>
 );
 
+const InfoIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
 export default function PipelineStatus({ result, loading, currentAgent, agentStatus }) {
   const agents = [
     {
@@ -80,16 +88,19 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
     if (agentStatus) {
       return agentStatus[agentId] || "waiting";
     }
-    
+
     if (!result && !loading) return "waiting";
-    
+
     // If result exists, use it
     if (result?.agentStatus?.[agentId]) {
       return result.agentStatus[agentId];
     }
-    
+
     return "waiting";
   };
+
+  const editorStatus = getAgentStatus("editor");
+  const isEditorRunning = editorStatus === "running";
 
   return (
     <div>
@@ -134,6 +145,21 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
           </div>
         );
       })}
+
+      {isEditorRunning && (
+        <div className="editor-info-panel">
+          <div className="editor-info-header">
+            <InfoIcon />
+            <span>Editor Agent</span>
+          </div>
+          <p className="editor-info-text">
+            This agent reviews the Writer&apos;s draft and produces structured feedback
+            (what&apos;s weak, what&apos;s missing, what needs improvement) along with a quality
+            score. Output should clearly indicate whether the content is{" "}
+            <strong>&quot;approved&quot;</strong> or <strong>&quot;needs revision.&quot;</strong>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
