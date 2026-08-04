@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./TopicInput.css";
 
 const SendIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -30,23 +29,17 @@ export default function TopicInput({ onSubmit, disabled }) {
   };
 
   return (
-    <div className="topic-card">
-      <div className="card-header-custom">
-        <div>
-          <h3>Configure Pipeline</h3>
-          <p className="subtitle">Enter your research parameters</p>
-        </div>
-        <div className="config-icon">⚙️</div>
+    <div className="section">
+      <div className="section-header">
+        <span className="section-title">Configure pipeline</span>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label>
-            <span className="label-icon">📝</span>
-            Research Topic
-          </label>
+          <label className="form-label">Research topic</label>
           <textarea
             name="topic"
+            className="form-textarea"
             value={form.topic}
             onChange={handleChange}
             placeholder="What would you like to research?"
@@ -57,24 +50,20 @@ export default function TopicInput({ onSubmit, disabled }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label>
-              <span className="label-icon">📄</span>
-              Content Type
-            </label>
+            <label className="form-label">Content type</label>
             <input
               name="contentType"
+              className="form-input"
               value={form.contentType}
               onChange={handleChange}
               disabled={disabled}
             />
           </div>
           <div className="form-group">
-            <label>
-              <span className="label-icon">👥</span>
-              Audience
-            </label>
+            <label className="form-label">Audience</label>
             <input
               name="audience"
+              className="form-input"
               value={form.audience}
               onChange={handleChange}
               disabled={disabled}
@@ -84,25 +73,25 @@ export default function TopicInput({ onSubmit, disabled }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label>
-              <span className="label-icon">🎯</span>
-              Tone
-            </label>
-            <select name="tone" value={form.tone} onChange={handleChange} disabled={disabled}>
+            <label className="form-label">Tone</label>
+            <select
+              name="tone"
+              className="form-select"
+              value={form.tone}
+              onChange={handleChange}
+              disabled={disabled}
+            >
               <option>Educational</option>
-              <option>Professional</option>
-              <option>Conversational</option>
+              <option>Casual</option>
               <option>Formal</option>
             </select>
           </div>
           <div className="form-group">
-            <label>
-              <span className="label-icon">📊</span>
-              Word Count
-            </label>
+            <label className="form-label">Word count</label>
             <input
               type="number"
               name="wordCount"
+              className="form-input"
               value={form.wordCount}
               onChange={handleChange}
               min={200}
@@ -112,9 +101,9 @@ export default function TopicInput({ onSubmit, disabled }) {
           </div>
         </div>
 
-        <button type="submit" disabled={disabled || form.topic.trim().length < 3}>
+        <button type="submit" className="run-button" disabled={disabled || form.topic.trim().length < 3}>
           <SendIcon />
-          {disabled ? "Processing..." : "Run Pipeline"}
+          Run pipeline
         </button>
       </form>
     </div>

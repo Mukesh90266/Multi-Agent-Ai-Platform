@@ -1,11 +1,11 @@
 {
-  "runId": "2d040b27-fb52-4e17-9d9b-6950e0608f5b",
+  "runId": "a3c70878-aee4-42dd-90e5-30dec7e418a6",
   "input": {
     "topic": "Benefits of AI in Healthcare",
     "contentType": "Article",
     "audience": "General",
     "tone": "Educational",
-    "wordCount": 1000
+    "wordCount": 800
   },
   "status": "approved",
   "currentIteration": 1,

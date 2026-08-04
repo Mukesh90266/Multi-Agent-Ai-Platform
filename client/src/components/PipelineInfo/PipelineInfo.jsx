@@ -29,88 +29,76 @@ const PlayIcon = () => (
 );
 
 export default function PipelineInfo({ result, loading }) {
-  const formatTime = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleTimeString();
-  };
-
   const getStatus = () => {
-    if (loading) return { text: "Running", class: "running" };
-    if (!result) return { text: "Idle", class: "idle" };
-    if (result.status === "approved") return { text: "Completed", class: "completed" };
-    return { text: "In Progress", class: "progress" };
+    if (loading) return { text: "Running", color: "gray" };
+    if (!result) return { text: "Idle", color: "gray" };
+    if (result.status === "approved") return { text: "Completed", color: "green" };
+    return { text: "In Progress", color: "gray" };
   };
 
   const status = getStatus();
 
+  const formatTime = (date) => {
+    if (!date) return "—";
+    return new Date(date).toLocaleTimeString();
+  };
+
   return (
-    <div className="pipeline-info-card">
-      <div className="card-header-custom">
-        <div>
-          <h3>Pipeline Info</h3>
-          <p className="subtitle">Current execution details</p>
-        </div>
-        <span className={`status-badge ${status.class}`}>
-          {loading && <span className="pulse-dot"></span>}
+    <div>
+      <div className="section-header-row">
+        <span className="section-title">Pipeline info</span>
+        <span className={`info-badge info-badge-${status.color}`}>
+          <span className={`info-badge-dot ${status.color}`} />
           {status.text}
         </span>
       </div>
 
-      <div className="info-list">
-        <div className="info-item">
+      <div className="info-grid">
+        <div className="info-card">
           <div className="info-icon">
             <TopicIcon />
           </div>
           <div className="info-content">
-            <span className="info-label">Topic</span>
-            <span className="info-value">
-              {result?.input?.topic?.slice(0, 30) || "-"}
-              {result?.input?.topic?.length > 30 && "..."}
-            </span>
+            <div className="info-label">Topic</div>
+            <div className="info-value">
+              {result?.input?.topic?.slice(0, 20) || "—"}
+              {result?.input?.topic?.length > 20 && "..."}
+            </div>
           </div>
         </div>
 
-        <div className="info-item">
+        <div className="info-card">
           <div className="info-icon">
             <HashIcon />
           </div>
           <div className="info-content">
-            <span className="info-label">Iteration</span>
-            <span className="info-value">
+            <div className="info-label">Iteration</div>
+            <div className="info-value">
               {result?.currentIteration || 1} of {result?.maxIterations || 5}
-            </span>
+            </div>
           </div>
         </div>
 
-        <div className="info-item">
+        <div className="info-card">
           <div className="info-icon">
             <ClockIcon />
           </div>
           <div className="info-content">
-            <span className="info-label">Started At</span>
-            <span className="info-value">{formatTime(result?.createdAt)}</span>
+            <div className="info-label">Started at</div>
+            <div className="info-value">{formatTime(result?.createdAt)}</div>
           </div>
         </div>
 
-        <div className="info-item">
+        <div className="info-card">
           <div className="info-icon">
             <PlayIcon />
           </div>
           <div className="info-content">
-            <span className="info-label">Status</span>
-            <span className={`status-pill ${status.class}`}>
-              {status.text}
-            </span>
+            <div className="info-label">Status</div>
+            <div className="info-value">{status.text}</div>
           </div>
         </div>
       </div>
-
-      {result?.runId && (
-        <div className="run-id">
-          <span>Run ID:</span>
-          <code>{result.runId.slice(0, 8)}...</code>
-        </div>
-      )}
     </div>
   );
 }

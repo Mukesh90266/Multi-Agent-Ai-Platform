@@ -1,50 +1,69 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "./LiveOutput.css";
 
 const BoltIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
-const CopyIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <polyline points="20 6 9 17 4 12" />
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );
 
 const ExpandIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+    <polyline points="15 3 21 3 21 9" />
+    <polyline points="9 21 3 21 3 15" />
+    <line x1="21" y1="3" x2="14" y2="10" />
+    <line x1="3" y1="21" x2="10" y2="14" />
   </svg>
 );
 
-const MinimizeIcon = () => (
+const ClipboardIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+  </svg>
+);
+
+const SearchIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
+    <circle cx="11" cy="11" r="8" />
+    <path d="M21 21l-4.35-4.35" />
+  </svg>
+);
+
+const PenIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 19l7-7 3 3-7 7-3-3z" />
+    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+  </svg>
+);
+
+const MessageIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+const FileIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
   </svg>
 );
 
 export default function LiveOutput({ result, loading }) {
   const [activeTab, setActiveTab] = useState("research");
   const [copied, setCopied] = useState(false);
-  const [expanded, setExpanded] = useState(false);
 
   const tabs = [
-    { id: "research", label: "Research JSON", icon: "🔍" },
-    { id: "draft", label: "Draft", icon: "✍️" },
-    { id: "feedback", label: "Feedback", icon: "💬" },
-    { id: "final", label: "Final Output", icon: "✨" },
+    { id: "research", label: "Research JSON", icon: SearchIcon, file: "research-output.json" },
+    { id: "draft", label: "Draft", icon: PenIcon, file: "draft.md" },
+    { id: "feedback", label: "Feedback", icon: MessageIcon, file: "editor-feedback.json" },
+    { id: "final", label: "Final output", icon: FileIcon, file: "final-output.md" },
   ];
 
-  const getTabContent = () => {
+  const getContent = () => {
     switch (activeTab) {
       case "research":
         return result?.research ? JSON.stringify(result.research, null, 2) : "";
@@ -59,100 +78,77 @@ export default function LiveOutput({ result, loading }) {
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(getTabContent());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const getFileName = () => {
+    return tabs.find((t) => t.id === activeTab)?.file || "output.json";
   };
 
-  const formatJson = (json) => {
-    if (!json) return "";
-    try {
-      return JSON.stringify(JSON.parse(json), null, 2);
-    } catch {
-      return json;
+  const handleCopy = () => {
+    const content = getContent();
+    if (content) {
+      navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
+  const currentTab = tabs.find((t) => t.id === activeTab);
+  const content = getContent();
+  const lineCount = content ? content.split("\n").length : 1;
+
   return (
-    <div className={`live-output-card ${expanded ? "expanded" : ""}`}>
-      <div className="output-header">
-        <div className="header-left">
-          <div className="header-icon">
+    <div className="live-output-card">
+      <div className="card-header">
+        <div className="card-header-left">
+          <div className="card-header-icon">
             <BoltIcon />
           </div>
           <div>
-            <h2>Live Output</h2>
-            <p>Real-time output from each agent</p>
+            <div className="card-header-title">Live output</div>
+            <div className="card-header-subtitle">Real-time output from each agent</div>
           </div>
         </div>
-        <div className="header-actions">
-          {loading && (
-            <div className="live-indicator">
-              <span className="pulse"></span>
-              Live
-            </div>
-          )}
-          <button className="icon-btn" onClick={() => setExpanded(!expanded)}>
-            {expanded ? <MinimizeIcon /> : <ExpandIcon />}
-          </button>
+        <div className="card-header-right">
+          <ExpandIcon />
         </div>
       </div>
 
       <div className="tabs-container">
-        <div className="tabs">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`tab ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`tab ${activeTab === tab.id ? "active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <tab.icon />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="file-status-bar">
+        <div className="file-info">
+          <div className="file-dot" />
+          <span className="file-name">{getFileName()}</span>
+        </div>
+        <div className="file-actions">
+          <span className="line-count">{lineCount} lines</span>
+          <button className="copy-btn" onClick={handleCopy} disabled={!content}>
+            {copied ? "Copied!" : "Copy"}
+          </button>
         </div>
       </div>
 
-      <div className="code-wrapper">
-        <div className="code-header">
-          <div className="code-info">
-            <span className="dot"></span>
-            <span className="file-name">
-              {activeTab === "research" && "research-output.json"}
-              {activeTab === "draft" && "draft.md"}
-              {activeTab === "feedback" && "editor-feedback.json"}
-              {activeTab === "final" && "final-output.md"}
-            </span>
-          </div>
-          <div className="code-actions">
-            <span className="line-count">
-              {getTabContent().split('\n').length} lines
-            </span>
-            <button className="copy-btn" onClick={handleCopy}>
-              {copied ? <CheckIcon /> : <CopyIcon />}
-              {copied ? "Copied!" : "Copy"}
-            </button>
-          </div>
+      {content ? (
+        <div className="code-container">
+          <pre className="code-content">{content}</pre>
         </div>
-        <div className="code-content">
-          {getTabContent() ? (
-            <pre>
-              <code>{formatJson(getTabContent())}</code>
-            </pre>
-          ) : (
-            <div className="empty-state">
-              <div className="empty-icon">📋</div>
-              <p>Output will appear here</p>
-              <span>Run the pipeline to see results</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {loading && (
-        <div className="loading-bar">
-          <div className="loading-progress"></div>
+      ) : (
+        <div className="empty-state">
+          <div className="empty-icon">
+            <ClipboardIcon />
+          </div>
+          <div className="empty-title">Output will appear here</div>
+          <div className="empty-subtitle">Run the pipeline to see results</div>
         </div>
       )}
     </div>

@@ -1,18 +1,15 @@
 import { useState } from "react";
 import TopicInput from "../components/TopicInput/TopicInput";
-import AgentCard from "../components/AgentCard/AgentCard";
+import PipelineStatus from "../components/PipelineStatus/PipelineStatus";
 import PipelineInfo from "../components/PipelineInfo/PipelineInfo";
 import LiveOutput from "../components/LiveOutput/LiveOutput";
-import "./Home.css";
 
 export default function Home() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const run = async (formData) => {
+  const runPipeline = async (formData) => {
     setLoading(true);
-    setError("");
     setResult(null);
 
     try {
@@ -25,36 +22,26 @@ export default function Home() {
       const data = await response.json();
       if (data.success) {
         setResult(data);
-      } else {
-        setError(data.message || "Pipeline failed");
       }
     } catch (e) {
-      setError("Could not contact the server.");
+      console.error("Pipeline error:", e);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="home-layout">
-      {/* LEFT SIDEBAR */}
+    <div className="main-layout">
       <aside className="sidebar">
-        {/* Topic Input Card */}
-        <TopicInput onSubmit={run} disabled={loading} />
-
-        {/* Pipeline Status Card */}
-        <AgentCard 
-          result={result} 
-          loading={loading}
-          error={error}
-        />
-
-        {/* Pipeline Info Card */}
-        <PipelineInfo result={result} loading={loading} />
+        <TopicInput onSubmit={runPipeline} disabled={loading} />
+        <div className="section section-divider">
+          <PipelineStatus result={result} loading={loading} />
+        </div>
+        <div className="section section-divider">
+          <PipelineInfo result={result} loading={loading} />
+        </div>
       </aside>
-
-      {/* RIGHT CONTENT */}
-      <main className="content">
+      <main className="right-panel">
         <LiveOutput result={result} loading={loading} />
       </main>
     </div>
