@@ -5,12 +5,15 @@ export default function TopicInput({ onSubmit, disabled }) {
   const [form, setForm] = useState({
     topic: "",
     contentType: "Blog post",
-    audience: "Beginner learners",
+    audience: "General",
     tone: "Educational",
     wordCount: 800,
   });
 
-  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -20,69 +23,69 @@ export default function TopicInput({ onSubmit, disabled }) {
   };
 
   return (
-    <form className="topic-section" onSubmit={handleSubmit}>
-      <h2>Research Topic</h2>
-      
-      <div className="form-group">
-        <label>Topic</label>
-        <textarea
-          required
-          minLength="3"
-          name="topic"
-          value={form.topic}
-          onChange={change}
-          placeholder="Enter your research topic here..."
-          disabled={disabled}
-        />
-      </div>
-
-      <div className="form-row">
+    <div className="card topic-card">
+      <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label>Content Type</label>
-          <input
-            name="contentType"
-            value={form.contentType}
-            onChange={change}
+          <label>Topic</label>
+          <textarea
+            name="topic"
+            value={form.topic}
+            onChange={handleChange}
+            placeholder="Enter your research topic..."
             disabled={disabled}
+            rows={3}
           />
         </div>
-        <div className="form-group">
-          <label>Audience</label>
-          <input 
-            name="audience" 
-            value={form.audience} 
-            onChange={change}
-            disabled={disabled}
-          />
-        </div>
-        <div className="form-group">
-          <label>Tone</label>
-          <select name="tone" value={form.tone} onChange={change} disabled={disabled}>
-            <option>Educational</option>
-            <option>Professional</option>
-            <option>Conversational</option>
-            <option>Formal</option>
-          </select>
-        </div>
-      </div>
 
-      <div className="form-group word-count-group">
-        <label>Word Count: {form.wordCount} words</label>
-        <input
-          type="range"
-          name="wordCount"
-          min="200"
-          max="3000"
-          step="100"
-          value={form.wordCount}
-          onChange={change}
-          disabled={disabled}
-        />
-      </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Content Type</label>
+            <input
+              name="contentType"
+              value={form.contentType}
+              onChange={handleChange}
+              disabled={disabled}
+            />
+          </div>
+          <div className="form-group">
+            <label>Audience</label>
+            <input
+              name="audience"
+              value={form.audience}
+              onChange={handleChange}
+              disabled={disabled}
+            />
+          </div>
+        </div>
 
-      <button type="submit" disabled={disabled || form.topic.trim().length < 3}>
-        {disabled ? "Processing..." : "Submit"}
-      </button>
-    </form>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Tone</label>
+            <select name="tone" value={form.tone} onChange={handleChange} disabled={disabled}>
+              <option>Educational</option>
+              <option>Professional</option>
+              <option>Conversational</option>
+              <option>Formal</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Word Count</label>
+            <input
+              type="number"
+              name="wordCount"
+              value={form.wordCount}
+              onChange={handleChange}
+              min={200}
+              max={3000}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+
+        <button type="submit" disabled={disabled || form.topic.trim().length < 3}>
+          {disabled ? "Running..." : "Run Pipeline"}
+        </button>
+      </form>
+    </div>
   );
 }

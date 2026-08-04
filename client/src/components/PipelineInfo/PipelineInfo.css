@@ -1,0 +1,96 @@
+.pipeline-info-card {
+  padding: 20px;
+}
+
+.pipeline-info-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-icon {
+  width: 32px;
+  height: 32px;
+  background: #F3F4F6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.info-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.status-pill.idle {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
+.status-pill.running {
+  background: #EDE9FE;
+  color: #7C3AED;
+}
+
+.status-pill.approved,
+.status-pill.completed {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+
+.status-pill.in-progress,
+.status-pill.needs_revision {
+  background: #FEF3C7;
+  color: #D97706;
+}
