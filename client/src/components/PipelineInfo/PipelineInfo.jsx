@@ -28,9 +28,10 @@ const PlayIcon = () => (
 
 export default function PipelineInfo({ result, loading }) {
   const getStatus = () => {
-    if (loading) return { text: "Running", color: "gray" };
+    if (loading) return { text: "Running", color: "orange" };
     if (!result) return { text: "Idle", color: "gray" };
     if (result.status === "approved") return { text: "Completed", color: "green" };
+    if (result.status === "needs_revision") return { text: "Needs Review", color: "yellow" };
     return { text: "In Progress", color: "gray" };
   };
 
@@ -41,12 +42,17 @@ export default function PipelineInfo({ result, loading }) {
     return new Date(date).toLocaleTimeString();
   };
 
+  const topicText = result?.input?.topic || "—";
+  const displayTopic = topicText.length > 20 ? topicText.slice(0, 20) + "..." : topicText;
+
   return (
     <div>
       <div className="section-header-row">
         <span className="section-title">Pipeline info</span>
         <span className={`info-badge info-badge-${status.color}`}>
-          <span className={`info-badge-dot ${status.color}`} />
+          {loading && <span className="info-badge-dot orange" />}
+          {!loading && status.color === "green" && <span className="info-badge-dot green" />}
+          {!loading && status.color !== "green" && <span className="info-badge-dot gray" />}
           {status.text}
         </span>
       </div>
@@ -58,10 +64,7 @@ export default function PipelineInfo({ result, loading }) {
           </div>
           <div className="info-content">
             <div className="info-label">Topic</div>
-            <div className="info-value">
-              {result?.input?.topic?.slice(0, 20) || "—"}
-              {result?.input?.topic?.length > 20 && "..."}
-            </div>
+            <div className="info-value">{displayTopic}</div>
           </div>
         </div>
 
@@ -83,7 +86,7 @@ export default function PipelineInfo({ result, loading }) {
           </div>
           <div className="info-content">
             <div className="info-label">Started at</div>
-            <div className="info-value">{formatTime(result?.createdAt)}</div>
+            <div className="info-value">{loading ? "Running..." : formatTime(result?.createdAt)}</div>
           </div>
         </div>
 

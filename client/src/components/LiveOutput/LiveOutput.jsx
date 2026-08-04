@@ -90,9 +90,9 @@ export default function LiveOutput({ result, loading }) {
     }
   };
 
-  const currentTab = tabs.find((t) => t.id === activeTab);
   const content = getContent();
   const lineCount = content ? content.split("\n").length : 1;
+  const hasContent = content && content.length > 0;
 
   return (
     <div className="live-output-card">
@@ -103,7 +103,9 @@ export default function LiveOutput({ result, loading }) {
           </div>
           <div>
             <div className="card-header-title">Live output</div>
-            <div className="card-header-subtitle">Real-time output from each agent</div>
+            <div className="card-header-subtitle">
+              {loading ? "Processing pipeline..." : hasContent ? "Real-time output from each agent" : "Run the pipeline to see results"}
+            </div>
           </div>
         </div>
         <div className="card-header-right">
@@ -130,14 +132,23 @@ export default function LiveOutput({ result, loading }) {
           <span className="file-name">{getFileName()}</span>
         </div>
         <div className="file-actions">
-          <span className="line-count">{lineCount} lines</span>
-          <button className="copy-btn" onClick={handleCopy} disabled={!content}>
+          <span className="line-count">
+            {loading ? "..." : `${lineCount} lines`}
+          </span>
+          <button className="copy-btn" onClick={handleCopy} disabled={!hasContent}>
             {copied ? "Copied!" : "Copy"}
           </button>
         </div>
       </div>
 
-      {content ? (
+      {loading ? (
+        <div className="code-container">
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <span>Processing pipeline...</span>
+          </div>
+        </div>
+      ) : hasContent ? (
         <div className="code-container">
           <pre className="code-content">{content}</pre>
         </div>

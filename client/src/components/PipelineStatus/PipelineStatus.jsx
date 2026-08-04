@@ -1,4 +1,4 @@
-
+import "./PipelineStatus.css";
 
 const SearchIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -41,16 +41,7 @@ const LoaderIcon = () => (
   </svg>
 );
 
-export default function PipelineStatus({ result, loading }) {
-  const getAgentStatus = (agentId) => {
-    if (!result && !loading) return "waiting";
-    if (loading && !result) {
-      if (agentId === "researcher") return "running";
-      return "waiting";
-    }
-    return result?.agentStatus?.[agentId] || "waiting";
-  };
-
+export default function PipelineStatus({ result, loading, currentAgent, agentStatus }) {
   const agents = [
     {
       id: "researcher",
@@ -84,17 +75,36 @@ export default function PipelineStatus({ result, loading }) {
     },
   ];
 
+  // Use real-time agentStatus if available, otherwise fall back to result
+  const getAgentStatus = (agentId) => {
+    if (agentStatus) {
+      return agentStatus[agentId] || "waiting";
+    }
+    
+    if (!result && !loading) return "waiting";
+    
+    // If result exists, use it
+    if (result?.agentStatus?.[agentId]) {
+      return result.agentStatus[agentId];
+    }
+    
+    return "waiting";
+  };
+
   return (
     <div>
       <div className="section-header-row">
         <span className="section-title">Pipeline status</span>
-        <span className="section-subtitle">Live execution progress</span>
+        <span className="section-subtitle">
+          {loading ? "Processing..." : result ? "Completed" : "Live execution progress"}
+        </span>
       </div>
 
       {agents.map((agent) => {
         const status = getAgentStatus(agent.id);
         const isCompleted = status === "completed";
         const isRunning = status === "running";
+        const isWaiting = status === "waiting";
 
         return (
           <div key={agent.id} className={`agent-card ${agent.id}`}>
@@ -104,7 +114,7 @@ export default function PipelineStatus({ result, loading }) {
             <div className="agent-info">
               <div className="agent-header">
                 <span className="agent-name">{agent.name}</span>
-                <span className="agent-badge">
+                <span className={`agent-badge ${status}`}>
                   {isCompleted ? "Completed" : isRunning ? "Running" : "Waiting"}
                 </span>
               </div>
