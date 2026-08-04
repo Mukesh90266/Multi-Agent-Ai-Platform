@@ -1,0 +1,1 @@
+.loader-wrap{padding:13px;color:#1d4ed8;font-weight:600}.spinner{display:inline-block;height:14px;width:14px;border:3px solid #bfdbfe;border-top-color:#2563eb;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}@keyframes spin{to{transform:rotate(360deg)}}
