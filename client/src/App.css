@@ -822,6 +822,135 @@ body {
   color: #78350f;
 }
 
+/* EDITOR VERDICT PANEL */
+.editor-verdict-panel {
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 10px;
+  animation: fadeIn 0.4s ease-in;
+  border: 1px solid;
+}
+
+.editor-verdict-panel.approved {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.editor-verdict-panel.needs-revision {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.editor-verdict-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.editor-verdict-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-verdict-panel.approved .editor-verdict-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.editor-verdict-panel.needs-revision .editor-verdict-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.editor-verdict-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.editor-verdict-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.editor-verdict-panel.approved .editor-verdict-title {
+  color: #166534;
+}
+
+.editor-verdict-panel.needs-revision .editor-verdict-title {
+  color: #92400e;
+}
+
+.editor-verdict-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.editor-verdict-score-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.editor-verdict-score-label svg {
+  width: 12px;
+  height: 12px;
+}
+
+.editor-verdict-score-bar {
+  flex: 1;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.editor-verdict-score-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.editor-verdict-panel.approved .editor-verdict-score-fill {
+  background: #22c55e;
+}
+
+.editor-verdict-panel.needs-revision .editor-verdict-score-fill {
+  background: #f59e0b;
+}
+
+.editor-verdict-score-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  min-width: 36px;
+  text-align: right;
+}
+
+.editor-verdict-summary {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.editor-verdict-panel.approved .editor-verdict-summary {
+  color: #166534;
+}
+
+.editor-verdict-panel.needs-revision .editor-verdict-summary {
+  color: #92400e;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
