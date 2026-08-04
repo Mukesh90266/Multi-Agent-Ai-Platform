@@ -1,6 +1,27 @@
 import { askLLM } from "../../services/llmService.js";
 import { editorPrompt } from "./editorPrompt.js";
 
+function demoReview() {
+  return {
+    decision: "approved",
+    qualityScore: 85,
+    summary: "The demo draft covers the topic adequately. In production with a real LLM, the Editor Agent would provide detailed feedback on the content quality, structure, and completeness.",
+    strengths: [
+      "Basic structure is present",
+      "Covers main topics",
+      "Appropriate tone for the target audience"
+    ],
+    missingPoints: [
+      "Could benefit from more specific examples",
+      "More detailed explanations would improve clarity"
+    ],
+    weaknesses: [],
+    revisionInstructions: [],
+    factCheckWarnings: [],
+    mode: "demo"
+  };
+}
+
 export async function reviewContent(input) {
   const prompt = editorPrompt(input);
 
@@ -16,9 +37,8 @@ Never invent sources, citations, facts, or errors.
   });
 
   if (!rawReview) {
-    throw new Error(
-      "Editor Agent could not run because no AI provider is configured."
-    );
+    // Return demo review when no LLM is configured
+    return demoReview();
   }
 
   let review;

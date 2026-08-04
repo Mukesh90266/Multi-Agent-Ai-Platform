@@ -1,70 +1,111 @@
 import { useState } from "react";
-import "./TopicInput.css";
+
+const SendIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
 export default function TopicInput({ onSubmit, disabled }) {
   const [form, setForm] = useState({
     topic: "",
     contentType: "Blog post",
-    audience: "Beginner learners",
+    audience: "General",
     tone: "Educational",
     wordCount: 800,
   });
-  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (form.topic.trim().length >= 3) {
+      onSubmit(form);
+    }
+  };
+
   return (
-    <form
-      className="topic-form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit(form);
-      }}
-    >
-      <label>
-        Research topic
-        <textarea
-          required
-          minLength="3"
-          name="topic"
-          value={form.topic}
-          onChange={change}
-          placeholder="Example: Benefits and limitations of the MERN stack"
-        />
-      </label>
-      <div className="form-grid">
-        <label>
-          Content type
-          <input
-            name="contentType"
-            value={form.contentType}
-            onChange={change}
-          />
-        </label>
-        <label>
-          Target audience
-          <input name="audience" value={form.audience} onChange={change} />
-        </label>
-        <label>
-          Tone
-          <select name="tone" value={form.tone} onChange={change}>
-            <option>Educational</option>
-            <option>Professional</option>
-            <option>Conversational</option>
-            <option>Formal</option>
-          </select>
-        </label>
+    <div className="section">
+      <div className="section-header">
+        <span className="section-title">Configure pipeline</span>
       </div>
-      <label>
-        Target word count
-        <input
-          type="number"
-          name="wordCount"
-          min="200"
-          max="3000"
-          value={form.wordCount}
-          onChange={change}
-        />
-      </label>
-      <button disabled={disabled}>
-        {disabled ? "Researching…" : "Run Researcher Agent"}
-      </button>
-    </form>
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label className="form-label">Research topic</label>
+          <textarea
+            name="topic"
+            className="form-textarea"
+            value={form.topic}
+            onChange={handleChange}
+            placeholder="What would you like to research?"
+            disabled={disabled}
+            rows={3}
+          />
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Content type</label>
+            <input
+              name="contentType"
+              className="form-input"
+              value={form.contentType}
+              onChange={handleChange}
+              disabled={disabled}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Audience</label>
+            <input
+              name="audience"
+              className="form-input"
+              value={form.audience}
+              onChange={handleChange}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Tone</label>
+            <select
+              name="tone"
+              className="form-select"
+              value={form.tone}
+              onChange={handleChange}
+              disabled={disabled}
+            >
+              <option>Educational</option>
+              <option>Casual</option>
+              <option>Formal</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Word count</label>
+            <input
+              type="number"
+              name="wordCount"
+              className="form-input"
+              value={form.wordCount}
+              onChange={handleChange}
+              min={200}
+              max={3000}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+
+        <button type="submit" className="run-button" disabled={disabled || form.topic.trim().length < 3}>
+          <SendIcon />
+          Run pipeline
+        </button>
+      </form>
+    </div>
   );
 }

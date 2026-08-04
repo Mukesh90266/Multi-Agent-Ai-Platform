@@ -8,113 +8,208 @@ import {
   writeContent,
   reviewContent
 } from "../agents/index.js";
+
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const serverDirectory = path.resolve(directory, '..');
 const iterationLogPath = path.join(serverDirectory, 'logs', 'iterationLogs.json');
 const outputPath = path.join(serverDirectory, 'output', 'finalOutput.json');
+
+const MAX_ITERATIONS = 5;
+
 export async function runPipeline(input, runId = crypto.randomUUID()) {
-  const agentStatus = {
-    researcher: "running",
-    writer: "waiting",
-    editor: "waiting"
-  };
+  const iterations = [];
+  let researchResult = null;
+  let writerResult = null;
+  let currentDraft = null;
+  let currentResearch = null;
+  
+  // Iterate until editor approves or max iterations reached
+  for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
+    logger.info(`=== Starting Iteration ${iteration} for run ${runId} ===`);
+    
+    const agentStatus = {
+      researcher: iteration === 1 ? "running" : "waiting",
+      writer: "waiting",
+      editor: "waiting"
+    };
 
-  stateManager.set(runId, {
-    status: "researching",
-    agentStatus
-  });
+    stateManager.set(runId, {
+      status: iteration === 1 ? "researching" : "writing_revision",
+      iteration,
+      maxIterations: MAX_ITERATIONS,
+      agentStatus,
+      iterations,
+      research: researchResult,
+      draft: writerResult
+    });
 
-  logger.info(`Researcher started: ${runId}`);
+    // ----------------------------------
+    // STEP 1: RESEARCHER AGENT (only in first iteration)
+    // ----------------------------------
+    if (iteration === 1) {
+      logger.info(`Researcher started (iteration ${iteration}): ${runId}`);
+      
+      const researchAgentStatus = {
+        researcher: "running",
+        writer: "waiting",
+        editor: "waiting"
+      };
+      
+      stateManager.set(runId, {
+        status: "researching",
+        iteration,
+        maxIterations: MAX_ITERATIONS,
+        agentStatus: researchAgentStatus,
+        iterations,
+        research: null,
+        draft: null
+      });
 
-  // ----------------------------------
-  // STEP 1: RESEARCHER AGENT
-  // ----------------------------------
-  const researchResult = await research(input);
+      researchResult = await research(input);
+      currentResearch = researchResult;
 
-  agentStatus.researcher = "completed";
-  agentStatus.writer = "running";
+      iterations.push({
+        iteration,
+        agent: "researcher",
+        status: "completed",
+        output: researchResult
+      });
 
-  stateManager.set(runId, {
-    status: "writing",
-    agentStatus,
-    research: researchResult
-  });
+      logger.info(`Researcher completed (iteration ${iteration}): ${runId}`);
+    }
 
-  logger.info(`Writer started: ${runId}`);
+    // ----------------------------------
+    // STEP 2: WRITER AGENT
+    // ----------------------------------
+    const writerAgentStatus = {
+      researcher: "completed",
+      writer: "running",
+      editor: "waiting"
+    };
 
-  // ----------------------------------
-  // STEP 2: WRITER AGENT
-  // ----------------------------------
-  const writerResult = await writeContent({
-    ...input,
-    research: researchResult
-  });
+    stateManager.set(runId, {
+      status: "writing",
+      iteration,
+      maxIterations: MAX_ITERATIONS,
+      agentStatus: writerAgentStatus,
+      iterations,
+      research: researchResult,
+      draft: currentDraft
+    });
 
-  agentStatus.writer = "completed";
-  agentStatus.editor = "running";
+    logger.info(`Writer started (iteration ${iteration}): ${runId}`);
 
-  stateManager.set(runId, {
-    status: "editing",
-    agentStatus,
-    research: researchResult,
-    draft: writerResult
-  });
+    // If this is not the first iteration, pass the editor feedback
+    const writerInput = iteration === 1 
+      ? { ...input, research: researchResult }
+      : { ...input, research: researchResult, editorFeedback: currentDraft?.editorFeedback };
 
-  logger.info(`Editor started: ${runId}`);
+    writerResult = await writeContent(writerInput);
+    currentDraft = writerResult;
 
-  // ----------------------------------
-  // STEP 3: EDITOR AGENT
-  // ----------------------------------
-  const editorReview = await reviewContent({
-    ...input,
-    research: researchResult,
-    draft: writerResult.content
-  });
+    iterations.push({
+      iteration,
+      agent: "writer",
+      status: "completed",
+      output: writerResult,
+      isRevision: iteration > 1
+    });
 
-  agentStatus.editor = "completed";
+    logger.info(`Writer completed (iteration ${iteration}): ${runId}`);
+
+    // ----------------------------------
+    // STEP 3: EDITOR AGENT
+    // ----------------------------------
+    const editorAgentStatus = {
+      researcher: "completed",
+      writer: "completed",
+      editor: "running"
+    };
+
+    stateManager.set(runId, {
+      status: "editing",
+      iteration,
+      maxIterations: MAX_ITERATIONS,
+      agentStatus: editorAgentStatus,
+      iterations,
+      research: researchResult,
+      draft: writerResult
+    });
+
+    logger.info(`Editor started (iteration ${iteration}): ${runId}`);
+
+    const editorReview = await reviewContent({
+      ...input,
+      research: researchResult,
+      draft: writerResult.content,
+      iteration
+    });
+
+    iterations.push({
+      iteration,
+      agent: "editor",
+      status: editorReview.decision,
+      output: editorReview
+    });
+
+    logger.info(`Editor completed (iteration ${iteration}): ${runId} - Decision: ${editorReview.decision}`);
+
+    // Check if editor approved
+    if (editorReview.decision === "approved") {
+      logger.info(`Pipeline approved after ${iteration} iteration(s): ${runId}`);
+      break;
+    }
+
+    // If needs revision, prepare feedback for next iteration
+    if (editorReview.decision === "needs_revision") {
+      logger.info(`Editor requested revision (iteration ${iteration}): ${runId}`);
+      
+      // Prepare feedback for writer in next iteration
+      currentDraft = {
+        ...writerResult,
+        editorFeedback: {
+          revisionInstructions: editorReview.revisionInstructions,
+          weaknesses: editorReview.weaknesses,
+          missingPoints: editorReview.missingPoints,
+          summary: editorReview.summary
+        }
+      };
+    }
+
+    // If max iterations reached, stop
+    if (iteration >= MAX_ITERATIONS) {
+      logger.warn(`Max iterations (${MAX_ITERATIONS}) reached for run ${runId}`);
+      break;
+    }
+  }
+
+  // Get final editor review from iterations
+  const finalEditorReview = iterations
+    .filter(i => i.agent === "editor")
+    .pop()?.output;
 
   const result = {
     runId,
     input,
-
-    // Editor determines whether the current draft is approved.
-    status: editorReview.decision,
-
-    agentStatus,
-
+    status: finalEditorReview?.decision || "unknown",
+    currentIteration: iterations.filter(i => i.agent === "editor").length,
+    maxIterations: MAX_ITERATIONS,
+    agentStatus: {
+      researcher: "completed",
+      writer: "completed",
+      editor: "completed"
+    },
     research: researchResult,
-
     draft: writerResult,
-
-    editorReview,
-
-    iterations: [
-      {
-        iteration: 1,
-        agent: "researcher",
-        status: "completed",
-        output: researchResult
-      },
-      {
-        iteration: 2,
-        agent: "writer",
-        status: "completed",
-        output: writerResult
-      },
-      {
-        iteration: 3,
-        agent: "editor",
-        status: editorReview.decision,
-        output: editorReview
-      }
-    ]
+    editorReview: finalEditorReview,
+    iterations,
+    approved: finalEditorReview?.decision === "approved"
   };
 
   stateManager.set(runId, result);
 
-  // Save old and new run iteration data.
+  // Save iteration logs
   let logs = [];
-
   try {
     logs = JSON.parse(await fs.readFile(iterationLogPath, "utf8"));
   } catch {
@@ -125,6 +220,7 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     runId,
     createdAt: new Date().toISOString(),
     status: result.status,
+    iteration: result.currentIteration,
     iterations: result.iterations
   });
 
@@ -133,7 +229,7 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     JSON.stringify(logs.slice(0, 100), null, 2)
   );
 
-  // Save newest complete pipeline result.
+  // Save newest complete pipeline result
   await fs.writeFile(
     outputPath,
     JSON.stringify(result, null, 2)
