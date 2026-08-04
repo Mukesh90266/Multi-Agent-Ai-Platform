@@ -36,7 +36,11 @@ const ClockIcon = () => (
 
 export default function AgentCard({ result, loading, error }) {
   const getAgentStatus = (agentId) => {
-    if (loading && !result) return "waiting";
+    if (loading && !result) {
+      if (agentId === "researcher") return "running";
+      if (agentId === "writer" && result?.agentStatus?.researcher === "completed") return "running";
+      return "waiting";
+    }
     return result?.agentStatus?.[agentId] || "waiting";
   };
 
@@ -48,57 +52,90 @@ export default function AgentCard({ result, loading, error }) {
       description: "Research collected successfully",
       runningText: "Collecting research data...",
       waitingText: "Waiting for input",
+      color: "#22C55E",
+      bgColor: "#DCFCE7",
     },
     {
       id: "writer",
       name: "Writer",
       icon: PenIcon,
-      description: "Generating draft content...",
+      description: "Draft content generated",
       runningText: "Generating content...",
       waitingText: "Waiting for research",
+      color: "#7C3AED",
+      bgColor: "#EDE9FE",
     },
     {
       id: "editor",
       name: "Editor",
       icon: EditIcon,
-      description: "Reviewing draft content...",
+      description: "Review completed",
       runningText: "Reviewing content...",
       waitingText: "Waiting for writer",
+      color: "#F59E0B",
+      bgColor: "#FEF3C7",
     },
   ];
 
   return (
-    <div className="card agent-card-container">
-      <div className="card-header">
+    <div className="agent-card-container">
+      <div className="card-header-custom">
         <div>
           <h3>Pipeline Status</h3>
           <p className="subtitle">Live execution progress</p>
+        </div>
+        <div className="status-dot-container">
+          <span className={`status-dot ${loading ? 'loading' : result ? 'complete' : 'idle'}`}></span>
         </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
 
       <div className="agent-list">
-        {agents.map((agent) => {
+        {agents.map((agent, index) => {
           const status = getAgentStatus(agent.id);
           const isRunning = status === "running";
           const isCompleted = status === "completed";
+          const isWaiting = status === "waiting";
 
           return (
-            <div key={agent.id} className={`agent-item ${agent.id} ${status}`}>
-              <div className={`agent-icon ${status}`}>
-                <agent.icon />
+            <div 
+              key={agent.id} 
+              className={`agent-item ${status}`}
+              style={{ 
+                '--agent-color': agent.color,
+                '--agent-bg': agent.bgColor,
+                animationDelay: `${index * 0.1}s`
+              }}
+            >
+              <div className="agent-icon-wrapper">
+                <div className={`agent-icon ${status}`} style={{ background: agent.bgColor }}>
+                  <agent.icon />
+                </div>
+                {isRunning && <div className="running-ring"></div>}
               </div>
               
               <div className="agent-info">
                 <div className="agent-name-row">
                   <span className="agent-name">{agent.name}</span>
                   <span className={`status-badge ${status}`}>
-                    {isCompleted && <CheckIcon />}
+                    {status === "completed" && <CheckIcon />}
                     {status === "completed" && "Completed"}
                     {status === "running" && "Running"}
                     {status === "waiting" && "Waiting"}
                   </span>
+                </div>
+                <div className="agent-progress">
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill" 
+                      style={{ 
+                        width: status === "completed" ? "100%" : 
+                               status === "running" ? "60%" : "0%",
+                        background: agent.color
+                      }}
+                    ></div>
+                  </div>
                 </div>
                 <p className="agent-description">
                   {isRunning ? agent.runningText : 
@@ -109,17 +146,17 @@ export default function AgentCard({ result, loading, error }) {
 
               <div className="agent-right">
                 {isCompleted && (
-                  <div className="check-circle">
+                  <div className="status-icon completed">
                     <CheckIcon />
                   </div>
                 )}
                 {isRunning && (
-                  <div className="loader-ring">
-                    <div className="loader-ring-inner" />
+                  <div className="loader-dots">
+                    <span></span><span></span><span></span>
                   </div>
                 )}
-                {status === "waiting" && (
-                  <div className="clock-icon">
+                {isWaiting && (
+                  <div className="status-icon waiting">
                     <ClockIcon />
                   </div>
                 )}

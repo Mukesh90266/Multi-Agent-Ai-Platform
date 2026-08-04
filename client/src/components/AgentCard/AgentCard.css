@@ -1,28 +1,68 @@
 .agent-card-container {
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E5E7EB;
   padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.card-header {
-  margin-bottom: 16px;
+.card-header-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
 }
 
-.card-header h3 {
-  font-size: 14px;
+.card-header-custom h3 {
+  font-size: 16px;
   font-weight: 600;
   color: #111827;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
-.card-header .subtitle {
-  font-size: 12px;
-  color: #6B7280;
+.card-header-custom .subtitle {
+  font-size: 13px;
+  color: #9CA3AF;
+  margin: 0;
+}
+
+.status-dot-container {
+  display: flex;
+  align-items: center;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+
+.status-dot.idle {
+  background: #E5E7EB;
+  animation: none;
+}
+
+.status-dot.loading {
+  background: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.status-dot.complete {
+  background: #22C55E;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
 }
 
 .error-message {
   background: #FEF2F2;
   color: #DC2626;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
   font-size: 13px;
   margin-bottom: 16px;
   border: 1px solid #FECACA;
@@ -37,78 +77,95 @@
 .agent-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
-  background: #F9FAFB;
-  border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  transition: all 0.2s;
+  gap: 14px;
+  padding: 16px;
+  background: #FAFAFA;
+  border-radius: 14px;
+  border: 1px solid #F3F4F6;
+  transition: all 0.3s ease;
+  animation: fadeSlideIn 0.4s ease backwards;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .agent-item:hover {
-  border-color: #D1D5DB;
+  border-color: var(--agent-color);
   background: #FFFFFF;
-}
-
-.agent-item.researcher {
-  border-left: 3px solid #22C55E;
-}
-
-.agent-item.writer {
-  border-left: 3px solid #7C3AED;
-}
-
-.agent-item.editor {
-  border-left: 3px solid #F59E0B;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
 }
 
 .agent-item.completed {
-  background: #F0FDF4;
+  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
   border-color: #BBF7D0;
 }
 
 .agent-item.running {
-  background: #F5F3FF;
+  background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
   border-color: #DDD6FE;
 }
 
+.agent-icon-wrapper {
+  position: relative;
+}
+
 .agent-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: all 0.3s;
 }
 
 .agent-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 
-.researcher .agent-icon {
-  background: #DCFCE7;
+.agent-item.researcher .agent-icon {
   color: #16A34A;
 }
 
-.writer .agent-icon {
-  background: #EDE9FE;
+.agent-item.writer .agent-icon {
   color: #7C3AED;
 }
 
-.editor .agent-icon {
-  background: #FEF3C7;
+.agent-item.editor .agent-icon {
   color: #D97706;
 }
 
 .agent-item.running .agent-icon {
-  animation: pulse-icon 1.5s infinite;
+  animation: iconPulse 1.5s infinite;
 }
 
-@keyframes pulse-icon {
+@keyframes iconPulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.08); }
+}
+
+.running-ring {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--agent-color);
+  border-radius: 16px;
+  animation: ringPulse 1.5s infinite;
+}
+
+@keyframes ringPulse {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.3); }
 }
 
 .agent-info {
@@ -119,12 +176,12 @@
 .agent-name-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .agent-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #111827;
 }
@@ -133,10 +190,10 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: 4px 10px;
+  border-radius: 20px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .status-badge svg {
@@ -156,7 +213,28 @@
 
 .status-badge.waiting {
   background: #F3F4F6;
-  color: #6B7280;
+  color: #9CA3AF;
+}
+
+.agent-progress {
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  height: 4px;
+  background: #E5E7EB;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.agent-item.completed .progress-fill {
+  box-shadow: 0 0 8px currentColor;
 }
 
 .agent-description {
@@ -176,42 +254,64 @@
   flex-shrink: 0;
 }
 
-.check-circle {
-  width: 28px;
-  height: 28px;
-  background: #22C55E;
+.status-icon {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.status-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.status-icon.completed {
+  background: #22C55E;
   color: white;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
-.check-circle svg {
-  width: 14px;
-  height: 14px;
-}
-
-.clock-icon {
-  width: 28px;
-  height: 28px;
+.status-icon.waiting {
+  background: #F3F4F6;
   color: #9CA3AF;
 }
 
-.clock-icon svg {
-  width: 20px;
-  height: 20px;
+.loader-dots {
+  display: flex;
+  gap: 4px;
 }
 
-.loader-ring {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #DDD6FE;
-  border-top-color: #7C3AED;
+.loader-dots span {
+  width: 8px;
+  height: 8px;
+  background: #7C3AED;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: bounce 1.4s infinite ease-in-out both;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.loader-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loader-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+@media (max-width: 480px) {
+  .agent-item {
+    padding: 12px;
+  }
+  
+  .agent-icon {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .agent-icon svg {
+    width: 18px;
+    height: 18px;
+  }
 }

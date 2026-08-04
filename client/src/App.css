@@ -10,11 +10,13 @@ body {
   color: #111827;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 nav {
-  height: 60px;
-  background: #FFFFFF;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid #E5E7EB;
   display: flex;
   align-items: center;
@@ -28,18 +30,19 @@ nav {
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .logo {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: linear-gradient(135deg, #2563EB, #7C3AED);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
 }
 
 .logo svg {
@@ -48,16 +51,17 @@ nav {
 }
 
 nav strong {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #111827;
+  letter-spacing: -0.01em;
 }
 
 .nav-right button {
-  padding: 8px 16px;
+  padding: 10px 18px;
   background: transparent;
   border: 1px solid #E5E7EB;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
   color: #6B7280;

@@ -1,6 +1,13 @@
 import { useState } from "react";
 import "./TopicInput.css";
 
+const SendIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
 export default function TopicInput({ onSubmit, disabled }) {
   const [form, setForm] = useState({
     topic: "",
@@ -23,15 +30,26 @@ export default function TopicInput({ onSubmit, disabled }) {
   };
 
   return (
-    <div className="card topic-card">
+    <div className="topic-card">
+      <div className="card-header-custom">
+        <div>
+          <h3>Configure Pipeline</h3>
+          <p className="subtitle">Enter your research parameters</p>
+        </div>
+        <div className="config-icon">⚙️</div>
+      </div>
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label>Topic</label>
+          <label>
+            <span className="label-icon">📝</span>
+            Research Topic
+          </label>
           <textarea
             name="topic"
             value={form.topic}
             onChange={handleChange}
-            placeholder="Enter your research topic..."
+            placeholder="What would you like to research?"
             disabled={disabled}
             rows={3}
           />
@@ -39,7 +57,10 @@ export default function TopicInput({ onSubmit, disabled }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label>Content Type</label>
+            <label>
+              <span className="label-icon">📄</span>
+              Content Type
+            </label>
             <input
               name="contentType"
               value={form.contentType}
@@ -48,7 +69,10 @@ export default function TopicInput({ onSubmit, disabled }) {
             />
           </div>
           <div className="form-group">
-            <label>Audience</label>
+            <label>
+              <span className="label-icon">👥</span>
+              Audience
+            </label>
             <input
               name="audience"
               value={form.audience}
@@ -60,7 +84,10 @@ export default function TopicInput({ onSubmit, disabled }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label>Tone</label>
+            <label>
+              <span className="label-icon">🎯</span>
+              Tone
+            </label>
             <select name="tone" value={form.tone} onChange={handleChange} disabled={disabled}>
               <option>Educational</option>
               <option>Professional</option>
@@ -69,7 +96,10 @@ export default function TopicInput({ onSubmit, disabled }) {
             </select>
           </div>
           <div className="form-group">
-            <label>Word Count</label>
+            <label>
+              <span className="label-icon">📊</span>
+              Word Count
+            </label>
             <input
               type="number"
               name="wordCount"
@@ -83,7 +113,8 @@ export default function TopicInput({ onSubmit, disabled }) {
         </div>
 
         <button type="submit" disabled={disabled || form.topic.trim().length < 3}>
-          {disabled ? "Running..." : "Run Pipeline"}
+          <SendIcon />
+          {disabled ? "Processing..." : "Run Pipeline"}
         </button>
       </form>
     </div>

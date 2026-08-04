@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./LiveOutput.css";
 
 const BoltIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg viewBox="0 0 24 24" fill="currentColor">
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );
@@ -15,41 +15,45 @@ const CopyIcon = () => (
 );
 
 const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
 const ExpandIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="15 3 21 3 21 9" />
-    <polyline points="9 21 3 21 3 15" />
-    <line x1="21" y1="3" x2="14" y2="10" />
-    <line x1="3" y1="21" x2="10" y2="14" />
+    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+  </svg>
+);
+
+const MinimizeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
   </svg>
 );
 
 export default function LiveOutput({ result, loading }) {
   const [activeTab, setActiveTab] = useState("research");
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const tabs = [
-    { id: "research", label: "Research JSON" },
-    { id: "draft", label: "Draft" },
-    { id: "feedback", label: "Feedback" },
-    { id: "final", label: "Final Output" },
+    { id: "research", label: "Research JSON", icon: "🔍" },
+    { id: "draft", label: "Draft", icon: "✍️" },
+    { id: "feedback", label: "Feedback", icon: "💬" },
+    { id: "final", label: "Final Output", icon: "✨" },
   ];
 
   const getTabContent = () => {
     switch (activeTab) {
       case "research":
-        return result?.research ? JSON.stringify(result.research, null, 2) : "// Research output will appear here";
+        return result?.research ? JSON.stringify(result.research, null, 2) : "";
       case "draft":
-        return result?.draft?.content || "// Draft content will appear here";
+        return result?.draft?.content || "";
       case "feedback":
-        return result?.editorReview ? JSON.stringify(result.editorReview, null, 2) : "// Editor feedback will appear here";
+        return result?.editorReview ? JSON.stringify(result.editorReview, null, 2) : "";
       case "final":
-        return result?.draft?.content || "// Final output will appear here";
+        return result?.draft?.content || "";
       default:
         return "";
     }
@@ -61,8 +65,17 @@ export default function LiveOutput({ result, loading }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const formatJson = (json) => {
+    if (!json) return "";
+    try {
+      return JSON.stringify(JSON.parse(json), null, 2);
+    } catch {
+      return json;
+    }
+  };
+
   return (
-    <div className="card live-output-card">
+    <div className={`live-output-card ${expanded ? "expanded" : ""}`}>
       <div className="output-header">
         <div className="header-left">
           <div className="header-icon">
@@ -73,43 +86,73 @@ export default function LiveOutput({ result, loading }) {
             <p>Real-time output from each agent</p>
           </div>
         </div>
-        <button className="expand-btn">
-          <ExpandIcon />
-          Expand All
-        </button>
-      </div>
-
-      <div className="tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`tab ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="code-container">
-        <div className="code-header">
-          <span className="code-lang">{activeTab === "draft" ? "Markdown" : "JSON"}</span>
-          <button className="copy-btn" onClick={handleCopy}>
-            {copied ? <CheckIcon /> : <CopyIcon />}
-            {copied ? "Copied!" : "Copy"}
+        <div className="header-actions">
+          {loading && (
+            <div className="live-indicator">
+              <span className="pulse"></span>
+              Live
+            </div>
+          )}
+          <button className="icon-btn" onClick={() => setExpanded(!expanded)}>
+            {expanded ? <MinimizeIcon /> : <ExpandIcon />}
           </button>
         </div>
+      </div>
+
+      <div className="tabs-container">
+        <div className="tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className="tab-icon">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="code-wrapper">
+        <div className="code-header">
+          <div className="code-info">
+            <span className="dot"></span>
+            <span className="file-name">
+              {activeTab === "research" && "research-output.json"}
+              {activeTab === "draft" && "draft.md"}
+              {activeTab === "feedback" && "editor-feedback.json"}
+              {activeTab === "final" && "final-output.md"}
+            </span>
+          </div>
+          <div className="code-actions">
+            <span className="line-count">
+              {getTabContent().split('\n').length} lines
+            </span>
+            <button className="copy-btn" onClick={handleCopy}>
+              {copied ? <CheckIcon /> : <CopyIcon />}
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+        </div>
         <div className="code-content">
-          <pre>
-            <code>{getTabContent()}</code>
-          </pre>
+          {getTabContent() ? (
+            <pre>
+              <code>{formatJson(getTabContent())}</code>
+            </pre>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">📋</div>
+              <p>Output will appear here</p>
+              <span>Run the pipeline to see results</span>
+            </div>
+          )}
         </div>
       </div>
 
       {loading && (
-        <div className="loading-overlay">
-          <div className="spinner" />
-          <span>Processing pipeline...</span>
+        <div className="loading-bar">
+          <div className="loading-progress"></div>
         </div>
       )}
     </div>

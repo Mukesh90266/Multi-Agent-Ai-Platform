@@ -1,17 +1,14 @@
 .pipeline-info-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E5E7EB;
   padding: 20px;
-}
-
-.pipeline-info-card h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .info-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
@@ -19,13 +16,22 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 12px;
+  background: #FAFAFA;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.info-item:hover {
+  background: #F3F4F6;
 }
 
 .info-icon {
-  width: 32px;
-  height: 32px;
-  background: #F3F4F6;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,13 +69,56 @@
   text-overflow: ellipsis;
 }
 
-.status-pill {
+.status-badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.idle {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
+.status-badge.running {
+  background: #EDE9FE;
+  color: #7C3AED;
+}
+
+.status-badge.completed,
+.status-badge.completed {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+
+.status-badge.progress {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: #7C3AED;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-pill {
+  display: inline-flex;
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   width: fit-content;
 }
 
@@ -83,14 +132,38 @@
   color: #7C3AED;
 }
 
-.status-pill.approved,
 .status-pill.completed {
   background: #DCFCE7;
   color: #16A34A;
 }
 
-.status-pill.in-progress,
-.status-pill.needs_revision {
+.status-pill.progress {
   background: #FEF3C7;
   color: #D97706;
+}
+
+.run-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #F3F4F6;
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.run-id code {
+  background: #F3F4F6;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 11px;
+  color: #6B7280;
+}
+
+@media (max-width: 480px) {
+  .info-list {
+    grid-template-columns: 1fr;
+  }
 }

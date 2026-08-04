@@ -29,14 +29,32 @@ const PlayIcon = () => (
 );
 
 export default function PipelineInfo({ result, loading }) {
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleTimeString();
+  const formatTime = (date) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleTimeString();
   };
 
+  const getStatus = () => {
+    if (loading) return { text: "Running", class: "running" };
+    if (!result) return { text: "Idle", class: "idle" };
+    if (result.status === "approved") return { text: "Completed", class: "completed" };
+    return { text: "In Progress", class: "progress" };
+  };
+
+  const status = getStatus();
+
   return (
-    <div className="card pipeline-info-card">
-      <h3>Pipeline Info</h3>
+    <div className="pipeline-info-card">
+      <div className="card-header-custom">
+        <div>
+          <h3>Pipeline Info</h3>
+          <p className="subtitle">Current execution details</p>
+        </div>
+        <span className={`status-badge ${status.class}`}>
+          {loading && <span className="pulse-dot"></span>}
+          {status.text}
+        </span>
+      </div>
 
       <div className="info-list">
         <div className="info-item">
@@ -46,7 +64,8 @@ export default function PipelineInfo({ result, loading }) {
           <div className="info-content">
             <span className="info-label">Topic</span>
             <span className="info-value">
-              {result?.input?.topic || "-"}
+              {result?.input?.topic?.slice(0, 30) || "-"}
+              {result?.input?.topic?.length > 30 && "..."}
             </span>
           </div>
         </div>
@@ -69,9 +88,7 @@ export default function PipelineInfo({ result, loading }) {
           </div>
           <div className="info-content">
             <span className="info-label">Started At</span>
-            <span className="info-value">
-              {result ? formatDate(result.runId ? new Date().toISOString() : null) : "-"}
-            </span>
+            <span className="info-value">{formatTime(result?.createdAt)}</span>
           </div>
         </div>
 
@@ -81,12 +98,19 @@ export default function PipelineInfo({ result, loading }) {
           </div>
           <div className="info-content">
             <span className="info-label">Status</span>
-            <span className={`status-pill ${result?.status || (loading ? 'running' : 'idle')}`}>
-              {loading ? "Running" : result?.status === "approved" ? "Completed" : result ? "In Progress" : "Idle"}
+            <span className={`status-pill ${status.class}`}>
+              {status.text}
             </span>
           </div>
         </div>
       </div>
+
+      {result?.runId && (
+        <div className="run-id">
+          <span>Run ID:</span>
+          <code>{result.runId.slice(0, 8)}...</code>
+        </div>
+      )}
     </div>
   );
 }
