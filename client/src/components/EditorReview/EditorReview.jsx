@@ -1,6 +1,6 @@
 import "./EditorReview.css";
 
-export default function EditorReview({ review }) {
+export default function EditorReview({ review, iteration }) {
   if (!review) {
     return null;
   }
@@ -12,7 +12,9 @@ export default function EditorReview({ review }) {
       <div className="editor-review-header">
         <div>
           <h2>Editor Agent Review</h2>
-
+          {iteration && (
+            <span className="iteration-tag">Iteration {iteration}</span>
+          )}
           <p className="editor-summary">{review.summary}</p>
         </div>
 
@@ -92,8 +94,15 @@ export default function EditorReview({ review }) {
             <li key={index}>{instruction}</li>
           ))}
         </ol>
+      ) : approved ? (
+        <p className="approved-message">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          No revisions needed. Content is approved!
+        </p>
       ) : (
-        <p>No revision instructions needed.</p>
+        <p>No revision instructions provided.</p>
       )}
 
       {review.factCheckWarnings?.length > 0 && (
