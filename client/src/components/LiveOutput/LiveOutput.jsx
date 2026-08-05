@@ -141,16 +141,22 @@ export default function LiveOutput({ result, loading }) {
         </div>
       </div>
 
-      {loading ? (
+      {hasContent ? (
+        <div className="code-container">
+          <pre className="code-content">{content}</pre>
+          {loading && (
+            <div className="live-loading-bar">
+              <div className="loading-spinner-small"></div>
+              <span>Pipeline running...</span>
+            </div>
+          )}
+        </div>
+      ) : loading ? (
         <div className="code-container">
           <div className="loading-content">
             <div className="loading-spinner"></div>
             <span>Processing pipeline...</span>
           </div>
-        </div>
-      ) : hasContent ? (
-        <div className="code-container">
-          <pre className="code-content">{content}</pre>
         </div>
       ) : (
         <div className="empty-state">

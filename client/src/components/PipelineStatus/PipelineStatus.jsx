@@ -41,6 +41,35 @@ const LoaderIcon = () => (
   </svg>
 );
 
+const InfoIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+const ShieldCheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <polyline points="9 12 12 15 16 10" />
+  </svg>
+);
+
+const StarIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
 export default function PipelineStatus({ result, loading, currentAgent, agentStatus }) {
   const agents = [
     {
@@ -80,16 +109,28 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
     if (agentStatus) {
       return agentStatus[agentId] || "waiting";
     }
-    
+
     if (!result && !loading) return "waiting";
-    
+
     // If result exists, use it
     if (result?.agentStatus?.[agentId]) {
       return result.agentStatus[agentId];
     }
-    
+
     return "waiting";
   };
+
+  const editorStatus = getAgentStatus("editor");
+  const isEditorRunning = editorStatus === "running";
+  const isEditorCompleted = editorStatus === "completed";
+
+  const editorReview = result?.editorReview;
+  const decision = editorReview?.decision;
+  const qualityScore = editorReview?.qualityScore;
+  const summary = editorReview?.summary;
+
+  const isApproved = decision === "approved";
+  const isNeedsRevision = decision === "needs_revision";
 
   return (
     <div>
@@ -134,6 +175,52 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
           </div>
         );
       })}
+
+      {isEditorRunning && (
+        <div className="editor-info-panel">
+          <div className="editor-info-header">
+            <InfoIcon />
+            <span>Editor Agent</span>
+          </div>
+          <p className="editor-info-text">
+            This agent reviews the Writer&apos;s draft and produces structured feedback
+            (what&apos;s weak, what&apos;s missing, what needs improvement) along with a quality
+            score. Output should clearly indicate whether the content is{" "}
+            <strong>&quot;approved&quot;</strong> or <strong>&quot;needs revision.&quot;</strong>
+          </p>
+        </div>
+      )}
+
+      {isEditorCompleted && editorReview && (
+        <div className={`editor-verdict-panel ${isApproved ? "approved" : "needs-revision"}`}>
+          <div className="editor-verdict-header">
+            <div className="editor-verdict-icon">
+              {isApproved ? <ShieldCheckIcon /> : <AlertIcon />}
+            </div>
+            <div className="editor-verdict-title">
+              {isApproved ? "Approved" : "Needs Revision"}
+            </div>
+          </div>
+
+          <div className="editor-verdict-score">
+            <div className="editor-verdict-score-label">
+              <StarIcon />
+              <span>Quality Score</span>
+            </div>
+            <div className="editor-verdict-score-bar">
+              <div
+                className="editor-verdict-score-fill"
+                style={{ width: `${qualityScore || 0}%` }}
+              />
+            </div>
+            <div className="editor-verdict-score-value">{qualityScore || 0}/100</div>
+          </div>
+
+          {summary && (
+            <p className="editor-verdict-summary">{summary}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
