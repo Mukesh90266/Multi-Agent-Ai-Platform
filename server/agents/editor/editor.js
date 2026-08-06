@@ -4,19 +4,54 @@ import { editorPrompt } from "./editorPrompt.js";
 function demoReview() {
   return {
     decision: "approved",
-    qualityScore: 85,
-    summary: "The demo draft covers the topic adequately. In production with a real LLM, the Editor Agent would provide detailed feedback on the content quality, structure, and completeness.",
+    qualityScore: 80,  // 80 threshold for approval
+    summary: "The demo draft meets the minimum quality threshold. Approved for publication.",
     strengths: [
       "Basic structure is present",
       "Covers main topics",
       "Appropriate tone for the target audience"
     ],
-    missingPoints: [
-      "Could benefit from more specific examples",
-      "More detailed explanations would improve clarity"
-    ],
+    missingPoints: [],  // No missing points when approved
     weaknesses: [],
-    revisionInstructions: [],
+    revisionInstructions: [],  // No revision instructions when approved
+    factCheckWarnings: [],
+    mode: "demo"
+  };
+}
+
+// Demo review that returns needs_revision for testing the loop
+function demoReviewNeedsRevision() {
+  return {
+    decision: "needs_revision",
+    qualityScore: 58,  // Below 80 threshold
+    summary: "The draft needs improvements to reach the 80 quality threshold.",
+    strengths: [
+      "Good topic coverage",
+      "Clear structure"
+    ],
+    missingPoints: [
+      "Missing practical code examples",
+      "No explanation of common pitfalls"
+    ],
+    weaknesses: [
+      {
+        section: "Introduction",
+        severity: "medium",
+        issue: "Too generic, doesn't grab attention",
+        suggestion: "Start with a compelling hook or real-world problem"
+      },
+      {
+        section: "Content",
+        severity: "high",
+        issue: "Lacks specific code examples",
+        suggestion: "Add working code snippets with explanations"
+      }
+    ],
+    revisionInstructions: [
+      "Add at least 2 practical code examples with explanations",
+      "Include a section on common mistakes and how to avoid them",
+      "Improve the introduction to be more engaging"
+    ],
     factCheckWarnings: [],
     mode: "demo"
   };
@@ -29,7 +64,7 @@ export async function reviewContent(input) {
     temperature: 0.2,
     jsonMode: true,
     systemMessage: `
-You are a strict and fair Editor Agent.
+You are a strict, helpful, and professional Editor Agent.
 Return only valid JSON.
 Give practical, specific, and actionable feedback.
 Never invent sources, citations, facts, or errors.
@@ -37,8 +72,10 @@ Never invent sources, citations, facts, or errors.
   });
 
   if (!rawReview) {
-    // Return demo review when no LLM is configured
-    return demoReview();
+    // Return demo review - use needs_revision occasionally for testing
+    // For demo purposes, we alternate to show the revision loop working
+    const shouldRevise = input.iteration && input.iteration < 2;
+    return shouldRevise ? demoReviewNeedsRevision() : demoReview();
   }
 
   let review;

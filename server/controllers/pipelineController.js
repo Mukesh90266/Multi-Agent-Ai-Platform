@@ -11,8 +11,8 @@ export async function runPipelineController(req, res) {
     // Initialize state immediately so status endpoint never returns 404
     stateManager.set(runId, {
       status: "starting",
-      iteration: 1,
-      maxIterations: 5,
+      iteration: 0,
+      maxIterations: 3,
       agentStatus: {
         researcher: "waiting",
         writer: "waiting",
