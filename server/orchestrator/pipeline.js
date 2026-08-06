@@ -185,11 +185,34 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     // FINAL RESULT
     // ============================================
     const totalIterations = loopIteration - 1;
+    
+    // Build revision summary
+    const revisionHistory = [];
+    for (let i = 1; i <= totalIterations; i++) {
+      const reviewIter = iterations.find(it => it.phase === 'review' && it.iteration === i);
+      const writeIter = iterations.find(it => it.phase === 'write' && it.iteration === i);
+      
+      if (reviewIter) {
+        revisionHistory.push({
+          iteration: i,
+          decision: reviewIter.output.decision,
+          qualityScore: reviewIter.output.qualityScore,
+          hadRevisions: reviewIter.output.decision === 'needs_revision',
+          revisionCount: reviewIter.output.revisionInstructions?.length || 0
+        });
+      }
+    }
+
     logger.phase('PIPELINE COMPLETED');
+    logger.info(`📊 Revision Summary:`);
+    revisionHistory.forEach(r => {
+      const icon = r.decision === 'approved' ? '✅' : '🔄';
+      logger.info(`   ${icon} Iteration ${r.iteration}: ${r.decision.toUpperCase()} (${r.qualityScore}/100)${r.hadRevisions ? ` - ${r.revisionCount} revisions needed` : ''}`);
+    });
     logger.info(`Total Writer-Editor Cycles: ${totalIterations}`);
     logger.info(`Final Decision: ${editorDecision}`);
     logger.info(`Quality Score: ${finalEditorReview?.qualityScore || 'N/A'}/100`);
-    logger.info(`Content Approved: ${editorDecision === 'approved' ? 'YES ✓' : 'NO (max iterations reached)'}`);
+    logger.info(`Content Approved: ${editorDecision === 'approved' ? '✅ YES' : '⚠️ NO (max iterations reached)'}`);
 
     const result = {
       runId,
@@ -198,6 +221,7 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       totalIterations,
       maxIterations: MAX_ITERATIONS,
       reachedMaxIterations: totalIterations === MAX_ITERATIONS && editorDecision === "needs_revision",
+      revisionHistory,  // Clear history of each iteration's decision
       agentStatus: {
         researcher: "completed",
         writer: "completed",

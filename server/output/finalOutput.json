@@ -1,26 +1,42 @@
 {
-  "runId": "982cb37b-b042-4658-a227-26654f93c8f3",
+  "runId": "4f10f059-9e3c-457b-b7bf-d2c21721817e",
   "input": {
-    "topic": "JavaScript Async/Await",
-    "contentType": "blog post",
-    "audience": "intermediate developers",
-    "tone": "educational",
+    "topic": "Python Machine Learning",
+    "contentType": "article",
+    "audience": "data science beginners",
+    "tone": "informative",
     "wordCount": 800
   },
   "status": "approved",
-  "totalIterations": 1,
+  "totalIterations": 2,
   "maxIterations": 3,
   "reachedMaxIterations": false,
+  "revisionHistory": [
+    {
+      "iteration": 1,
+      "decision": "needs_revision",
+      "qualityScore": 62,
+      "hadRevisions": true,
+      "revisionCount": 3
+    },
+    {
+      "iteration": 2,
+      "decision": "approved",
+      "qualityScore": 85,
+      "hadRevisions": false,
+      "revisionCount": 0
+    }
+  ],
   "agentStatus": {
     "researcher": "completed",
     "writer": "completed",
     "editor": "completed"
   },
   "research": {
-    "topic": "JavaScript Async/Await",
-    "summary": "A research brief on JavaScript Async/Await, prepared for intermediate developers. Verify time-sensitive claims before publication.",
+    "topic": "Python Machine Learning",
+    "summary": "A research brief on Python Machine Learning, prepared for data science beginners. Verify time-sensitive claims before publication.",
     "keyPoints": [
-      "Define the scope and audience relevance of JavaScript Async/Await.",
+      "Define the scope and audience relevance of Python Machine Learning.",
       "Explain core concepts before advanced details.",
       "Use practical examples to make the subject understandable.",
       "Present benefits, limitations, and responsible use.",
@@ -44,7 +60,7 @@
       "Conclusion and next steps"
     ],
     "examples": [
-      "A beginner-friendly real-world use case involving JavaScript Async/Await.",
+      "A beginner-friendly real-world use case involving Python Machine Learning.",
       "A comparison that explains the concept in familiar terms."
     ],
     "sources": [
@@ -61,7 +77,7 @@
     "mode": "demo"
   },
   "draft": {
-    "content": "# JavaScript Async/Await\n\n## Introduction\n\nWelcome to this comprehensive guide on JavaScript Async/Await. In this article, we'll explore the key aspects and provide valuable insights for intermediate developers.\n\n## Key Concepts\n\nUnderstanding JavaScript Async/Await is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nJavaScript Async/Await offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with JavaScript Async/Await, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nJavaScript Async/Await is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+    "content": "# Python Machine Learning\n\n## Introduction\n\nWelcome to this comprehensive guide on Python Machine Learning. In this article, we'll explore the key aspects and provide valuable insights for data science beginners.\n\n## Key Concepts\n\nUnderstanding Python Machine Learning is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nPython Machine Learning offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Python Machine Learning, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nPython Machine Learning is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
     "wordCount": 250,
     "mode": "demo"
   },
@@ -74,10 +90,7 @@
       "Covers main topics",
       "Appropriate tone for the target audience"
     ],
-    "missingPoints": [
-      "Could benefit from more specific examples",
-      "More detailed explanations would improve clarity"
-    ],
+    "missingPoints": [],
     "weaknesses": [],
     "revisionInstructions": [],
     "factCheckWarnings": [],
@@ -89,12 +102,12 @@
       "iteration": 0,
       "agent": "researcher",
       "status": "completed",
-      "timestamp": "2026-08-06T03:57:10.350Z",
+      "timestamp": "2026-08-06T04:13:15.997Z",
       "output": {
-        "topic": "JavaScript Async/Await",
-        "summary": "A research brief on JavaScript Async/Await, prepared for intermediate developers. Verify time-sensitive claims before publication.",
+        "topic": "Python Machine Learning",
+        "summary": "A research brief on Python Machine Learning, prepared for data science beginners. Verify time-sensitive claims before publication.",
         "keyPoints": [
-          "Define the scope and audience relevance of JavaScript Async/Await.",
+          "Define the scope and audience relevance of Python Machine Learning.",
           "Explain core concepts before advanced details.",
           "Use practical examples to make the subject understandable.",
           "Present benefits, limitations, and responsible use.",
@@ -118,7 +131,7 @@
           "Conclusion and next steps"
         ],
         "examples": [
-          "A beginner-friendly real-world use case involving JavaScript Async/Await.",
+          "A beginner-friendly real-world use case involving Python Machine Learning.",
           "A comparison that explains the concept in familiar terms."
         ],
         "sources": [
@@ -134,18 +147,18 @@
         ],
         "mode": "demo"
       },
-      "summary": "Topic: JavaScript Async/Await | Key Points: 5 | Sources: 1"
+      "summary": "Topic: Python Machine Learning | Key Points: 5 | Sources: 1"
     },
     {
       "phase": "write",
       "iteration": 1,
       "agent": "writer",
       "status": "completed",
-      "timestamp": "2026-08-06T03:57:10.353Z",
+      "timestamp": "2026-08-06T04:13:15.998Z",
       "isRevision": false,
       "editorFeedback": null,
       "output": {
-        "content": "# JavaScript Async/Await\n\n## Introduction\n\nWelcome to this comprehensive guide on JavaScript Async/Await. In this article, we'll explore the key aspects and provide valuable insights for intermediate developers.\n\n## Key Concepts\n\nUnderstanding JavaScript Async/Await is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nJavaScript Async/Await offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with JavaScript Async/Await, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nJavaScript Async/Await is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+        "content": "# Python Machine Learning\n\n## Introduction\n\nWelcome to this comprehensive guide on Python Machine Learning. In this article, we'll explore the key aspects and provide valuable insights for data science beginners.\n\n## Key Concepts\n\nUnderstanding Python Machine Learning is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nPython Machine Learning offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Python Machine Learning, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nPython Machine Learning is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
         "wordCount": 250,
         "mode": "demo"
       },
@@ -155,8 +168,98 @@
       "phase": "review",
       "iteration": 1,
       "agent": "editor",
+      "status": "needs_revision",
+      "timestamp": "2026-08-06T04:13:15.998Z",
+      "output": {
+        "decision": "needs_revision",
+        "qualityScore": 62,
+        "summary": "The draft needs improvements in several areas before it can be approved.",
+        "strengths": [
+          "Good topic coverage",
+          "Clear structure"
+        ],
+        "missingPoints": [
+          "Missing practical code examples",
+          "No explanation of common pitfalls"
+        ],
+        "weaknesses": [
+          {
+            "section": "Introduction",
+            "severity": "medium",
+            "issue": "Too generic, doesn't grab attention",
+            "suggestion": "Start with a compelling hook or real-world problem"
+          },
+          {
+            "section": "Content",
+            "severity": "high",
+            "issue": "Lacks specific code examples",
+            "suggestion": "Add working code snippets with explanations"
+          }
+        ],
+        "revisionInstructions": [
+          "Add at least 2 practical code examples with explanations",
+          "Include a section on common mistakes and how to avoid them",
+          "Improve the introduction to be more engaging"
+        ],
+        "factCheckWarnings": [],
+        "mode": "demo"
+      },
+      "summary": "Decision: needs_revision | Quality: 62/100 | Strengths: 2 | Issues: 2"
+    },
+    {
+      "phase": "write",
+      "iteration": 2,
+      "agent": "writer",
+      "status": "completed",
+      "timestamp": "2026-08-06T04:13:15.998Z",
+      "isRevision": true,
+      "editorFeedback": {
+        "decision": "needs_revision",
+        "qualityScore": 62,
+        "summary": "The draft needs improvements in several areas before it can be approved.",
+        "strengths": [
+          "Good topic coverage",
+          "Clear structure"
+        ],
+        "missingPoints": [
+          "Missing practical code examples",
+          "No explanation of common pitfalls"
+        ],
+        "weaknesses": [
+          {
+            "section": "Introduction",
+            "severity": "medium",
+            "issue": "Too generic, doesn't grab attention",
+            "suggestion": "Start with a compelling hook or real-world problem"
+          },
+          {
+            "section": "Content",
+            "severity": "high",
+            "issue": "Lacks specific code examples",
+            "suggestion": "Add working code snippets with explanations"
+          }
+        ],
+        "revisionInstructions": [
+          "Add at least 2 practical code examples with explanations",
+          "Include a section on common mistakes and how to avoid them",
+          "Improve the introduction to be more engaging"
+        ],
+        "factCheckWarnings": [],
+        "mode": "demo"
+      },
+      "output": {
+        "content": "# Python Machine Learning\n\n## Introduction\n\nWelcome to this comprehensive guide on Python Machine Learning. In this article, we'll explore the key aspects and provide valuable insights for data science beginners.\n\n## Key Concepts\n\nUnderstanding Python Machine Learning is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nPython Machine Learning offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Python Machine Learning, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nPython Machine Learning is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+        "wordCount": 250,
+        "mode": "demo"
+      },
+      "summary": "Words: 250 | Mode: demo"
+    },
+    {
+      "phase": "review",
+      "iteration": 2,
+      "agent": "editor",
       "status": "approved",
-      "timestamp": "2026-08-06T03:57:10.355Z",
+      "timestamp": "2026-08-06T04:13:15.999Z",
       "output": {
         "decision": "approved",
         "qualityScore": 85,
@@ -166,10 +269,7 @@
           "Covers main topics",
           "Appropriate tone for the target audience"
         ],
-        "missingPoints": [
-          "Could benefit from more specific examples",
-          "More detailed explanations would improve clarity"
-        ],
+        "missingPoints": [],
         "weaknesses": [],
         "revisionInstructions": [],
         "factCheckWarnings": [],
