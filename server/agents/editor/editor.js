@@ -4,8 +4,8 @@ import { editorPrompt } from "./editorPrompt.js";
 function demoReview() {
   return {
     decision: "approved",
-    qualityScore: 85,
-    summary: "The demo draft covers the topic adequately. In production with a real LLM, the Editor Agent would provide detailed feedback on the content quality, structure, and completeness.",
+    qualityScore: 72,  // 70+ threshold for approval
+    summary: "The demo draft meets the minimum quality threshold. Approved for publication.",
     strengths: [
       "Basic structure is present",
       "Covers main topics",
@@ -23,8 +23,8 @@ function demoReview() {
 function demoReviewNeedsRevision() {
   return {
     decision: "needs_revision",
-    qualityScore: 62,
-    summary: "The draft needs improvements in several areas before it can be approved.",
+    qualityScore: 58,  // Below 70 threshold
+    summary: "The draft needs improvements to reach the 70 quality threshold.",
     strengths: [
       "Good topic coverage",
       "Clear structure"

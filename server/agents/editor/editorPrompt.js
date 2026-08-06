@@ -76,7 +76,7 @@ Decision rules:
   properly structured, suitable for the audience, and has no significant issue.
 - Use "needs_revision" if the Writer should make meaningful improvements.
 - qualityScore must be an integer from 0 to 100.
-- If decision is "approved", qualityScore should normally be 80 or above.
+- If decision is "approved", qualityScore should normally be 70 or above.
 - Give specific feedback, not generic feedback.
 - Never invent factual problems that are not present in the content.
 `;
