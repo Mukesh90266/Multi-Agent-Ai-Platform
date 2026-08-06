@@ -4,7 +4,7 @@ import { editorPrompt } from "./editorPrompt.js";
 function demoReview() {
   return {
     decision: "approved",
-    qualityScore: 70,  // Exactly 70 threshold for approval
+    qualityScore: 80,  // 80 threshold for approval
     summary: "The demo draft meets the minimum quality threshold. Approved for publication.",
     strengths: [
       "Basic structure is present",
@@ -23,8 +23,8 @@ function demoReview() {
 function demoReviewNeedsRevision() {
   return {
     decision: "needs_revision",
-    qualityScore: 58,  // Below 70 threshold
-    summary: "The draft needs improvements to reach the 70 quality threshold.",
+    qualityScore: 58,  // Below 80 threshold
+    summary: "The draft needs improvements to reach the 80 quality threshold.",
     strengths: [
       "Good topic coverage",
       "Clear structure"

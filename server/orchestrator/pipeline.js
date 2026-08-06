@@ -152,9 +152,9 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       finalEditorReview = editorReview;
       
       // IMPORTANT: Use QUALITY SCORE as the deciding factor, not the decision field
-      // Score >= 70 means approved, regardless of what the editor said
+      // Score >= 80 means approved, regardless of what the editor said
       const qualityScore = editorReview.qualityScore || 0;
-      const scoreBasedDecision = qualityScore >= 70 ? "approved" : "needs_revision";
+      const scoreBasedDecision = qualityScore >= 80 ? "approved" : "needs_revision";
       
       editorDecision = scoreBasedDecision;  // Use score-based decision
       editorFeedback = editorReview;
@@ -170,7 +170,7 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
         summary: `Decision: ${editorDecision} | Quality: ${qualityScore}/100 | Strengths: ${editorReview.strengths?.length || 0} | Issues: ${editorReview.weaknesses?.length || 0}`
       });
 
-      logger.agent('editor', 'completed', `Decision: ${editorDecision} (${qualityScore}/100) - ${qualityScore >= 70 ? '✅ Meets threshold' : '🔄 Below threshold'}`);
+      logger.agent('editor', 'completed', `Decision: ${editorDecision} (${qualityScore}/100) - ${qualityScore >= 80 ? '✅ Meets threshold' : '🔄 Below threshold'}`);
       
       // Show detailed feedback
       if (editorReview.strengths?.length) {
@@ -184,9 +184,9 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       }
 
       // Check if we should continue or stop
-      if (qualityScore >= 70) {
+      if (qualityScore >= 80) {
         // Score reached threshold - STOP THE LOOP!
-        logger.info(`✅ Quality score ${qualityScore} reached approval threshold (70+). Stopping loop.`);
+        logger.info(`✅ Quality score ${qualityScore} reached approval threshold (80+). Stopping loop.`);
         break;  // Exit loop immediately!
       } else if (editorDecision === "needs_revision" && loopIteration < MAX_ITERATIONS) {
         logger.warning(`Editor requested revisions. Starting iteration ${loopIteration + 1}...`);
@@ -209,7 +209,7 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       
       if (reviewIter) {
         const score = reviewIter.qualityScore || reviewIter.output.qualityScore || 0;
-        const scoreBasedDecision = score >= 70 ? "approved" : "needs_revision";
+        const scoreBasedDecision = score >= 80 ? "approved" : "needs_revision";
         
         revisionHistory.push({
           iteration: i,

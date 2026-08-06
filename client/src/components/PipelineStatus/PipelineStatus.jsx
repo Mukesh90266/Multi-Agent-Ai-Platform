@@ -133,9 +133,9 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
   const maxIterations = result?.maxIterations || 3;
 
   // Calculate final decision based on QUALITY SCORE, not decision field
-  // Score >= 70 = Approved, Score < 70 = Needs Revision
-  const isApproved = qualityScore >= 70;
-  const isNeedsRevision = qualityScore < 70;
+  // Score >= 80 = Approved, Score < 80 = Needs Revision
+  const isApproved = qualityScore >= 80;
+  const isNeedsRevision = qualityScore < 80;
 
   // Calculate revision summary
   const getRevisionSummary = () => {
@@ -246,7 +246,7 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
               </div>
               <div className="revision-history-list">
                 {revisionHistory.map((r, idx) => {
-                  const iterationApproved = r.qualityScore >= 70;
+                  const iterationApproved = r.qualityScore >= 80;
                   return (
                     <div key={idx} className={`revision-history-item ${iterationApproved ? 'approved' : 'revision-needed'}`}>
                       <span className="revision-decision-icon">
@@ -262,9 +262,9 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
                   );
                 })}
               </div>
-              {reachedMaxIterations && qualityScore < 70 && (
+              {reachedMaxIterations && qualityScore < 80 && (
                 <div className="max-iterations-warning">
-                  ⚠️ Max iterations ({maxIterations}) reached. Quality score below 70. Needs improvement.
+                  ⚠️ Max iterations ({maxIterations}) reached. Quality score below 80. Needs improvement.
                 </div>
               )}
             </div>

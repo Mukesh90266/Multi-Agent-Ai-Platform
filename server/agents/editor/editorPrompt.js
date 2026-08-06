@@ -51,7 +51,8 @@ Review the draft for:
 SCORING GUIDELINES:
 - Score 90-100: Exceptional, publication-ready content
 - Score 80-89: Very good, minor polishing needed
-- Score 70-79: Good, meets quality threshold for approval ⭐
+- Score 80-89: Good, meets quality threshold for approval ⭐
+- Score 70-79: Needs more polish
 - Score 60-69: Needs work, but SOME improvements from previous version
 - Score 50-59: Below average, significant issues remain
 - Score below 50: Poor, major rework needed
@@ -96,7 +97,7 @@ Decision rules:
   properly structured, suitable for the audience, and has no significant issue.
 - Use "needs_revision" if the Writer should make meaningful improvements.
 - qualityScore must be an integer from 0 to 100.
-- If decision is "approved", qualityScore should normally be 70 or above.
+- If decision is "approved", qualityScore should normally be 80 or above.
 - Give specific feedback, not generic feedback.
 - Never invent factual problems that are not present in the content.
 - When scoring, consider: Is this better than the previous version?
