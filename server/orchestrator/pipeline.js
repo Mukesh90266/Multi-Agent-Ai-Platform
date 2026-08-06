@@ -137,9 +137,14 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
         draft: currentDraft
       });
 
+      // Build previous feedback for Editor to recognize improvements
+      const previousFeedback = loopIteration > 1 && editorFeedback ? 
+        `Previous issues to check if resolved:\n${editorFeedback.revisionInstructions?.map((inst, i) => `${i + 1}. ${inst}`).join('\n')}\n\nPrevious weaknesses:\n${editorFeedback.weaknesses?.map(w => `- ${w.section}: ${w.issue}`).join('\n')}\n\nPrevious missing points:\n${editorFeedback.missingPoints?.map(p => `- ${p}`).join('\n')}` : 
+        null;
+
       const editorReview = await reviewContent({
         ...input,
-        research: researchResult,
+        research: { ...researchResult, previousFeedback },
         draft: currentDraft.content,
         iteration: loopIteration
       });
