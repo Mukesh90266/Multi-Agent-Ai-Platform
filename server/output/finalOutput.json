@@ -1,10 +1,10 @@
 {
-  "runId": "5e0f7e16-acc9-493c-82a2-86cfa4254912",
+  "runId": "f8360d0f-7790-4bd1-bc62-33b03e0bfd3a",
   "input": {
-    "topic": "Docker Containers",
-    "contentType": "guide",
-    "audience": "DevOps beginners",
-    "tone": "technical",
+    "topic": "Git Version Control",
+    "contentType": "tutorial",
+    "audience": "developers",
+    "tone": "practical",
     "wordCount": 800
   },
   "status": "approved",
@@ -22,7 +22,7 @@
     {
       "iteration": 2,
       "decision": "approved",
-      "qualityScore": 72,
+      "qualityScore": 70,
       "hadRevisions": false,
       "revisionCount": 0
     }
@@ -33,10 +33,10 @@
     "editor": "completed"
   },
   "research": {
-    "topic": "Docker Containers",
-    "summary": "A research brief on Docker Containers, prepared for DevOps beginners. Verify time-sensitive claims before publication.",
+    "topic": "Git Version Control",
+    "summary": "A research brief on Git Version Control, prepared for developers. Verify time-sensitive claims before publication.",
     "keyPoints": [
-      "Define the scope and audience relevance of Docker Containers.",
+      "Define the scope and audience relevance of Git Version Control.",
       "Explain core concepts before advanced details.",
       "Use practical examples to make the subject understandable.",
       "Present benefits, limitations, and responsible use.",
@@ -60,7 +60,7 @@
       "Conclusion and next steps"
     ],
     "examples": [
-      "A beginner-friendly real-world use case involving Docker Containers.",
+      "A beginner-friendly real-world use case involving Git Version Control.",
       "A comparison that explains the concept in familiar terms."
     ],
     "sources": [
@@ -77,13 +77,13 @@
     "mode": "demo"
   },
   "draft": {
-    "content": "# Docker Containers\n\n## Introduction\n\nWelcome to this comprehensive guide on Docker Containers. In this article, we'll explore the key aspects and provide valuable insights for DevOps beginners.\n\n## Key Concepts\n\nUnderstanding Docker Containers is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nDocker Containers offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Docker Containers, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nDocker Containers is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+    "content": "# Git Version Control\n\n## Introduction\n\nWelcome to this comprehensive guide on Git Version Control. In this article, we'll explore the key aspects and provide valuable insights for developers.\n\n## Key Concepts\n\nUnderstanding Git Version Control is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nGit Version Control offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Git Version Control, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nGit Version Control is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
     "wordCount": 250,
     "mode": "demo"
   },
   "editorReview": {
     "decision": "approved",
-    "qualityScore": 72,
+    "qualityScore": 70,
     "summary": "The demo draft meets the minimum quality threshold. Approved for publication.",
     "strengths": [
       "Basic structure is present",
@@ -102,12 +102,12 @@
       "iteration": 0,
       "agent": "researcher",
       "status": "completed",
-      "timestamp": "2026-08-06T04:18:03.539Z",
+      "timestamp": "2026-08-06T04:18:58.531Z",
       "output": {
-        "topic": "Docker Containers",
-        "summary": "A research brief on Docker Containers, prepared for DevOps beginners. Verify time-sensitive claims before publication.",
+        "topic": "Git Version Control",
+        "summary": "A research brief on Git Version Control, prepared for developers. Verify time-sensitive claims before publication.",
         "keyPoints": [
-          "Define the scope and audience relevance of Docker Containers.",
+          "Define the scope and audience relevance of Git Version Control.",
           "Explain core concepts before advanced details.",
           "Use practical examples to make the subject understandable.",
           "Present benefits, limitations, and responsible use.",
@@ -131,7 +131,7 @@
           "Conclusion and next steps"
         ],
         "examples": [
-          "A beginner-friendly real-world use case involving Docker Containers.",
+          "A beginner-friendly real-world use case involving Git Version Control.",
           "A comparison that explains the concept in familiar terms."
         ],
         "sources": [
@@ -147,18 +147,18 @@
         ],
         "mode": "demo"
       },
-      "summary": "Topic: Docker Containers | Key Points: 5 | Sources: 1"
+      "summary": "Topic: Git Version Control | Key Points: 5 | Sources: 1"
     },
     {
       "phase": "write",
       "iteration": 1,
       "agent": "writer",
       "status": "completed",
-      "timestamp": "2026-08-06T04:18:03.540Z",
+      "timestamp": "2026-08-06T04:18:58.532Z",
       "isRevision": false,
       "editorFeedback": null,
       "output": {
-        "content": "# Docker Containers\n\n## Introduction\n\nWelcome to this comprehensive guide on Docker Containers. In this article, we'll explore the key aspects and provide valuable insights for DevOps beginners.\n\n## Key Concepts\n\nUnderstanding Docker Containers is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nDocker Containers offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Docker Containers, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nDocker Containers is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+        "content": "# Git Version Control\n\n## Introduction\n\nWelcome to this comprehensive guide on Git Version Control. In this article, we'll explore the key aspects and provide valuable insights for developers.\n\n## Key Concepts\n\nUnderstanding Git Version Control is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nGit Version Control offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Git Version Control, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nGit Version Control is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
         "wordCount": 250,
         "mode": "demo"
       },
@@ -169,7 +169,7 @@
       "iteration": 1,
       "agent": "editor",
       "status": "needs_revision",
-      "timestamp": "2026-08-06T04:18:03.540Z",
+      "timestamp": "2026-08-06T04:18:58.533Z",
       "output": {
         "decision": "needs_revision",
         "qualityScore": 58,
@@ -211,7 +211,7 @@
       "iteration": 2,
       "agent": "writer",
       "status": "completed",
-      "timestamp": "2026-08-06T04:18:03.541Z",
+      "timestamp": "2026-08-06T04:18:58.534Z",
       "isRevision": true,
       "editorFeedback": {
         "decision": "needs_revision",
@@ -248,7 +248,7 @@
         "mode": "demo"
       },
       "output": {
-        "content": "# Docker Containers\n\n## Introduction\n\nWelcome to this comprehensive guide on Docker Containers. In this article, we'll explore the key aspects and provide valuable insights for DevOps beginners.\n\n## Key Concepts\n\nUnderstanding Docker Containers is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nDocker Containers offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Docker Containers, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nDocker Containers is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+        "content": "# Git Version Control\n\n## Introduction\n\nWelcome to this comprehensive guide on Git Version Control. In this article, we'll explore the key aspects and provide valuable insights for developers.\n\n## Key Concepts\n\nUnderstanding Git Version Control is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nGit Version Control offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Git Version Control, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nGit Version Control is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
         "wordCount": 250,
         "mode": "demo"
       },
@@ -259,10 +259,10 @@
       "iteration": 2,
       "agent": "editor",
       "status": "approved",
-      "timestamp": "2026-08-06T04:18:03.542Z",
+      "timestamp": "2026-08-06T04:18:58.534Z",
       "output": {
         "decision": "approved",
-        "qualityScore": 72,
+        "qualityScore": 70,
         "summary": "The demo draft meets the minimum quality threshold. Approved for publication.",
         "strengths": [
           "Basic structure is present",
@@ -275,7 +275,7 @@
         "factCheckWarnings": [],
         "mode": "demo"
       },
-      "summary": "Decision: approved | Quality: 72/100 | Strengths: 3 | Issues: 0"
+      "summary": "Decision: approved | Quality: 70/100 | Strengths: 3 | Issues: 0"
     }
   ],
   "approved": true

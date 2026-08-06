@@ -4,7 +4,7 @@ import { editorPrompt } from "./editorPrompt.js";
 function demoReview() {
   return {
     decision: "approved",
-    qualityScore: 72,  // 70+ threshold for approval
+    qualityScore: 70,  // Exactly 70 threshold for approval
     summary: "The demo draft meets the minimum quality threshold. Approved for publication.",
     strengths: [
       "Basic structure is present",
