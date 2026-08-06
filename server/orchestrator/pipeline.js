@@ -14,21 +14,26 @@ const serverDirectory = path.resolve(directory, '..');
 const iterationLogPath = path.join(serverDirectory, 'logs', 'iterationLogs.json');
 const outputPath = path.join(serverDirectory, 'output', 'finalOutput.json');
 
+// Maximum number of Writer-Editor revision cycles
+const MAX_ITERATIONS = 3;
+
 export async function runPipeline(input, runId = crypto.randomUUID()) {
   const iterations = [];
   let researchResult = null;
-  let writerResult = null;
+  let currentDraft = null;
+  let finalEditorReview = null;
 
   try {
-    // ----------------------------------
-    // STEP 1: RESEARCHER AGENT
-    // ----------------------------------
-    logger.info(`Researcher started: ${runId}`);
+    // ============================================
+    // PHASE 1: RESEARCHER AGENT (RUNS ONCE)
+    // ============================================
+    logger.phase('RESEARCHER AGENT - STARTING');
+    logger.agent('researcher', 'started', `Topic: ${input.topic}`);
 
     stateManager.set(runId, {
       status: "researching",
-      iteration: 1,
-      maxIterations: 1,
+      iteration: 0,
+      maxIterations: MAX_ITERATIONS,
       agentStatus: {
         researcher: "running",
         writer: "waiting",
@@ -42,97 +47,167 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     researchResult = await research(input);
 
     iterations.push({
-      iteration: 1,
+      phase: "research",
+      iteration: 0,
       agent: "researcher",
       status: "completed",
-      output: researchResult
+      timestamp: new Date().toISOString(),
+      output: researchResult,
+      summary: `Topic: ${researchResult.topic} | Key Points: ${researchResult.keyPoints?.length || 0} | Sources: ${researchResult.sources?.length || 0}`
     });
 
-    logger.info(`Researcher completed: ${runId}`);
+    logger.agent('researcher', 'completed', `${researchResult.keyPoints?.length || 0} key points, ${researchResult.sources?.length || 0} sources`);
+    logger.info(`   Summary: ${researchResult.summary}`);
 
-    // ----------------------------------
-    // STEP 2: WRITER AGENT
-    // ----------------------------------
-    logger.info(`Writer started: ${runId}`);
+    // ============================================
+    // PHASE 2: WRITER-EDITOR LOOP (UP TO 3 CYCLES)
+    // ============================================
+    let loopIteration = 1;
+    let editorDecision = "needs_revision";
+    let editorFeedback = null;
 
-    stateManager.set(runId, {
-      status: "writing",
-      iteration: 1,
-      maxIterations: 1,
-      agentStatus: {
-        researcher: "completed",
-        writer: "running",
-        editor: "waiting"
-      },
-      iterations,
-      research: researchResult,
-      draft: null
-    });
+    while (loopIteration <= MAX_ITERATIONS && editorDecision === "needs_revision") {
+      logger.phase(`WRITER-EDITOR ITERATION ${loopIteration}/${MAX_ITERATIONS}`);
 
-    writerResult = await writeContent({ ...input, research: researchResult });
+      // ------------------------------------------
+      // STEP A: WRITER AGENT
+      // ------------------------------------------
+      const writerMode = loopIteration === 1 ? 'Initial Draft' : 'Revision';
+      logger.agent('writer', 'started', writerMode);
 
-    iterations.push({
-      iteration: 1,
-      agent: "writer",
-      status: "completed",
-      output: writerResult,
-      isRevision: false
-    });
+      stateManager.set(runId, {
+        status: "writing",
+        iteration: loopIteration,
+        maxIterations: MAX_ITERATIONS,
+        agentStatus: {
+          researcher: "completed",
+          writer: "running",
+          editor: "waiting"
+        },
+        iterations,
+        research: researchResult,
+        draft: currentDraft
+      });
 
-    logger.info(`Writer completed: ${runId}`);
+      const writerInput = {
+        ...input,
+        research: researchResult,
+        editorFeedback: loopIteration > 1 ? editorFeedback : undefined
+      };
 
-    // ----------------------------------
-    // STEP 3: EDITOR AGENT
-    // ----------------------------------
-    logger.info(`Editor started: ${runId}`);
+      const writerResult = await writeContent(writerInput);
 
-    stateManager.set(runId, {
-      status: "editing",
-      iteration: 1,
-      maxIterations: 1,
-      agentStatus: {
-        researcher: "completed",
-        writer: "completed",
-        editor: "running"
-      },
-      iterations,
-      research: researchResult,
-      draft: writerResult
-    });
+      currentDraft = writerResult;
 
-    const editorReview = await reviewContent({
-      ...input,
-      research: researchResult,
-      draft: writerResult.content,
-      iteration: 1
-    });
+      iterations.push({
+        phase: "write",
+        iteration: loopIteration,
+        agent: "writer",
+        status: "completed",
+        timestamp: new Date().toISOString(),
+        isRevision: loopIteration > 1,
+        editorFeedback: loopIteration > 1 ? editorFeedback : null,
+        output: writerResult,
+        summary: `Words: ${writerResult.wordCount} | Mode: ${writerResult.mode}`
+      });
 
-    iterations.push({
-      iteration: 1,
-      agent: "editor",
-      status: editorReview.decision,
-      output: editorReview
-    });
+      logger.agent('writer', 'completed', `Generated ${writerResult.wordCount} words`);
+      
+      // Show revision context if this is a revision
+      if (loopIteration > 1 && editorFeedback) {
+        logger.info(`   Revising based on editor feedback: ${editorFeedback.summary}`);
+      }
 
-    logger.info(`Editor completed: ${runId} - Decision: ${editorReview.decision}`);
+      // ------------------------------------------
+      // STEP B: EDITOR AGENT
+      // ------------------------------------------
+      logger.agent('editor', 'started');
 
-    // Final state
+      stateManager.set(runId, {
+        status: "editing",
+        iteration: loopIteration,
+        maxIterations: MAX_ITERATIONS,
+        agentStatus: {
+          researcher: "completed",
+          writer: "completed",
+          editor: "running"
+        },
+        iterations,
+        research: researchResult,
+        draft: currentDraft
+      });
+
+      const editorReview = await reviewContent({
+        ...input,
+        research: researchResult,
+        draft: currentDraft.content,
+        iteration: loopIteration
+      });
+
+      finalEditorReview = editorReview;
+      editorDecision = editorReview.decision;
+      editorFeedback = editorReview;
+
+      iterations.push({
+        phase: "review",
+        iteration: loopIteration,
+        agent: "editor",
+        status: editorReview.decision,
+        timestamp: new Date().toISOString(),
+        output: editorReview,
+        summary: `Decision: ${editorReview.decision} | Quality: ${editorReview.qualityScore}/100 | Strengths: ${editorReview.strengths?.length || 0} | Issues: ${editorReview.weaknesses?.length || 0}`
+      });
+
+      logger.agent('editor', 'completed', `Decision: ${editorReview.decision} (${editorReview.qualityScore}/100)`);
+      
+      // Show detailed feedback
+      if (editorReview.strengths?.length) {
+        logger.info(`   Strengths: ${editorReview.strengths.join('; ')}`);
+      }
+      if (editorReview.weaknesses?.length) {
+        logger.info(`   Weaknesses: ${editorReview.weaknesses.map(w => `[${w.severity}] ${w.issue}`).join('; ')}`);
+      }
+      if (editorReview.revisionInstructions?.length) {
+        logger.info(`   Revisions needed: ${editorReview.revisionInstructions.length} items`);
+      }
+
+      // Check if we need another iteration
+      if (editorDecision === "needs_revision" && loopIteration < MAX_ITERATIONS) {
+        logger.warning(`Editor requested revisions. Starting iteration ${loopIteration + 1}...`);
+      } else if (editorDecision === "needs_revision" && loopIteration === MAX_ITERATIONS) {
+        logger.warning(`Max iterations (${MAX_ITERATIONS}) reached. Proceeding with current draft.`);
+      }
+
+      loopIteration++;
+    }
+
+    // ============================================
+    // FINAL RESULT
+    // ============================================
+    const totalIterations = loopIteration - 1;
+    logger.phase('PIPELINE COMPLETED');
+    logger.info(`Total Writer-Editor Cycles: ${totalIterations}`);
+    logger.info(`Final Decision: ${editorDecision}`);
+    logger.info(`Quality Score: ${finalEditorReview?.qualityScore || 'N/A'}/100`);
+    logger.info(`Content Approved: ${editorDecision === 'approved' ? 'YES ✓' : 'NO (max iterations reached)'}`);
+
     const result = {
       runId,
       input,
-      status: editorReview.decision,
-      currentIteration: 1,
-      maxIterations: 1,
+      status: editorDecision,
+      totalIterations,
+      maxIterations: MAX_ITERATIONS,
+      reachedMaxIterations: totalIterations === MAX_ITERATIONS && editorDecision === "needs_revision",
       agentStatus: {
         researcher: "completed",
         writer: "completed",
         editor: "completed"
       },
       research: researchResult,
-      draft: writerResult,
-      editorReview,
+      draft: currentDraft,
+      editorReview: finalEditorReview,
       iterations,
-      approved: editorReview.decision === "approved"
+      approved: editorDecision === "approved"
     };
 
     stateManager.set(runId, result);
@@ -149,7 +224,7 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       runId,
       createdAt: new Date().toISOString(),
       status: result.status,
-      iteration: result.currentIteration,
+      totalIterations: result.totalIterations,
       iterations: result.iterations
     });
 
@@ -166,19 +241,19 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
 
     return result;
   } catch (error) {
-    logger.error(`Pipeline error for run ${runId}:`, error.message);
+    logger.error(`Pipeline failed: ${error.message}`);
 
     stateManager.set(runId, {
       status: "error",
       error: error.message,
       agentStatus: {
         researcher: researchResult ? "completed" : "error",
-        writer: writerResult ? "completed" : "error",
+        writer: currentDraft ? "completed" : "error",
         editor: "error"
       },
       iterations,
       research: researchResult,
-      draft: writerResult
+      draft: currentDraft
     });
 
     throw error;
