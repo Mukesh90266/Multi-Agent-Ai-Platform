@@ -125,7 +125,6 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
   const isEditorCompleted = editorStatus === "completed";
 
   const editorReview = result?.editorReview;
-  const decision = editorReview?.decision;
   const qualityScore = editorReview?.qualityScore;
   const summary = editorReview?.summary;
   const revisionHistory = result?.revisionHistory || [];
@@ -133,8 +132,10 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
   const totalIterations = result?.totalIterations || 0;
   const maxIterations = result?.maxIterations || 3;
 
-  const isApproved = decision === "approved";
-  const isNeedsRevision = decision === "needs_revision";
+  // Calculate final decision based on QUALITY SCORE, not decision field
+  // Score >= 70 = Approved, Score < 70 = Needs Revision
+  const isApproved = qualityScore >= 70;
+  const isNeedsRevision = qualityScore < 70;
 
   // Calculate revision summary
   const getRevisionSummary = () => {
@@ -244,23 +245,26 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
                 <span>Revision History</span>
               </div>
               <div className="revision-history-list">
-                {revisionHistory.map((r, idx) => (
-                  <div key={idx} className={`revision-history-item ${r.decision === 'approved' ? 'approved' : 'revision-needed'}`}>
-                    <span className="revision-decision-icon">
-                      {r.decision === 'approved' ? '✅' : '🔄'}
-                    </span>
-                    <span className="revision-iteration">Iteration {r.iteration}:</span>
-                    <span className="revision-decision">{r.decision.toUpperCase()}</span>
-                    <span className="revision-score">({r.qualityScore}/100)</span>
-                    {r.hadRevisions && (
-                      <span className="revision-count">- {r.revisionCount} revisions</span>
-                    )}
-                  </div>
-                ))}
+                {revisionHistory.map((r, idx) => {
+                  const iterationApproved = r.qualityScore >= 70;
+                  return (
+                    <div key={idx} className={`revision-history-item ${iterationApproved ? 'approved' : 'revision-needed'}`}>
+                      <span className="revision-decision-icon">
+                        {iterationApproved ? '✅' : '🔄'}
+                      </span>
+                      <span className="revision-iteration">Iteration {r.iteration}:</span>
+                      <span className="revision-decision">{iterationApproved ? 'APPROVED' : 'NEEDS WORK'}</span>
+                      <span className="revision-score">({r.qualityScore}/100)</span>
+                      {!iterationApproved && r.revisionCount > 0 && (
+                        <span className="revision-count">- {r.revisionCount} revisions</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              {reachedMaxIterations && (
+              {reachedMaxIterations && qualityScore < 70 && (
                 <div className="max-iterations-warning">
-                  ⚠️ Max iterations ({maxIterations}) reached. Content requires further improvements.
+                  ⚠️ Max iterations ({maxIterations}) reached. Quality score below 70. Needs improvement.
                 </div>
               )}
             </div>

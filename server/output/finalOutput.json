@@ -1,10 +1,10 @@
 {
-  "runId": "a6f892c8-5074-4944-a8a2-db7afd90be2b",
+  "runId": "4785c78a-44aa-458b-a7de-fca2dc23392a",
   "input": {
-    "topic": "Climate Change Effects",
-    "contentType": "article",
-    "audience": "general public",
-    "tone": "informative",
+    "topic": "Artificial Intelligence",
+    "contentType": "blog post",
+    "audience": "tech enthusiasts",
+    "tone": "engaging",
     "wordCount": 800
   },
   "status": "approved",
@@ -33,10 +33,10 @@
     "editor": "completed"
   },
   "research": {
-    "topic": "Climate Change Effects",
-    "summary": "A research brief on Climate Change Effects, prepared for general public. Verify time-sensitive claims before publication.",
+    "topic": "Artificial Intelligence",
+    "summary": "A research brief on Artificial Intelligence, prepared for tech enthusiasts. Verify time-sensitive claims before publication.",
     "keyPoints": [
-      "Define the scope and audience relevance of Climate Change Effects.",
+      "Define the scope and audience relevance of Artificial Intelligence.",
       "Explain core concepts before advanced details.",
       "Use practical examples to make the subject understandable.",
       "Present benefits, limitations, and responsible use.",
@@ -60,7 +60,7 @@
       "Conclusion and next steps"
     ],
     "examples": [
-      "A beginner-friendly real-world use case involving Climate Change Effects.",
+      "A beginner-friendly real-world use case involving Artificial Intelligence.",
       "A comparison that explains the concept in familiar terms."
     ],
     "sources": [
@@ -77,7 +77,7 @@
     "mode": "demo"
   },
   "draft": {
-    "content": "# Climate Change Effects\n\n## Introduction\n\nWelcome to this comprehensive guide on Climate Change Effects. In this article, we'll explore the key aspects and provide valuable insights for general public.\n\n## Key Concepts\n\nUnderstanding Climate Change Effects is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nClimate Change Effects offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Climate Change Effects, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nClimate Change Effects is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+    "content": "# Artificial Intelligence\n\n## Introduction\n\nWelcome to this comprehensive guide on Artificial Intelligence. In this article, we'll explore the key aspects and provide valuable insights for tech enthusiasts.\n\n## Key Concepts\n\nUnderstanding Artificial Intelligence is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nArtificial Intelligence offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Artificial Intelligence, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nArtificial Intelligence is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
     "wordCount": 250,
     "mode": "demo"
   },
@@ -102,12 +102,12 @@
       "iteration": 0,
       "agent": "researcher",
       "status": "completed",
-      "timestamp": "2026-08-06T04:29:30.868Z",
+      "timestamp": "2026-08-06T04:34:19.193Z",
       "output": {
-        "topic": "Climate Change Effects",
-        "summary": "A research brief on Climate Change Effects, prepared for general public. Verify time-sensitive claims before publication.",
+        "topic": "Artificial Intelligence",
+        "summary": "A research brief on Artificial Intelligence, prepared for tech enthusiasts. Verify time-sensitive claims before publication.",
         "keyPoints": [
-          "Define the scope and audience relevance of Climate Change Effects.",
+          "Define the scope and audience relevance of Artificial Intelligence.",
           "Explain core concepts before advanced details.",
           "Use practical examples to make the subject understandable.",
           "Present benefits, limitations, and responsible use.",
@@ -131,7 +131,7 @@
           "Conclusion and next steps"
         ],
         "examples": [
-          "A beginner-friendly real-world use case involving Climate Change Effects.",
+          "A beginner-friendly real-world use case involving Artificial Intelligence.",
           "A comparison that explains the concept in familiar terms."
         ],
         "sources": [
@@ -147,18 +147,18 @@
         ],
         "mode": "demo"
       },
-      "summary": "Topic: Climate Change Effects | Key Points: 5 | Sources: 1"
+      "summary": "Topic: Artificial Intelligence | Key Points: 5 | Sources: 1"
     },
     {
       "phase": "write",
       "iteration": 1,
       "agent": "writer",
       "status": "completed",
-      "timestamp": "2026-08-06T04:29:30.868Z",
+      "timestamp": "2026-08-06T04:34:19.194Z",
       "isRevision": false,
       "editorFeedback": null,
       "output": {
-        "content": "# Climate Change Effects\n\n## Introduction\n\nWelcome to this comprehensive guide on Climate Change Effects. In this article, we'll explore the key aspects and provide valuable insights for general public.\n\n## Key Concepts\n\nUnderstanding Climate Change Effects is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nClimate Change Effects offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Climate Change Effects, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nClimate Change Effects is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+        "content": "# Artificial Intelligence\n\n## Introduction\n\nWelcome to this comprehensive guide on Artificial Intelligence. In this article, we'll explore the key aspects and provide valuable insights for tech enthusiasts.\n\n## Key Concepts\n\nUnderstanding Artificial Intelligence is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nArtificial Intelligence offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Artificial Intelligence, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nArtificial Intelligence is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
         "wordCount": 250,
         "mode": "demo"
       },
@@ -169,7 +169,7 @@
       "iteration": 1,
       "agent": "editor",
       "status": "needs_revision",
-      "timestamp": "2026-08-06T04:29:30.868Z",
+      "timestamp": "2026-08-06T04:34:19.194Z",
       "output": {
         "decision": "needs_revision",
         "qualityScore": 58,
@@ -211,7 +211,7 @@
       "iteration": 2,
       "agent": "writer",
       "status": "completed",
-      "timestamp": "2026-08-06T04:29:30.869Z",
+      "timestamp": "2026-08-06T04:34:19.194Z",
       "isRevision": true,
       "editorFeedback": {
         "decision": "needs_revision",
@@ -248,7 +248,7 @@
         "mode": "demo"
       },
       "output": {
-        "content": "# Climate Change Effects\n\n## Introduction\n\nWelcome to this comprehensive guide on Climate Change Effects. In this article, we'll explore the key aspects and provide valuable insights for general public.\n\n## Key Concepts\n\nUnderstanding Climate Change Effects is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nClimate Change Effects offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Climate Change Effects, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nClimate Change Effects is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+        "content": "# Artificial Intelligence\n\n## Introduction\n\nWelcome to this comprehensive guide on Artificial Intelligence. In this article, we'll explore the key aspects and provide valuable insights for tech enthusiasts.\n\n## Key Concepts\n\nUnderstanding Artificial Intelligence is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nArtificial Intelligence offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Artificial Intelligence, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nArtificial Intelligence is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
         "wordCount": 250,
         "mode": "demo"
       },
@@ -259,7 +259,7 @@
       "iteration": 2,
       "agent": "editor",
       "status": "approved",
-      "timestamp": "2026-08-06T04:29:30.869Z",
+      "timestamp": "2026-08-06T04:34:19.194Z",
       "output": {
         "decision": "approved",
         "qualityScore": 70,
