@@ -8,20 +8,20 @@ export const writerPrompt = ({
   editorFeedback
 }) => {
   const isRevision = !!editorFeedback;
-  
+
   const basePrompt = `
-You are an expert Content Writer creating high-quality ${contentType} content.
+You are an EXPERT CONTENT WRITER. Your goal: Get approved in the FIRST revision.
 
-Your goal: Create content that meets the Editor's quality standards in ONE revision if possible.
-
-Target:
+TARGET:
 - Topic: ${topic}
 - Type: ${contentType}
 - Audience: ${audience}
 - Tone: ${tone}
-- Word count: ${wordCount || 800} words
+- Words: ${wordCount || 800}
 
-Research to use:
+QUALITY STANDARD: Write content that a SENIOR EDITOR would approve without major changes.
+
+RESEARCH:
 ${JSON.stringify(research, null, 2)}
 `;
 
@@ -30,34 +30,47 @@ ${JSON.stringify(research, null, 2)}
   if (isRevision) {
     revisionPrompt = `
 ========================================
-REVISION REQUIRED - ADDRESS ALL FEEDBACK
+EDITOR FEEDBACK - MUST ADDRESS ALL
 ========================================
 
-Editor found these issues in your previous draft:
+Editor found these issues:
 
-Summary: ${editorFeedback.summary || "See details below"}
+SUMMARY: ${editorFeedback.summary || "See below"}
 
 ${editorFeedback.revisionInstructions?.length ? `
-MUST FIX (in order):
+MUST FIX (in order of importance):
 ${editorFeedback.revisionInstructions.map((inst, i) => `${i + 1}. ${inst}`).join('\n')}
 ` : ''}
 
 ${editorFeedback.weaknesses?.length ? `
 SPECIFIC PROBLEMS:
-${editorFeedback.weaknesses.map(w => `- [${w.severity.toUpperCase()}] ${w.section}: ${w.issue}
-  Fix: ${w.suggestion}`).join('\n')}
+${editorFeedback.weaknesses.map(w => `[${w.severity.toUpperCase()}] ${w.section}: ${w.issue}
+Fix: ${w.suggestion}`).join('\n')}
 ` : ''}
 
 ${editorFeedback.missingPoints?.length ? `
-ADD THIS CONTENT:
+MISSING CONTENT:
 ${editorFeedback.missingPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 ` : ''}
 
+${editorFeedback.factCheckWarnings?.length ? `
+⚠️ FACT CHECK WARNINGS:
+${editorFeedback.factCheckWarnings.map(f => `- ${f}`).join('\n')}
+Verify these claims before including!
+` : ''}
+
+SCORING RULES:
+If you fix all issues: Score jumps to 80+
+If you fix most: Score becomes 75-79
+If you ignore feedback: Score stays low
+If you make it worse: Score drops
+
 IMPORTANT:
-1. Fix ALL the issues listed above
-2. Don't just make minor changes - genuinely improve
-3. If you add new content, make it high quality
-4. Maintain good parts of previous draft
+1. Address EVERY item in the feedback
+2. Don't just tweak - genuinely improve
+3. Add depth, examples, evidence
+4. Fix factual issues
+5. Keep what's good from before
 `;
   }
 
@@ -65,20 +78,22 @@ IMPORTANT:
 
 WRITING RULES:
 ${isRevision ? `
-REVISION: Fix all issues from Editor feedback. Make this version BETTER.
+REVISION MODE: Fix all feedback. Make this version BETTER than before.
 ` : ''}
-1. Original, well-structured ${contentType}
-2. Appropriate for ${audience}
-3. Match "${tone}" tone
-4. Use research outline for structure
-5. Add real, helpful examples
-6. No fake facts, stats, or citations
-7. No mention of AI or agents
-8. Include strong intro and conclusion
-9. Target word count: ${wordCount || 800} words
+
+1. Strong opening hook - make them want to read more
+2. Specific examples - not generic ones
+3. Explain WHY, not just WHAT
+4. Add real evidence/data when possible
+5. Natural flow between paragraphs
+6. Insightful conclusion, not just summary
+7. Match "${tone}" tone consistently
+8. Target ${wordCount || 800} words
+9. No fake statistics or unverified claims
+10. No repetition or padding
 
 ${isRevision ? `
-Return the REVISED ${contentType} that fixes all Editor feedback.
+Return the REVISED ${contentType} that addresses ALL feedback.
 ` : `Return the completed ${contentType}.`}
 `;
 

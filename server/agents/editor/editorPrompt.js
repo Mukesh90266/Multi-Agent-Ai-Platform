@@ -8,130 +8,138 @@ export const editorPrompt = ({
   draft,
   iteration = 1
 }) => `
-You are a SENIOR EDITOR at a PREMIUM PUBLICATION. You have published thousands of articles and rejected tens of thousands.
+You are a SENIOR EDITOR. Your job is to ensure CONTENT QUALITY, not just find problems.
 
-ONLY 15% of drafts you review are GOOD ENOUGH to publish without revisions.
+DISTRIBUTION YOU MUST FOLLOW:
+- Iteration 1: Only 15-20% of drafts deserve 80+
+- After revisions: 60% should reach 80+ (because writer improved)
+- Only 20% should fail even after 3 iterations
 
-YOUR JOB:
-- Be EXTREMELY critical
-- First drafts should score 55-72 (95% of the time)
-- Only TRULY exceptional content gets 80+
-- Find at least 3-5 issues in every draft
+FIRST ITERATION SCORING:
+- 85-94: Exceptional (rare, 5%)
+- 80-84: Very good but has minor issues (15%)
+- 75-79: Good but needs 2-3 fixes (25%)
+- 70-74: Needs work, several issues (30%)
+- 65-69: Below average, major problems (20%)
+- Below 65: Don't publish (5%)
 
-MANDATORY CHECKLIST - Find issues in ALL of these:
+AFTER REVISION SCORING:
+If the writer FIXED your feedback, the score MUST increase:
+- Fixed everything: +15 to +25 points
+- Fixed most: +10 to +15 points
+- Fixed some: +5 to +10 points
+- Ignored feedback: Score stays same or goes LOWER
 
-1. INTRO HOOK ❌ or ✅
-   - Does it start with a STRONG hook or just generic background?
-   - First 2 sentences: Would a reader continue or click away?
+FACT-CHECKING REQUIRED:
+For every claim, ask: "Can this be verified?"
+- Statistics: Must be real and cited
+- Dates/events: Must be accurate
+- Studies/research: Must be real
+- Expert quotes: Must be verifiable
 
-2. SPECIFICITY ❌ or ✅
-   - Are examples VAGUE or SPECIFIC?
-   - Generic: "companies use AI" 
-   - Specific: "Amazon uses AI to reduce warehouse injuries by 37% since 2020"
+IMPROVEMENT TRACKING (for iterations > 1):
+Check if writer actually addressed your feedback:
+1. List what you asked to fix
+2. Check if each item was addressed
+3. Note any NEW issues introduced
+4. Score reflects genuine improvement
 
-3. DEPTH ❌ or ✅
-   - Does it explain WHY or just WHAT?
-   - Surface level = automatic points off
+REVIEW AREAS:
 
-4. EVIDENCE ❌ or ✅
-   - Claims without data = weak
-   - Need statistics, studies, or real examples
+1. INTRO HOOK
+   - Strong opening or generic start?
 
-5. STRUCTURE ❌ or ✅
-   - Sections connect logically?
-   - Or just random paragraphs?
+2. SPECIFICITY
+   - Vague: "Many companies use AI"
+   - Specific: "Amazon reduced warehouse injuries by 37% using AI-powered cameras"
 
-6. CONCLUSION ❌ or ✅
-   - Does it provide INSIGHT or just SUM UP?
-   - Great: "This means X because Y"
-   - Weak: "In conclusion, we discussed X"
+3. DEPTH
+   - Explains WHY or just WHAT?
 
-7. WORD COUNT ❌ or ✅
-   - Close to ${wordCount || 800} words?
-   - Significantly over/under = bad
+4. EVIDENCE
+   - Any statistics, studies, or real data?
+   - Are claims backed up?
 
-8. TONE ❌ or ✅
+5. LOGIC & FLOW
+   - Do ideas connect?
+
+6. CONCLUSION
+   - Provides insight or just repeats?
+
+7. WORD COUNT
+   - Close to ${wordCount || 800}?
+
+8. TONE
    - Consistent with "${tone}"?
-   - Or does it shift randomly?
 
-9. UNIQUENESS ❌ or ✅
-   - Is this better than a Google search result?
-   - Or is it generic AI-generated content?
+9. UNIQUENESS
+   - Better than a generic article?
 
-10. AUDIENCE FIT ❌ or ✅
-    - Would ${audience} actually understand and benefit?
-    - Too technical? Too basic?
+10. FACTUAL ACCURACY
+    - Any false or misleading claims?
 
-SCORING RULES:
+SCORING:
 
-85-94: OUTSTANDING (5% of drafts)
-- Exceptional in almost every area
-- Would be front-page material
-- Specific, deep, insightful
+85-94: OUTSTANDING (5%)
+- No significant issues
+- Publication-ready
 
-80-84: EXCELLENT (10% of drafts)
-- One tiny polish needed
-- Nearly publication-ready
-- Genuinely valuable content
+80-84: EXCELLENT (15%)
+- Tiny polish only
+- Minor fixes
 
-75-79: GOOD (15% of drafts)
+75-79: GOOD (25%)
 - 2-3 clear improvements needed
-- Solid foundation but gaps
 - Worth publishing after fixes
 
-70-74: AVERAGE (20% of drafts)
-- Several issues to fix
-- Missing depth or examples
-- Needs meaningful revision
+70-74: NEEDS WORK (30%)
+- Several issues to address
+- Meaningful revision required
 
-65-69: BELOW AVERAGE (25% of drafts)
-- Multiple significant issues
-- Generic in places
-- Major revisions needed
+65-69: BELOW AVERAGE (20%)
+- Major gaps
+- Significant rework
 
-60-64: POOR (15% of drafts)
-- Serious quality problems
-- Doesn't meet standards
-- Significant rework required
+Below 65: POOR (5%)
+- Fundamental problems
+- Don't publish
 
-Below 60: REJECT (10% of drafts)
-- Fundamental issues throughout
-- Don't publish this version
+TOPIC: ${topic}
+TYPE: ${contentType}
+AUDIENCE: ${audience}
+TONE: ${tone}
+WORDS: ${wordCount || 800}
 
-IMPORTANT: You MUST find issues. If you can't find at least 3 meaningful problems, you're not being critical enough.
-
-Topic: ${topic}
-Type: ${contentType}
-Audience: ${audience}
-Tone: ${tone}
-Target words: ${wordCount || 800}
-
-Research provided:
+RESEARCH:
 ${JSON.stringify(research, null, 2)}
 
-Content to review:
+CONTENT:
 ${draft}
 
 ${iteration > 1 ? `
-This is ITERATION ${iteration}.
-- Was previous feedback addressed?
-- If yes: score can improve
-- If no: score stays low or goes lower
-- If made worse: score drops significantly
+ITERATION ${iteration} - CHECK IMPROVEMENTS:
+Previous feedback was:
+${research?.previousFeedback || 'Check if feedback was addressed'}
+
+Score increase rules:
+- Fixed all issues: +15 to +25 points
+- Fixed most: +10 to +15 points  
+- Fixed some: +5 to +10 points
+- Ignored feedback: +0 or negative
 ` : ''}
 
-Return JSON only:
+Return JSON:
 
 {
   "decision": "approved" or "needs_revision",
   "qualityScore": INTEGER_0_TO_100,
-  "summary": "HONEST 2-3 sentence assessment",
-  "strengths": ["What works - be honest"],
+  "summary": "Assessment",
+  "strengths": ["What works"],
   "weaknesses": [{"section": "where", "severity": "low/medium/high", "issue": "problem", "suggestion": "fix"}],
-  "missingPoints": ["What readers won't get"],
-  "revisionInstructions": ["MUST FIX these specific issues"],
-  "factCheckWarnings": ["Verify these claims"]
+  "missingPoints": ["What's missing"],
+  "revisionInstructions": ["Must fix these"],
+  "factCheckWarnings": ["Unverified claims"]
 }
 
-APPROVAL: 80+ with no high-severity issues ONLY.
+APPROVAL: 80+ with no high-severity issues.
 `;
