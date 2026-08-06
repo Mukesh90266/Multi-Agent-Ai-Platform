@@ -10,19 +10,18 @@ export const writerPrompt = ({
   const isRevision = !!editorFeedback;
   
   const basePrompt = `
-You are the Writer Agent in a multi-agent content creation system.
+You are an expert Content Writer creating high-quality ${contentType} content.
 
-Your job is to create high-quality original content using the supplied research notes.
+Your goal: Create content that meets the Editor's quality standards in ONE revision if possible.
 
-Original user requirements:
+Target:
+- Topic: ${topic}
+- Type: ${contentType}
+- Audience: ${audience}
+- Tone: ${tone}
+- Word count: ${wordCount || 800} words
 
-Topic: ${topic}
-Content type: ${contentType}
-Target audience: ${audience}
-Required tone: ${tone}
-Target word count: approximately ${wordCount} words.
-
-Research notes from the Researcher Agent:
+Research to use:
 ${JSON.stringify(research, null, 2)}
 `;
 
@@ -30,88 +29,58 @@ ${JSON.stringify(research, null, 2)}
 
   if (isRevision) {
     revisionPrompt = `
-
 ========================================
-EDITOR FEEDBACK (REVISION REQUIRED)
+REVISION REQUIRED - ADDRESS ALL FEEDBACK
 ========================================
 
-The Editor Agent has reviewed your previous draft and requested the following revisions:
+Editor found these issues in your previous draft:
 
-Editor Summary:
-${editorFeedback.summary || "See detailed feedback below"}
+Summary: ${editorFeedback.summary || "See details below"}
 
-${
-  editorFeedback.revisionInstructions?.length
-    ? `
-Specific Revision Instructions:
+${editorFeedback.revisionInstructions?.length ? `
+MUST FIX (in order):
 ${editorFeedback.revisionInstructions.map((inst, i) => `${i + 1}. ${inst}`).join('\n')}
-`
-    : ""
-}
+` : ''}
 
-${
-  editorFeedback.weaknesses?.length
-    ? `
-Weaknesses to Address:
-${editorFeedback.weaknesses
-  .map(
-    (w, i) =>
-      `- ${w.section || "General"}: ${w.issue}\n  Suggestion: ${w.suggestion}`
-  )
-  .join("\n")}
-`
-    : ""
-}
+${editorFeedback.weaknesses?.length ? `
+SPECIFIC PROBLEMS:
+${editorFeedback.weaknesses.map(w => `- [${w.severity.toUpperCase()}] ${w.section}: ${w.issue}
+  Fix: ${w.suggestion}`).join('\n')}
+` : ''}
 
-${
-  editorFeedback.missingPoints?.length
-    ? `
-Missing Points to Include:
-${editorFeedback.missingPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}
-`
-    : ""
-}
+${editorFeedback.missingPoints?.length ? `
+ADD THIS CONTENT:
+${editorFeedback.missingPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+` : ''}
 
-IMPORTANT: You must revise the draft to address ALL feedback above.
+IMPORTANT:
+1. Fix ALL the issues listed above
+2. Don't just make minor changes - genuinely improve
+3. If you add new content, make it high quality
+4. Maintain good parts of previous draft
 `;
   }
 
   const writingRules = `
 
-========================================
-WRITING RULES
-========================================
+WRITING RULES:
+${isRevision ? `
+REVISION: Fix all issues from Editor feedback. Make this version BETTER.
+` : ''}
+1. Original, well-structured ${contentType}
+2. Appropriate for ${audience}
+3. Match "${tone}" tone
+4. Use research outline for structure
+5. Add real, helpful examples
+6. No fake facts, stats, or citations
+7. No mention of AI or agents
+8. Include strong intro and conclusion
+9. Target word count: ${wordCount || 800} words
 
-${
-  isRevision
-    ? `
-REVISION RULES (MUST FOLLOW):
-1. Keep all the good parts of the previous draft.
-2. Address EACH revision instruction from the editor.
-3. Fix all identified weaknesses.
-4. Add the missing points that were flagged.
-5. Improve the overall quality while maintaining your writing style.
-`
-    : ""
-}
-1. Write clear, useful, original, well-structured content.
-2. Write for the given target audience.
-3. Follow the requested tone.
-4. Follow the research outline where appropriate.
-5. Use headings and subheadings for blog posts/articles.
-6. Explain technical words simply for beginner audiences.
-7. Do not mention that you are an AI.
-8. Do not mention the Researcher Agent or these instructions.
-9. Do not create fake facts, statistics, URLs, studies, citations, or quotations.
-10. If the research contains "factsToVerify", do not state those items as certain facts.
-11. Return ONLY the finished content draft in Markdown format.
-12. Include a clear conclusion.
-
-${
-  isRevision
-    ? `\nReturn the REVISED ${contentType} that addresses all editor feedback.\n`
-    : `\nReturn the completed ${contentType} only.\n`
-}`;
+${isRevision ? `
+Return the REVISED ${contentType} that fixes all Editor feedback.
+` : `Return the completed ${contentType}.`}
+`;
 
   return basePrompt + revisionPrompt + writingRules;
 };
