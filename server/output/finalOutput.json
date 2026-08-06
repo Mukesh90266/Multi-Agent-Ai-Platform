@@ -1,10 +1,10 @@
 {
-  "runId": "4785c78a-44aa-458b-a7de-fca2dc23392a",
+  "runId": "f8d0a01b-d1b1-467f-9041-dae6a661420f",
   "input": {
-    "topic": "Artificial Intelligence",
-    "contentType": "blog post",
-    "audience": "tech enthusiasts",
-    "tone": "engaging",
+    "topic": "Education",
+    "contentType": "Blog post",
+    "audience": "General",
+    "tone": "Educational",
     "wordCount": 800
   },
   "status": "approved",
@@ -33,10 +33,10 @@
     "editor": "completed"
   },
   "research": {
-    "topic": "Artificial Intelligence",
-    "summary": "A research brief on Artificial Intelligence, prepared for tech enthusiasts. Verify time-sensitive claims before publication.",
+    "topic": "Education",
+    "summary": "A research brief on Education, prepared for General. Verify time-sensitive claims before publication.",
     "keyPoints": [
-      "Define the scope and audience relevance of Artificial Intelligence.",
+      "Define the scope and audience relevance of Education.",
       "Explain core concepts before advanced details.",
       "Use practical examples to make the subject understandable.",
       "Present benefits, limitations, and responsible use.",
@@ -60,7 +60,7 @@
       "Conclusion and next steps"
     ],
     "examples": [
-      "A beginner-friendly real-world use case involving Artificial Intelligence.",
+      "A beginner-friendly real-world use case involving Education.",
       "A comparison that explains the concept in familiar terms."
     ],
     "sources": [
@@ -77,7 +77,7 @@
     "mode": "demo"
   },
   "draft": {
-    "content": "# Artificial Intelligence\n\n## Introduction\n\nWelcome to this comprehensive guide on Artificial Intelligence. In this article, we'll explore the key aspects and provide valuable insights for tech enthusiasts.\n\n## Key Concepts\n\nUnderstanding Artificial Intelligence is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nArtificial Intelligence offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Artificial Intelligence, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nArtificial Intelligence is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+    "content": "# Education\n\n## Introduction\n\nWelcome to this comprehensive guide on Education. In this article, we'll explore the key aspects and provide valuable insights for General.\n\n## Key Concepts\n\nUnderstanding Education is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nEducation offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Education, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nEducation is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
     "wordCount": 250,
     "mode": "demo"
   },
@@ -102,12 +102,12 @@
       "iteration": 0,
       "agent": "researcher",
       "status": "completed",
-      "timestamp": "2026-08-06T04:34:19.193Z",
+      "timestamp": "2026-08-06T04:56:21.606Z",
       "output": {
-        "topic": "Artificial Intelligence",
-        "summary": "A research brief on Artificial Intelligence, prepared for tech enthusiasts. Verify time-sensitive claims before publication.",
+        "topic": "Education",
+        "summary": "A research brief on Education, prepared for General. Verify time-sensitive claims before publication.",
         "keyPoints": [
-          "Define the scope and audience relevance of Artificial Intelligence.",
+          "Define the scope and audience relevance of Education.",
           "Explain core concepts before advanced details.",
           "Use practical examples to make the subject understandable.",
           "Present benefits, limitations, and responsible use.",
@@ -131,7 +131,7 @@
           "Conclusion and next steps"
         ],
         "examples": [
-          "A beginner-friendly real-world use case involving Artificial Intelligence.",
+          "A beginner-friendly real-world use case involving Education.",
           "A comparison that explains the concept in familiar terms."
         ],
         "sources": [
@@ -147,18 +147,18 @@
         ],
         "mode": "demo"
       },
-      "summary": "Topic: Artificial Intelligence | Key Points: 5 | Sources: 1"
+      "summary": "Topic: Education | Key Points: 5 | Sources: 1"
     },
     {
       "phase": "write",
       "iteration": 1,
       "agent": "writer",
       "status": "completed",
-      "timestamp": "2026-08-06T04:34:19.194Z",
+      "timestamp": "2026-08-06T04:56:21.606Z",
       "isRevision": false,
       "editorFeedback": null,
       "output": {
-        "content": "# Artificial Intelligence\n\n## Introduction\n\nWelcome to this comprehensive guide on Artificial Intelligence. In this article, we'll explore the key aspects and provide valuable insights for tech enthusiasts.\n\n## Key Concepts\n\nUnderstanding Artificial Intelligence is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nArtificial Intelligence offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Artificial Intelligence, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nArtificial Intelligence is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+        "content": "# Education\n\n## Introduction\n\nWelcome to this comprehensive guide on Education. In this article, we'll explore the key aspects and provide valuable insights for General.\n\n## Key Concepts\n\nUnderstanding Education is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nEducation offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Education, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nEducation is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
         "wordCount": 250,
         "mode": "demo"
       },
@@ -169,7 +169,7 @@
       "iteration": 1,
       "agent": "editor",
       "status": "needs_revision",
-      "timestamp": "2026-08-06T04:34:19.194Z",
+      "timestamp": "2026-08-06T04:56:21.607Z",
       "output": {
         "decision": "needs_revision",
         "qualityScore": 58,
@@ -211,7 +211,7 @@
       "iteration": 2,
       "agent": "writer",
       "status": "completed",
-      "timestamp": "2026-08-06T04:34:19.194Z",
+      "timestamp": "2026-08-06T04:56:21.607Z",
       "isRevision": true,
       "editorFeedback": {
         "decision": "needs_revision",
@@ -248,7 +248,7 @@
         "mode": "demo"
       },
       "output": {
-        "content": "# Artificial Intelligence\n\n## Introduction\n\nWelcome to this comprehensive guide on Artificial Intelligence. In this article, we'll explore the key aspects and provide valuable insights for tech enthusiasts.\n\n## Key Concepts\n\nUnderstanding Artificial Intelligence is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nArtificial Intelligence offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Artificial Intelligence, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nArtificial Intelligence is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+        "content": "# Education\n\n## Introduction\n\nWelcome to this comprehensive guide on Education. In this article, we'll explore the key aspects and provide valuable insights for General.\n\n## Key Concepts\n\nUnderstanding Education is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nEducation offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Education, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nEducation is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
         "wordCount": 250,
         "mode": "demo"
       },
@@ -259,7 +259,7 @@
       "iteration": 2,
       "agent": "editor",
       "status": "approved",
-      "timestamp": "2026-08-06T04:34:19.194Z",
+      "timestamp": "2026-08-06T04:56:21.607Z",
       "output": {
         "decision": "approved",
         "qualityScore": 70,

@@ -150,20 +150,27 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       });
 
       finalEditorReview = editorReview;
-      editorDecision = editorReview.decision;
+      
+      // IMPORTANT: Use QUALITY SCORE as the deciding factor, not the decision field
+      // Score >= 70 means approved, regardless of what the editor said
+      const qualityScore = editorReview.qualityScore || 0;
+      const scoreBasedDecision = qualityScore >= 70 ? "approved" : "needs_revision";
+      
+      editorDecision = scoreBasedDecision;  // Use score-based decision
       editorFeedback = editorReview;
 
       iterations.push({
         phase: "review",
         iteration: loopIteration,
         agent: "editor",
-        status: editorReview.decision,
+        status: editorDecision,  // Log the score-based decision
         timestamp: new Date().toISOString(),
         output: editorReview,
-        summary: `Decision: ${editorReview.decision} | Quality: ${editorReview.qualityScore}/100 | Strengths: ${editorReview.strengths?.length || 0} | Issues: ${editorReview.weaknesses?.length || 0}`
+        qualityScore: qualityScore,  // Store quality score separately
+        summary: `Decision: ${editorDecision} | Quality: ${qualityScore}/100 | Strengths: ${editorReview.strengths?.length || 0} | Issues: ${editorReview.weaknesses?.length || 0}`
       });
 
-      logger.agent('editor', 'completed', `Decision: ${editorReview.decision} (${editorReview.qualityScore}/100)`);
+      logger.agent('editor', 'completed', `Decision: ${editorDecision} (${qualityScore}/100) - ${qualityScore >= 70 ? '✅ Meets threshold' : '🔄 Below threshold'}`);
       
       // Show detailed feedback
       if (editorReview.strengths?.length) {
@@ -176,8 +183,12 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
         logger.info(`   Revisions needed: ${editorReview.revisionInstructions.length} items`);
       }
 
-      // Check if we need another iteration
-      if (editorDecision === "needs_revision" && loopIteration < MAX_ITERATIONS) {
+      // Check if we should continue or stop
+      if (qualityScore >= 70) {
+        // Score reached threshold - STOP THE LOOP!
+        logger.info(`✅ Quality score ${qualityScore} reached approval threshold (70+). Stopping loop.`);
+        break;  // Exit loop immediately!
+      } else if (editorDecision === "needs_revision" && loopIteration < MAX_ITERATIONS) {
         logger.warning(`Editor requested revisions. Starting iteration ${loopIteration + 1}...`);
       } else if (editorDecision === "needs_revision" && loopIteration === MAX_ITERATIONS) {
         logger.warning(`Max iterations (${MAX_ITERATIONS}) reached. Proceeding with current draft.`);
@@ -191,18 +202,20 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     // ============================================
     const totalIterations = loopIteration - 1;
     
-    // Build revision summary
+    // Build revision summary based on quality score
     const revisionHistory = [];
     for (let i = 1; i <= totalIterations; i++) {
       const reviewIter = iterations.find(it => it.phase === 'review' && it.iteration === i);
-      const writeIter = iterations.find(it => it.phase === 'write' && it.iteration === i);
       
       if (reviewIter) {
+        const score = reviewIter.qualityScore || reviewIter.output.qualityScore || 0;
+        const scoreBasedDecision = score >= 70 ? "approved" : "needs_revision";
+        
         revisionHistory.push({
           iteration: i,
-          decision: reviewIter.output.decision,
-          qualityScore: reviewIter.output.qualityScore,
-          hadRevisions: reviewIter.output.decision === 'needs_revision',
+          decision: scoreBasedDecision,
+          qualityScore: score,
+          hadRevisions: scoreBasedDecision === 'needs_revision',
           revisionCount: reviewIter.output.revisionInstructions?.length || 0
         });
       }
@@ -212,7 +225,8 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     logger.info(`📊 Revision Summary:`);
     revisionHistory.forEach(r => {
       const icon = r.decision === 'approved' ? '✅' : '🔄';
-      logger.info(`   ${icon} Iteration ${r.iteration}: ${r.decision.toUpperCase()} (${r.qualityScore}/100)${r.hadRevisions ? ` - ${r.revisionCount} revisions needed` : ''}`);
+      const isStoppedEarly = r.decision === 'approved' && r.iteration < MAX_ITERATIONS;
+      logger.info(`   ${icon} Iteration ${r.iteration}: ${r.decision.toUpperCase()} (${r.qualityScore}/100)${r.hadRevisions ? ` - ${r.revisionCount} revisions` : ''}${isStoppedEarly ? ' - STOPPED EARLY ⭐' : ''}`);
     });
     logger.info(`Total Writer-Editor Cycles: ${totalIterations}`);
     logger.info(`Final Decision: ${editorDecision}`);
