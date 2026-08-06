@@ -951,6 +951,99 @@ body {
   color: #92400e;
 }
 
+/* Revision Summary Styles */
+.editor-revision-summary {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.revision-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 10px;
+}
+
+.revision-cycle-icon {
+  font-size: 14px;
+}
+
+.revision-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.revision-history-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: white;
+}
+
+.revision-history-item.approved {
+  border-left: 3px solid #22c55e;
+}
+
+.revision-history-item.revision-needed {
+  border-left: 3px solid #f59e0b;
+}
+
+.revision-decision-icon {
+  font-size: 12px;
+}
+
+.revision-iteration {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.revision-decision {
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.revision-history-item.approved .revision-decision {
+  color: #16a34a;
+}
+
+.revision-history-item.revision-needed .revision-decision {
+  color: #d97706;
+}
+
+.revision-score {
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.revision-count {
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.max-iterations-warning {
+  margin-top: 10px;
+  padding: 10px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #92400e;
+  font-weight: 500;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }

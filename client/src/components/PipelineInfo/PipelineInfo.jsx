@@ -73,9 +73,9 @@ export default function PipelineInfo({ result, loading }) {
             <HashIcon />
           </div>
           <div className="info-content">
-            <div className="info-label">Iteration</div>
+            <div className="info-label">Iterations</div>
             <div className="info-value">
-              {result?.currentIteration || 1} of {result?.maxIterations || 5}
+              {result?.totalIterations || 1} / {result?.maxIterations || 3}
             </div>
           </div>
         </div>

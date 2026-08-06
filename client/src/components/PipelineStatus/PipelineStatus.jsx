@@ -128,9 +128,29 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
   const decision = editorReview?.decision;
   const qualityScore = editorReview?.qualityScore;
   const summary = editorReview?.summary;
+  const revisionHistory = result?.revisionHistory || [];
+  const reachedMaxIterations = result?.reachedMaxIterations;
+  const totalIterations = result?.totalIterations || 0;
+  const maxIterations = result?.maxIterations || 3;
 
   const isApproved = decision === "approved";
   const isNeedsRevision = decision === "needs_revision";
+
+  // Calculate revision summary
+  const getRevisionSummary = () => {
+    if (revisionHistory.length === 0) return null;
+    
+    const iterationsWithRevisions = revisionHistory.filter(r => r.hadRevisions);
+    const totalRevisions = iterationsWithRevisions.reduce((sum, r) => sum + r.revisionCount, 0);
+    
+    return {
+      totalCycles: revisionHistory.length,
+      revisionCycles: iterationsWithRevisions.length,
+      totalRevisions
+    };
+  };
+
+  const revisionSummary = getRevisionSummary();
 
   return (
     <div>
@@ -215,6 +235,36 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
             </div>
             <div className="editor-verdict-score-value">{qualityScore || 0}/100</div>
           </div>
+
+          {/* Revision Summary - Show when there were iterations */}
+          {revisionSummary && (
+            <div className="editor-revision-summary">
+              <div className="revision-summary-header">
+                <span className="revision-cycle-icon">🔄</span>
+                <span>Revision History</span>
+              </div>
+              <div className="revision-history-list">
+                {revisionHistory.map((r, idx) => (
+                  <div key={idx} className={`revision-history-item ${r.decision === 'approved' ? 'approved' : 'revision-needed'}`}>
+                    <span className="revision-decision-icon">
+                      {r.decision === 'approved' ? '✅' : '🔄'}
+                    </span>
+                    <span className="revision-iteration">Iteration {r.iteration}:</span>
+                    <span className="revision-decision">{r.decision.toUpperCase()}</span>
+                    <span className="revision-score">({r.qualityScore}/100)</span>
+                    {r.hadRevisions && (
+                      <span className="revision-count">- {r.revisionCount} revisions</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {reachedMaxIterations && (
+                <div className="max-iterations-warning">
+                  ⚠️ Max iterations ({maxIterations}) reached. Content requires further improvements.
+                </div>
+              )}
+            </div>
+          )}
 
           {summary && (
             <p className="editor-verdict-summary">{summary}</p>
