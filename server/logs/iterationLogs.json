@@ -1,5 +1,1335 @@
 [
   {
+    "runId": "f8d0a01b-d1b1-467f-9041-dae6a661420f",
+    "createdAt": "2026-08-06T04:56:21.610Z",
+    "status": "approved",
+    "totalIterations": 2,
+    "iterations": [
+      {
+        "phase": "research",
+        "iteration": 0,
+        "agent": "researcher",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:56:21.606Z",
+        "output": {
+          "topic": "Education",
+          "summary": "A research brief on Education, prepared for General. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of Education.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving Education.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        },
+        "summary": "Topic: Education | Key Points: 5 | Sources: 1"
+      },
+      {
+        "phase": "write",
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:56:21.606Z",
+        "isRevision": false,
+        "editorFeedback": null,
+        "output": {
+          "content": "# Education\n\n## Introduction\n\nWelcome to this comprehensive guide on Education. In this article, we'll explore the key aspects and provide valuable insights for General.\n\n## Key Concepts\n\nUnderstanding Education is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nEducation offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Education, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nEducation is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 1,
+        "agent": "editor",
+        "status": "needs_revision",
+        "timestamp": "2026-08-06T04:56:21.607Z",
+        "output": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: needs_revision | Quality: 58/100 | Strengths: 2 | Issues: 2"
+      },
+      {
+        "phase": "write",
+        "iteration": 2,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:56:21.607Z",
+        "isRevision": true,
+        "editorFeedback": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "output": {
+          "content": "# Education\n\n## Introduction\n\nWelcome to this comprehensive guide on Education. In this article, we'll explore the key aspects and provide valuable insights for General.\n\n## Key Concepts\n\nUnderstanding Education is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nEducation offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Education, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nEducation is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 2,
+        "agent": "editor",
+        "status": "approved",
+        "timestamp": "2026-08-06T04:56:21.607Z",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 70,
+          "summary": "The demo draft meets the minimum quality threshold. Approved for publication.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: approved | Quality: 70/100 | Strengths: 3 | Issues: 0"
+      }
+    ]
+  },
+  {
+    "runId": "4785c78a-44aa-458b-a7de-fca2dc23392a",
+    "createdAt": "2026-08-06T04:34:19.195Z",
+    "status": "approved",
+    "totalIterations": 2,
+    "iterations": [
+      {
+        "phase": "research",
+        "iteration": 0,
+        "agent": "researcher",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:34:19.193Z",
+        "output": {
+          "topic": "Artificial Intelligence",
+          "summary": "A research brief on Artificial Intelligence, prepared for tech enthusiasts. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of Artificial Intelligence.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving Artificial Intelligence.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        },
+        "summary": "Topic: Artificial Intelligence | Key Points: 5 | Sources: 1"
+      },
+      {
+        "phase": "write",
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:34:19.194Z",
+        "isRevision": false,
+        "editorFeedback": null,
+        "output": {
+          "content": "# Artificial Intelligence\n\n## Introduction\n\nWelcome to this comprehensive guide on Artificial Intelligence. In this article, we'll explore the key aspects and provide valuable insights for tech enthusiasts.\n\n## Key Concepts\n\nUnderstanding Artificial Intelligence is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nArtificial Intelligence offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Artificial Intelligence, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nArtificial Intelligence is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 1,
+        "agent": "editor",
+        "status": "needs_revision",
+        "timestamp": "2026-08-06T04:34:19.194Z",
+        "output": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: needs_revision | Quality: 58/100 | Strengths: 2 | Issues: 2"
+      },
+      {
+        "phase": "write",
+        "iteration": 2,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:34:19.194Z",
+        "isRevision": true,
+        "editorFeedback": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "output": {
+          "content": "# Artificial Intelligence\n\n## Introduction\n\nWelcome to this comprehensive guide on Artificial Intelligence. In this article, we'll explore the key aspects and provide valuable insights for tech enthusiasts.\n\n## Key Concepts\n\nUnderstanding Artificial Intelligence is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nArtificial Intelligence offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Artificial Intelligence, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nArtificial Intelligence is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 2,
+        "agent": "editor",
+        "status": "approved",
+        "timestamp": "2026-08-06T04:34:19.194Z",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 70,
+          "summary": "The demo draft meets the minimum quality threshold. Approved for publication.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: approved | Quality: 70/100 | Strengths: 3 | Issues: 0"
+      }
+    ]
+  },
+  {
+    "runId": "a6f892c8-5074-4944-a8a2-db7afd90be2b",
+    "createdAt": "2026-08-06T04:29:30.871Z",
+    "status": "approved",
+    "totalIterations": 2,
+    "iterations": [
+      {
+        "phase": "research",
+        "iteration": 0,
+        "agent": "researcher",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:29:30.868Z",
+        "output": {
+          "topic": "Climate Change Effects",
+          "summary": "A research brief on Climate Change Effects, prepared for general public. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of Climate Change Effects.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving Climate Change Effects.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        },
+        "summary": "Topic: Climate Change Effects | Key Points: 5 | Sources: 1"
+      },
+      {
+        "phase": "write",
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:29:30.868Z",
+        "isRevision": false,
+        "editorFeedback": null,
+        "output": {
+          "content": "# Climate Change Effects\n\n## Introduction\n\nWelcome to this comprehensive guide on Climate Change Effects. In this article, we'll explore the key aspects and provide valuable insights for general public.\n\n## Key Concepts\n\nUnderstanding Climate Change Effects is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nClimate Change Effects offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Climate Change Effects, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nClimate Change Effects is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 1,
+        "agent": "editor",
+        "status": "needs_revision",
+        "timestamp": "2026-08-06T04:29:30.868Z",
+        "output": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: needs_revision | Quality: 58/100 | Strengths: 2 | Issues: 2"
+      },
+      {
+        "phase": "write",
+        "iteration": 2,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:29:30.869Z",
+        "isRevision": true,
+        "editorFeedback": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "output": {
+          "content": "# Climate Change Effects\n\n## Introduction\n\nWelcome to this comprehensive guide on Climate Change Effects. In this article, we'll explore the key aspects and provide valuable insights for general public.\n\n## Key Concepts\n\nUnderstanding Climate Change Effects is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nClimate Change Effects offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Climate Change Effects, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nClimate Change Effects is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 2,
+        "agent": "editor",
+        "status": "approved",
+        "timestamp": "2026-08-06T04:29:30.869Z",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 70,
+          "summary": "The demo draft meets the minimum quality threshold. Approved for publication.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: approved | Quality: 70/100 | Strengths: 3 | Issues: 0"
+      }
+    ]
+  },
+  {
+    "runId": "f8360d0f-7790-4bd1-bc62-33b03e0bfd3a",
+    "createdAt": "2026-08-06T04:18:58.537Z",
+    "status": "approved",
+    "totalIterations": 2,
+    "iterations": [
+      {
+        "phase": "research",
+        "iteration": 0,
+        "agent": "researcher",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:18:58.531Z",
+        "output": {
+          "topic": "Git Version Control",
+          "summary": "A research brief on Git Version Control, prepared for developers. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of Git Version Control.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving Git Version Control.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        },
+        "summary": "Topic: Git Version Control | Key Points: 5 | Sources: 1"
+      },
+      {
+        "phase": "write",
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:18:58.532Z",
+        "isRevision": false,
+        "editorFeedback": null,
+        "output": {
+          "content": "# Git Version Control\n\n## Introduction\n\nWelcome to this comprehensive guide on Git Version Control. In this article, we'll explore the key aspects and provide valuable insights for developers.\n\n## Key Concepts\n\nUnderstanding Git Version Control is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nGit Version Control offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Git Version Control, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nGit Version Control is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 1,
+        "agent": "editor",
+        "status": "needs_revision",
+        "timestamp": "2026-08-06T04:18:58.533Z",
+        "output": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: needs_revision | Quality: 58/100 | Strengths: 2 | Issues: 2"
+      },
+      {
+        "phase": "write",
+        "iteration": 2,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:18:58.534Z",
+        "isRevision": true,
+        "editorFeedback": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "output": {
+          "content": "# Git Version Control\n\n## Introduction\n\nWelcome to this comprehensive guide on Git Version Control. In this article, we'll explore the key aspects and provide valuable insights for developers.\n\n## Key Concepts\n\nUnderstanding Git Version Control is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nGit Version Control offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Git Version Control, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nGit Version Control is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 2,
+        "agent": "editor",
+        "status": "approved",
+        "timestamp": "2026-08-06T04:18:58.534Z",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 70,
+          "summary": "The demo draft meets the minimum quality threshold. Approved for publication.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: approved | Quality: 70/100 | Strengths: 3 | Issues: 0"
+      }
+    ]
+  },
+  {
+    "runId": "5e0f7e16-acc9-493c-82a2-86cfa4254912",
+    "createdAt": "2026-08-06T04:18:03.545Z",
+    "status": "approved",
+    "totalIterations": 2,
+    "iterations": [
+      {
+        "phase": "research",
+        "iteration": 0,
+        "agent": "researcher",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:18:03.539Z",
+        "output": {
+          "topic": "Docker Containers",
+          "summary": "A research brief on Docker Containers, prepared for DevOps beginners. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of Docker Containers.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving Docker Containers.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        },
+        "summary": "Topic: Docker Containers | Key Points: 5 | Sources: 1"
+      },
+      {
+        "phase": "write",
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:18:03.540Z",
+        "isRevision": false,
+        "editorFeedback": null,
+        "output": {
+          "content": "# Docker Containers\n\n## Introduction\n\nWelcome to this comprehensive guide on Docker Containers. In this article, we'll explore the key aspects and provide valuable insights for DevOps beginners.\n\n## Key Concepts\n\nUnderstanding Docker Containers is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nDocker Containers offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Docker Containers, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nDocker Containers is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 1,
+        "agent": "editor",
+        "status": "needs_revision",
+        "timestamp": "2026-08-06T04:18:03.540Z",
+        "output": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: needs_revision | Quality: 58/100 | Strengths: 2 | Issues: 2"
+      },
+      {
+        "phase": "write",
+        "iteration": 2,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:18:03.541Z",
+        "isRevision": true,
+        "editorFeedback": {
+          "decision": "needs_revision",
+          "qualityScore": 58,
+          "summary": "The draft needs improvements to reach the 70 quality threshold.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "output": {
+          "content": "# Docker Containers\n\n## Introduction\n\nWelcome to this comprehensive guide on Docker Containers. In this article, we'll explore the key aspects and provide valuable insights for DevOps beginners.\n\n## Key Concepts\n\nUnderstanding Docker Containers is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nDocker Containers offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Docker Containers, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nDocker Containers is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 2,
+        "agent": "editor",
+        "status": "approved",
+        "timestamp": "2026-08-06T04:18:03.542Z",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 72,
+          "summary": "The demo draft meets the minimum quality threshold. Approved for publication.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: approved | Quality: 72/100 | Strengths: 3 | Issues: 0"
+      }
+    ]
+  },
+  {
+    "runId": "4f10f059-9e3c-457b-b7bf-d2c21721817e",
+    "createdAt": "2026-08-06T04:13:16.000Z",
+    "status": "approved",
+    "totalIterations": 2,
+    "iterations": [
+      {
+        "phase": "research",
+        "iteration": 0,
+        "agent": "researcher",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:13:15.997Z",
+        "output": {
+          "topic": "Python Machine Learning",
+          "summary": "A research brief on Python Machine Learning, prepared for data science beginners. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of Python Machine Learning.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving Python Machine Learning.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        },
+        "summary": "Topic: Python Machine Learning | Key Points: 5 | Sources: 1"
+      },
+      {
+        "phase": "write",
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:13:15.998Z",
+        "isRevision": false,
+        "editorFeedback": null,
+        "output": {
+          "content": "# Python Machine Learning\n\n## Introduction\n\nWelcome to this comprehensive guide on Python Machine Learning. In this article, we'll explore the key aspects and provide valuable insights for data science beginners.\n\n## Key Concepts\n\nUnderstanding Python Machine Learning is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nPython Machine Learning offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Python Machine Learning, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nPython Machine Learning is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 1,
+        "agent": "editor",
+        "status": "needs_revision",
+        "timestamp": "2026-08-06T04:13:15.998Z",
+        "output": {
+          "decision": "needs_revision",
+          "qualityScore": 62,
+          "summary": "The draft needs improvements in several areas before it can be approved.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: needs_revision | Quality: 62/100 | Strengths: 2 | Issues: 2"
+      },
+      {
+        "phase": "write",
+        "iteration": 2,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:13:15.998Z",
+        "isRevision": true,
+        "editorFeedback": {
+          "decision": "needs_revision",
+          "qualityScore": 62,
+          "summary": "The draft needs improvements in several areas before it can be approved.",
+          "strengths": [
+            "Good topic coverage",
+            "Clear structure"
+          ],
+          "missingPoints": [
+            "Missing practical code examples",
+            "No explanation of common pitfalls"
+          ],
+          "weaknesses": [
+            {
+              "section": "Introduction",
+              "severity": "medium",
+              "issue": "Too generic, doesn't grab attention",
+              "suggestion": "Start with a compelling hook or real-world problem"
+            },
+            {
+              "section": "Content",
+              "severity": "high",
+              "issue": "Lacks specific code examples",
+              "suggestion": "Add working code snippets with explanations"
+            }
+          ],
+          "revisionInstructions": [
+            "Add at least 2 practical code examples with explanations",
+            "Include a section on common mistakes and how to avoid them",
+            "Improve the introduction to be more engaging"
+          ],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "output": {
+          "content": "# Python Machine Learning\n\n## Introduction\n\nWelcome to this comprehensive guide on Python Machine Learning. In this article, we'll explore the key aspects and provide valuable insights for data science beginners.\n\n## Key Concepts\n\nUnderstanding Python Machine Learning is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nPython Machine Learning offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with Python Machine Learning, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nPython Machine Learning is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 2,
+        "agent": "editor",
+        "status": "approved",
+        "timestamp": "2026-08-06T04:13:15.999Z",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 85,
+          "summary": "The demo draft covers the topic adequately. In production with a real LLM, the Editor Agent would provide detailed feedback on the content quality, structure, and completeness.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: approved | Quality: 85/100 | Strengths: 3 | Issues: 0"
+      }
+    ]
+  },
+  {
+    "runId": "7b609da4-6146-4ff3-96aa-74e123f466bb",
+    "createdAt": "2026-08-06T04:12:20.461Z",
+    "status": "approved",
+    "totalIterations": 1,
+    "iterations": [
+      {
+        "phase": "research",
+        "iteration": 0,
+        "agent": "researcher",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:12:20.458Z",
+        "output": {
+          "topic": "React Hooks",
+          "summary": "A research brief on React Hooks, prepared for beginner developers. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of React Hooks.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving React Hooks.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        },
+        "summary": "Topic: React Hooks | Key Points: 5 | Sources: 1"
+      },
+      {
+        "phase": "write",
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T04:12:20.459Z",
+        "isRevision": false,
+        "editorFeedback": null,
+        "output": {
+          "content": "# React Hooks\n\n## Introduction\n\nWelcome to this comprehensive guide on React Hooks. In this article, we'll explore the key aspects and provide valuable insights for beginner developers.\n\n## Key Concepts\n\nUnderstanding React Hooks is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nReact Hooks offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with React Hooks, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nReact Hooks is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 1,
+        "agent": "editor",
+        "status": "approved",
+        "timestamp": "2026-08-06T04:12:20.459Z",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 85,
+          "summary": "The demo draft covers the topic adequately. In production with a real LLM, the Editor Agent would provide detailed feedback on the content quality, structure, and completeness.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [
+            "Could benefit from more specific examples",
+            "More detailed explanations would improve clarity"
+          ],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: approved | Quality: 85/100 | Strengths: 3 | Issues: 0"
+      }
+    ]
+  },
+  {
+    "runId": "982cb37b-b042-4658-a227-26654f93c8f3",
+    "createdAt": "2026-08-06T03:57:10.364Z",
+    "status": "approved",
+    "totalIterations": 1,
+    "iterations": [
+      {
+        "phase": "research",
+        "iteration": 0,
+        "agent": "researcher",
+        "status": "completed",
+        "timestamp": "2026-08-06T03:57:10.350Z",
+        "output": {
+          "topic": "JavaScript Async/Await",
+          "summary": "A research brief on JavaScript Async/Await, prepared for intermediate developers. Verify time-sensitive claims before publication.",
+          "keyPoints": [
+            "Define the scope and audience relevance of JavaScript Async/Await.",
+            "Explain core concepts before advanced details.",
+            "Use practical examples to make the subject understandable.",
+            "Present benefits, limitations, and responsible use.",
+            "Use reliable primary or official sources for factual claims."
+          ],
+          "definitions": [
+            {
+              "term": "Scope",
+              "meaning": "The boundaries of what the content will cover."
+            },
+            {
+              "term": "Primary source",
+              "meaning": "An original, authoritative source of information."
+            }
+          ],
+          "suggestedOutline": [
+            "Introduction and context",
+            "Core concepts",
+            "Practical examples or applications",
+            "Benefits and limitations",
+            "Conclusion and next steps"
+          ],
+          "examples": [
+            "A beginner-friendly real-world use case involving JavaScript Async/Await.",
+            "A comparison that explains the concept in familiar terms."
+          ],
+          "sources": [
+            {
+              "title": "Source verification required",
+              "url": "",
+              "note": "Demo mode does not claim a live web source. Add verified official sources before publishing."
+            }
+          ],
+          "factsToVerify": [
+            "Current standards, versions, regulations, or statistics related to the topic.",
+            "Any numerical claim, quotation, or date used in the final content."
+          ],
+          "mode": "demo"
+        },
+        "summary": "Topic: JavaScript Async/Await | Key Points: 5 | Sources: 1"
+      },
+      {
+        "phase": "write",
+        "iteration": 1,
+        "agent": "writer",
+        "status": "completed",
+        "timestamp": "2026-08-06T03:57:10.353Z",
+        "isRevision": false,
+        "editorFeedback": null,
+        "output": {
+          "content": "# JavaScript Async/Await\n\n## Introduction\n\nWelcome to this comprehensive guide on JavaScript Async/Await. In this article, we'll explore the key aspects and provide valuable insights for intermediate developers.\n\n## Key Concepts\n\nUnderstanding JavaScript Async/Await is essential for modern web development. Here are the main points to consider:\n\n1. **Core Principles**: The fundamental concepts that drive this technology\n2. **Practical Applications**: Real-world use cases and examples\n3. **Best Practices**: Industry-standard approaches and recommendations\n\n## Benefits\n\nJavaScript Async/Await offers numerous advantages:\n\n- Improved developer experience\n- Better performance optimization\n- Enhanced code maintainability\n- Strong community support\n\n## Getting Started\n\nTo begin your journey with JavaScript Async/Await, follow these steps:\n\n1. Set up your development environment\n2. Learn the basic syntax and concepts\n3. Build small projects to practice\n4. Join the community for support\n\n## Common Challenges\n\nEvery technology has its learning curve. Here are some challenges you might face:\n\n- Understanding complex concepts initially\n- Choosing the right tools and libraries\n- Managing state and data flow\n\n## Conclusion\n\nJavaScript Async/Await is a powerful technology that can significantly improve your development workflow. With practice and dedication, you'll master these concepts in no time.\n\n---\n\n*This is a demo draft. Configure an AI provider (like Groq) for full content generation.*\n",
+          "wordCount": 250,
+          "mode": "demo"
+        },
+        "summary": "Words: 250 | Mode: demo"
+      },
+      {
+        "phase": "review",
+        "iteration": 1,
+        "agent": "editor",
+        "status": "approved",
+        "timestamp": "2026-08-06T03:57:10.355Z",
+        "output": {
+          "decision": "approved",
+          "qualityScore": 85,
+          "summary": "The demo draft covers the topic adequately. In production with a real LLM, the Editor Agent would provide detailed feedback on the content quality, structure, and completeness.",
+          "strengths": [
+            "Basic structure is present",
+            "Covers main topics",
+            "Appropriate tone for the target audience"
+          ],
+          "missingPoints": [
+            "Could benefit from more specific examples",
+            "More detailed explanations would improve clarity"
+          ],
+          "weaknesses": [],
+          "revisionInstructions": [],
+          "factCheckWarnings": [],
+          "mode": "demo"
+        },
+        "summary": "Decision: approved | Quality: 85/100 | Strengths: 3 | Issues: 0"
+      }
+    ]
+  },
+  {
     "runId": "a3c70878-aee4-42dd-90e5-30dec7e418a6",
     "createdAt": "2026-08-04T06:44:34.252Z",
     "status": "approved",

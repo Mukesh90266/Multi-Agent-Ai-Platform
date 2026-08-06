@@ -53,32 +53,71 @@ const FileIcon = () => (
 
 export default function LiveOutput({ result, loading }) {
   const [activeTab, setActiveTab] = useState("research");
+  const [selectedIteration, setSelectedIteration] = useState(1);
   const [copied, setCopied] = useState(false);
 
+  // Extract iterations from result
+  const getDraftIterations = () => {
+    if (!result?.iterations) return [];
+    return result.iterations.filter(it => it.phase === "write");
+  };
+
+  const getEditorIterations = () => {
+    if (!result?.iterations) return [];
+    return result.iterations.filter(it => it.phase === "review");
+  };
+
+  const draftIterations = getDraftIterations();
+  const editorIterations = getEditorIterations();
+  const totalIterations = Math.max(draftIterations.length, editorIterations.length);
+
+  // Main tabs
   const tabs = [
-    { id: "research", label: "Research JSON", icon: SearchIcon, file: "research-output.json" },
-    { id: "draft", label: "Draft", icon: PenIcon, file: "draft.md" },
-    { id: "feedback", label: "Feedback", icon: MessageIcon, file: "editor-feedback.json" },
-    { id: "final", label: "Final output", icon: FileIcon, file: "final-output.md" },
+    { id: "research", label: "Research", icon: SearchIcon },
+    { id: "draft", label: "Draft", icon: PenIcon },
+    { id: "feedback", label: "Editor", icon: MessageIcon },
+    { id: "final", label: "Final", icon: FileIcon },
   ];
 
+  // Get content based on active tab and selected iteration
   const getContent = () => {
     switch (activeTab) {
       case "research":
         return result?.research ? JSON.stringify(result.research, null, 2) : "";
-      case "draft":
-        return result?.draft?.content || "";
-      case "feedback":
-        return result?.editorReview ? JSON.stringify(result.editorReview, null, 2) : "";
+
+      case "draft": {
+        if (totalIterations === 0) return "";
+        const iteration = draftIterations[selectedIteration - 1];
+        return iteration?.output?.content || "";
+      }
+
+      case "feedback": {
+        if (totalIterations === 0) return "";
+        const iteration = editorIterations[selectedIteration - 1];
+        return iteration?.output ? JSON.stringify(iteration.output, null, 2) : "";
+      }
+
       case "final":
         return result?.draft?.content || "";
+
       default:
         return "";
     }
   };
 
   const getFileName = () => {
-    return tabs.find((t) => t.id === activeTab)?.file || "output.json";
+    switch (activeTab) {
+      case "research":
+        return "research-output.json";
+      case "draft":
+        return `draft-v${selectedIteration}.md`;
+      case "feedback":
+        return `editor-review-v${selectedIteration}.json`;
+      case "final":
+        return "final-output.md";
+      default:
+        return "output.json";
+    }
   };
 
   const handleCopy = () => {
@@ -94,6 +133,16 @@ export default function LiveOutput({ result, loading }) {
   const lineCount = content ? content.split("\n").length : 1;
   const hasContent = content && content.length > 0;
 
+  // Get score for current iteration
+  const getCurrentScore = () => {
+    if (activeTab === "feedback" && editorIterations[selectedIteration - 1]) {
+      return editorIterations[selectedIteration - 1].output?.qualityScore;
+    }
+    return null;
+  };
+
+  const score = getCurrentScore();
+
   return (
     <div className="live-output-card">
       <div className="card-header">
@@ -104,7 +153,7 @@ export default function LiveOutput({ result, loading }) {
           <div>
             <div className="card-header-title">Live output</div>
             <div className="card-header-subtitle">
-              {loading ? "Processing pipeline..." : hasContent ? "Real-time output from each agent" : "Run the pipeline to see results"}
+              {loading ? "Processing pipeline..." : hasContent ? "All iterations from each agent" : "Run the pipeline to see results"}
             </div>
           </div>
         </div>
@@ -113,6 +162,7 @@ export default function LiveOutput({ result, loading }) {
         </div>
       </div>
 
+      {/* Main Tabs */}
       <div className="tabs-container">
         {tabs.map((tab) => (
           <button
@@ -126,10 +176,44 @@ export default function LiveOutput({ result, loading }) {
         ))}
       </div>
 
+      {/* Iteration Selector - Only show for Draft and Editor tabs */}
+      {(activeTab === "draft" || activeTab === "feedback") && totalIterations > 0 && (
+        <div className="iteration-selector">
+          <span className="iteration-selector-label">
+            {activeTab === "draft" ? "Draft Version:" : "Editor Review:"}
+          </span>
+          <div className="iteration-buttons">
+            {Array.from({ length: totalIterations }, (_, i) => i + 1).map((iter) => {
+              const iterData = activeTab === "draft" 
+                ? draftIterations[iter - 1] 
+                : editorIterations[iter - 1];
+              const iterScore = iterData?.output?.qualityScore;
+              const isApproved = iterScore >= 80;
+              
+              return (
+                <button
+                  key={iter}
+                  className={`iteration-btn ${selectedIteration === iter ? "active" : ""} ${isApproved ? "approved" : ""}`}
+                  onClick={() => setSelectedIteration(iter)}
+                >
+                  v{iter}
+                  {iterScore && <span className="iteration-score">{iterScore}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="file-status-bar">
         <div className="file-info">
           <div className="file-dot" />
           <span className="file-name">{getFileName()}</span>
+          {score && (
+            <span className={`iteration-badge ${score >= 80 ? "approved" : "needs-work"}`}>
+              {score >= 80 ? "✅ Approved" : "🔄 Needs Work"} ({score}/100)
+            </span>
+          )}
         </div>
         <div className="file-actions">
           <span className="line-count">

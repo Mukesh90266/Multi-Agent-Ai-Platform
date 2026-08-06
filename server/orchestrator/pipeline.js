@@ -14,21 +14,26 @@ const serverDirectory = path.resolve(directory, '..');
 const iterationLogPath = path.join(serverDirectory, 'logs', 'iterationLogs.json');
 const outputPath = path.join(serverDirectory, 'output', 'finalOutput.json');
 
+// Maximum number of Writer-Editor revision cycles
+const MAX_ITERATIONS = 3;
+
 export async function runPipeline(input, runId = crypto.randomUUID()) {
   const iterations = [];
   let researchResult = null;
-  let writerResult = null;
+  let currentDraft = null;
+  let finalEditorReview = null;
 
   try {
-    // ----------------------------------
-    // STEP 1: RESEARCHER AGENT
-    // ----------------------------------
-    logger.info(`Researcher started: ${runId}`);
+    // ============================================
+    // PHASE 1: RESEARCHER AGENT (RUNS ONCE)
+    // ============================================
+    logger.phase('RESEARCHER AGENT - STARTING');
+    logger.agent('researcher', 'started', `Topic: ${input.topic}`);
 
     stateManager.set(runId, {
       status: "researching",
-      iteration: 1,
-      maxIterations: 1,
+      iteration: 0,
+      maxIterations: MAX_ITERATIONS,
       agentStatus: {
         researcher: "running",
         writer: "waiting",
@@ -42,97 +47,210 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     researchResult = await research(input);
 
     iterations.push({
-      iteration: 1,
+      phase: "research",
+      iteration: 0,
       agent: "researcher",
       status: "completed",
-      output: researchResult
+      timestamp: new Date().toISOString(),
+      output: researchResult,
+      summary: `Topic: ${researchResult.topic} | Key Points: ${researchResult.keyPoints?.length || 0} | Sources: ${researchResult.sources?.length || 0}`
     });
 
-    logger.info(`Researcher completed: ${runId}`);
+    logger.agent('researcher', 'completed', `${researchResult.keyPoints?.length || 0} key points, ${researchResult.sources?.length || 0} sources`);
+    logger.info(`   Summary: ${researchResult.summary}`);
 
-    // ----------------------------------
-    // STEP 2: WRITER AGENT
-    // ----------------------------------
-    logger.info(`Writer started: ${runId}`);
+    // ============================================
+    // PHASE 2: WRITER-EDITOR LOOP (UP TO 3 CYCLES)
+    // ============================================
+    let loopIteration = 1;
+    let editorDecision = "needs_revision";
+    let editorFeedback = null;
 
-    stateManager.set(runId, {
-      status: "writing",
-      iteration: 1,
-      maxIterations: 1,
-      agentStatus: {
-        researcher: "completed",
-        writer: "running",
-        editor: "waiting"
-      },
-      iterations,
-      research: researchResult,
-      draft: null
+    while (loopIteration <= MAX_ITERATIONS && editorDecision === "needs_revision") {
+      logger.phase(`WRITER-EDITOR ITERATION ${loopIteration}/${MAX_ITERATIONS}`);
+
+      // ------------------------------------------
+      // STEP A: WRITER AGENT
+      // ------------------------------------------
+      const writerMode = loopIteration === 1 ? 'Initial Draft' : 'Revision';
+      logger.agent('writer', 'started', writerMode);
+
+      stateManager.set(runId, {
+        status: "writing",
+        iteration: loopIteration,
+        maxIterations: MAX_ITERATIONS,
+        agentStatus: {
+          researcher: "completed",
+          writer: "running",
+          editor: "waiting"
+        },
+        iterations,
+        research: researchResult,
+        draft: currentDraft
+      });
+
+      const writerInput = {
+        ...input,
+        research: researchResult,
+        editorFeedback: loopIteration > 1 ? editorFeedback : undefined
+      };
+
+      const writerResult = await writeContent(writerInput);
+
+      currentDraft = writerResult;
+
+      iterations.push({
+        phase: "write",
+        iteration: loopIteration,
+        agent: "writer",
+        status: "completed",
+        timestamp: new Date().toISOString(),
+        isRevision: loopIteration > 1,
+        editorFeedback: loopIteration > 1 ? editorFeedback : null,
+        output: writerResult,
+        summary: `Words: ${writerResult.wordCount} | Mode: ${writerResult.mode}`
+      });
+
+      logger.agent('writer', 'completed', `Generated ${writerResult.wordCount} words`);
+      
+      // Show revision context if this is a revision
+      if (loopIteration > 1 && editorFeedback) {
+        logger.info(`   Revising based on editor feedback: ${editorFeedback.summary}`);
+      }
+
+      // ------------------------------------------
+      // STEP B: EDITOR AGENT
+      // ------------------------------------------
+      logger.agent('editor', 'started');
+
+      stateManager.set(runId, {
+        status: "editing",
+        iteration: loopIteration,
+        maxIterations: MAX_ITERATIONS,
+        agentStatus: {
+          researcher: "completed",
+          writer: "completed",
+          editor: "running"
+        },
+        iterations,
+        research: researchResult,
+        draft: currentDraft
+      });
+
+      // Build previous feedback for Editor to recognize improvements
+      const previousFeedback = loopIteration > 1 && editorFeedback ? 
+        `Previous issues to check if resolved:\n${editorFeedback.revisionInstructions?.map((inst, i) => `${i + 1}. ${inst}`).join('\n')}\n\nPrevious weaknesses:\n${editorFeedback.weaknesses?.map(w => `- ${w.section}: ${w.issue}`).join('\n')}\n\nPrevious missing points:\n${editorFeedback.missingPoints?.map(p => `- ${p}`).join('\n')}` : 
+        null;
+
+      const editorReview = await reviewContent({
+        ...input,
+        research: { ...researchResult, previousFeedback },
+        draft: currentDraft.content,
+        iteration: loopIteration
+      });
+
+      finalEditorReview = editorReview;
+      
+      // IMPORTANT: Use QUALITY SCORE as the deciding factor, not the decision field
+      // Score >= 80 means approved, regardless of what the editor said
+      const qualityScore = editorReview.qualityScore || 0;
+      const scoreBasedDecision = qualityScore >= 80 ? "approved" : "needs_revision";
+      
+      editorDecision = scoreBasedDecision;  // Use score-based decision
+      editorFeedback = editorReview;
+
+      iterations.push({
+        phase: "review",
+        iteration: loopIteration,
+        agent: "editor",
+        status: editorDecision,  // Log the score-based decision
+        timestamp: new Date().toISOString(),
+        output: editorReview,
+        qualityScore: qualityScore,  // Store quality score separately
+        summary: `Decision: ${editorDecision} | Quality: ${qualityScore}/100 | Strengths: ${editorReview.strengths?.length || 0} | Issues: ${editorReview.weaknesses?.length || 0}`
+      });
+
+      logger.agent('editor', 'completed', `Decision: ${editorDecision} (${qualityScore}/100) - ${qualityScore >= 80 ? '✅ Meets threshold' : '🔄 Below threshold'}`);
+      
+      // Show detailed feedback
+      if (editorReview.strengths?.length) {
+        logger.info(`   Strengths: ${editorReview.strengths.join('; ')}`);
+      }
+      if (editorReview.weaknesses?.length) {
+        logger.info(`   Weaknesses: ${editorReview.weaknesses.map(w => `[${w.severity}] ${w.issue}`).join('; ')}`);
+      }
+      if (editorReview.revisionInstructions?.length) {
+        logger.info(`   Revisions needed: ${editorReview.revisionInstructions.length} items`);
+      }
+
+      // Check if we should continue or stop
+      if (qualityScore >= 80) {
+        // Score reached threshold - STOP THE LOOP!
+        logger.info(`✅ Quality score ${qualityScore} reached approval threshold (80+). Stopping loop.`);
+        break;  // Exit loop immediately!
+      } else if (editorDecision === "needs_revision" && loopIteration < MAX_ITERATIONS) {
+        logger.warning(`Editor requested revisions. Starting iteration ${loopIteration + 1}...`);
+      } else if (editorDecision === "needs_revision" && loopIteration === MAX_ITERATIONS) {
+        logger.warning(`Max iterations (${MAX_ITERATIONS}) reached. Proceeding with current draft.`);
+      }
+
+      loopIteration++;
+    }
+
+    // ============================================
+    // FINAL RESULT
+    // ============================================
+    const totalIterations = loopIteration - 1;
+    
+    // Build revision summary based on quality score
+    const revisionHistory = [];
+    for (let i = 1; i <= totalIterations; i++) {
+      const reviewIter = iterations.find(it => it.phase === 'review' && it.iteration === i);
+      
+      if (reviewIter) {
+        const score = reviewIter.qualityScore || reviewIter.output.qualityScore || 0;
+        const scoreBasedDecision = score >= 80 ? "approved" : "needs_revision";
+        
+        revisionHistory.push({
+          iteration: i,
+          decision: scoreBasedDecision,
+          qualityScore: score,
+          hadRevisions: scoreBasedDecision === 'needs_revision',
+          revisionCount: reviewIter.output.revisionInstructions?.length || 0
+        });
+      }
+    }
+
+    logger.phase('PIPELINE COMPLETED');
+    logger.info(`📊 Revision Summary:`);
+    revisionHistory.forEach(r => {
+      const icon = r.decision === 'approved' ? '✅' : '🔄';
+      const isStoppedEarly = r.decision === 'approved' && r.iteration < MAX_ITERATIONS;
+      logger.info(`   ${icon} Iteration ${r.iteration}: ${r.decision.toUpperCase()} (${r.qualityScore}/100)${r.hadRevisions ? ` - ${r.revisionCount} revisions` : ''}${isStoppedEarly ? ' - STOPPED EARLY ⭐' : ''}`);
     });
+    logger.info(`Total Writer-Editor Cycles: ${totalIterations}`);
+    logger.info(`Final Decision: ${editorDecision}`);
+    logger.info(`Quality Score: ${finalEditorReview?.qualityScore || 'N/A'}/100`);
+    logger.info(`Content Approved: ${editorDecision === 'approved' ? '✅ YES' : '⚠️ NO (max iterations reached)'}`);
 
-    writerResult = await writeContent({ ...input, research: researchResult });
-
-    iterations.push({
-      iteration: 1,
-      agent: "writer",
-      status: "completed",
-      output: writerResult,
-      isRevision: false
-    });
-
-    logger.info(`Writer completed: ${runId}`);
-
-    // ----------------------------------
-    // STEP 3: EDITOR AGENT
-    // ----------------------------------
-    logger.info(`Editor started: ${runId}`);
-
-    stateManager.set(runId, {
-      status: "editing",
-      iteration: 1,
-      maxIterations: 1,
-      agentStatus: {
-        researcher: "completed",
-        writer: "completed",
-        editor: "running"
-      },
-      iterations,
-      research: researchResult,
-      draft: writerResult
-    });
-
-    const editorReview = await reviewContent({
-      ...input,
-      research: researchResult,
-      draft: writerResult.content,
-      iteration: 1
-    });
-
-    iterations.push({
-      iteration: 1,
-      agent: "editor",
-      status: editorReview.decision,
-      output: editorReview
-    });
-
-    logger.info(`Editor completed: ${runId} - Decision: ${editorReview.decision}`);
-
-    // Final state
     const result = {
       runId,
       input,
-      status: editorReview.decision,
-      currentIteration: 1,
-      maxIterations: 1,
+      status: editorDecision,
+      totalIterations,
+      maxIterations: MAX_ITERATIONS,
+      reachedMaxIterations: totalIterations === MAX_ITERATIONS && editorDecision === "needs_revision",
+      revisionHistory,  // Clear history of each iteration's decision
       agentStatus: {
         researcher: "completed",
         writer: "completed",
         editor: "completed"
       },
       research: researchResult,
-      draft: writerResult,
-      editorReview,
+      draft: currentDraft,
+      editorReview: finalEditorReview,
       iterations,
-      approved: editorReview.decision === "approved"
+      approved: editorDecision === "approved"
     };
 
     stateManager.set(runId, result);
@@ -149,7 +267,7 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       runId,
       createdAt: new Date().toISOString(),
       status: result.status,
-      iteration: result.currentIteration,
+      totalIterations: result.totalIterations,
       iterations: result.iterations
     });
 
@@ -166,19 +284,19 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
 
     return result;
   } catch (error) {
-    logger.error(`Pipeline error for run ${runId}:`, error.message);
+    logger.error(`Pipeline failed: ${error.message}`);
 
     stateManager.set(runId, {
       status: "error",
       error: error.message,
       agentStatus: {
         researcher: researchResult ? "completed" : "error",
-        writer: writerResult ? "completed" : "error",
+        writer: currentDraft ? "completed" : "error",
         editor: "error"
       },
       iterations,
       research: researchResult,
-      draft: writerResult
+      draft: currentDraft
     });
 
     throw error;
