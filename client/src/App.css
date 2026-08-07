@@ -294,6 +294,11 @@ body {
   color: #d97706;
 }
 
+.agent-icon.optimizer {
+  background: #fce7f3;
+  color: #db2777;
+}
+
 .agent-info {
   flex: 1;
   min-width: 0;
@@ -707,6 +712,11 @@ body {
 .agent-badge.completed {
   background: #dcfce7;
   color: #16a34a;
+}
+
+.agent-badge.skipped {
+  background: #f3f4f6;
+  color: #9ca3af;
 }
 
 /* INFO BADGE COLORS */
@@ -1138,6 +1148,94 @@ body {
 .iteration-badge.needs-work {
   background: #fef3c7;
   color: #92400e;
+}
+
+/* SEO OPTIMIZER PANEL */
+.optimizer-panel {
+  background: #fdf2f8 !important;
+  border-color: #f9a8d4 !important;
+}
+
+.optimizer-panel .editor-verdict-icon {
+  background: #fce7f3 !important;
+  color: #db2777 !important;
+}
+
+.optimizer-panel .editor-verdict-title {
+  color: #9d174d !important;
+}
+
+.seo-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.seo-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.seo-meta-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.seo-meta-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.seo-slug {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-size: 12px;
+  color: #6366f1;
+}
+
+.seo-keyword {
+  background: #fce7f3;
+  color: #be185d;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.seo-keywords-section {
+  margin-bottom: 12px;
+}
+
+.seo-keyword-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.seo-keyword-tag {
+  background: #f3f4f6;
+  color: #4b5563;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.seo-meta-section {
+  margin-bottom: 8px;
+}
+
+.seo-meta-text {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 4px 0 0 0;
 }
 
 /* RESPONSIVE */

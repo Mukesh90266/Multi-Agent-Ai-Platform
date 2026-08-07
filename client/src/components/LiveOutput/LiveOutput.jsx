@@ -51,6 +51,13 @@ const FileIcon = () => (
   </svg>
 );
 
+const SEOTabIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+    <line x1="7" y1="7" x2="7.01" y2="7" />
+  </svg>
+);
+
 export default function LiveOutput({ result, loading }) {
   const [activeTab, setActiveTab] = useState("research");
   const [selectedIteration, setSelectedIteration] = useState(1);
@@ -77,6 +84,7 @@ export default function LiveOutput({ result, loading }) {
     { id: "draft", label: "Draft", icon: PenIcon },
     { id: "feedback", label: "Editor", icon: MessageIcon },
     { id: "final", label: "Final", icon: FileIcon },
+    { id: "seo", label: "SEO", icon: SEOTabIcon },
   ];
 
   // Get content based on active tab and selected iteration
@@ -100,6 +108,12 @@ export default function LiveOutput({ result, loading }) {
       case "final":
         return result?.draft?.content || "";
 
+      case "seo": {
+        const optimization = result?.optimization;
+        if (!optimization) return "";
+        return JSON.stringify(optimization, null, 2);
+      }
+
       default:
         return "";
     }
@@ -115,6 +129,8 @@ export default function LiveOutput({ result, loading }) {
         return `editor-review-v${selectedIteration}.json`;
       case "final":
         return "final-output.md";
+      case "seo":
+        return "seo-optimization.json";
       default:
         return "output.json";
     }

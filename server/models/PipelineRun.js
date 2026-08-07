@@ -32,6 +32,8 @@ draft: {
 
 editorReview: mongoose.Schema.Types.Mixed,
 
+optimization: mongoose.Schema.Types.Mixed,
+
 iterations: [mongoose.Schema.Types.Mixed],
 
     iterations: [mongoose.Schema.Types.Mixed],

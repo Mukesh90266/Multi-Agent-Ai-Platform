@@ -70,6 +70,13 @@ const StarIcon = () => (
   </svg>
 );
 
+const SEOTagIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+    <line x1="7" y1="7" x2="7.01" y2="7" />
+  </svg>
+);
+
 export default function PipelineStatus({ result, loading, currentAgent, agentStatus }) {
   const agents = [
     {
@@ -100,6 +107,17 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
         waiting: "Waiting for writer",
         running: "Reviewing content...",
         completed: "Review completed",
+      },
+    },
+    {
+      id: "optimizer",
+      name: "SEO Optimizer",
+      icon: SEOTagIcon,
+      statusText: {
+        waiting: "Waiting for approval",
+        running: "Optimizing format & SEO...",
+        completed: "SEO optimization done",
+        skipped: "Skipped (content not approved)",
       },
     },
   ];
@@ -167,6 +185,7 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
         const isCompleted = status === "completed";
         const isRunning = status === "running";
         const isWaiting = status === "waiting";
+        const isSkipped = status === "skipped";
 
         return (
           <div key={agent.id} className={`agent-card ${agent.id}`}>
@@ -177,7 +196,7 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
               <div className="agent-header">
                 <span className="agent-name">{agent.name}</span>
                 <span className={`agent-badge ${status}`}>
-                  {isCompleted ? "Completed" : isRunning ? "Running" : "Waiting"}
+                  {isCompleted ? "Completed" : isRunning ? "Running" : isSkipped ? "Skipped" : "Waiting"}
                 </span>
               </div>
               <div className="agent-progress">
@@ -188,7 +207,7 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
                   }}
                 />
               </div>
-              <span className="agent-status">{agent.statusText[status]}</span>
+              <span className="agent-status">{agent.statusText[status] || agent.statusText.waiting}</span>
             </div>
             <div className="agent-right">
               {isCompleted ? <CheckIcon /> : isRunning ? <LoaderIcon /> : <ClockIcon />}
@@ -272,6 +291,72 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
 
           {summary && (
             <p className="editor-verdict-summary">{summary}</p>
+          )}
+        </div>
+      )}
+
+      {/* SEO Optimizer Result Panel */}
+      {result?.optimization && (
+        <div className="editor-verdict-panel approved optimizer-panel">
+          <div className="editor-verdict-header">
+            <div className="editor-verdict-icon">
+              <SEOTagIcon />
+            </div>
+            <div className="editor-verdict-title">
+              SEO Optimized
+            </div>
+          </div>
+
+          <div className="seo-meta-grid">
+            {result.optimization.suggestedTitle && (
+              <div className="seo-meta-item">
+                <span className="seo-meta-label">Suggested Title</span>
+                <span className="seo-meta-value">{result.optimization.suggestedTitle}</span>
+              </div>
+            )}
+            {result.optimization.slug && (
+              <div className="seo-meta-item">
+                <span className="seo-meta-label">URL Slug</span>
+                <span className="seo-meta-value seo-slug">/{result.optimization.slug}</span>
+              </div>
+            )}
+            {result.optimization.seo?.primaryKeyword && (
+              <div className="seo-meta-item">
+                <span className="seo-meta-label">Primary Keyword</span>
+                <span className="seo-meta-value seo-keyword">{result.optimization.seo.primaryKeyword}</span>
+              </div>
+            )}
+            {result.optimization.readabilityScore != null && (
+              <div className="seo-meta-item">
+                <span className="seo-meta-label">Readability</span>
+                <span className="seo-meta-value">{result.optimization.readabilityScore}/100</span>
+              </div>
+            )}
+          </div>
+
+          {result.optimization.seo?.secondaryKeywords?.length > 0 && (
+            <div className="seo-keywords-section">
+              <span className="seo-meta-label">Secondary Keywords</span>
+              <div className="seo-keyword-tags">
+                {result.optimization.seo.secondaryKeywords.map((kw, i) => (
+                  <span key={i} className="seo-keyword-tag">{kw}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {result.optimization.metaTitle && (
+            <div className="seo-meta-section">
+              <span className="seo-meta-label">Meta Title</span>
+              <p className="seo-meta-text">{result.optimization.metaTitle}</p>
+            </div>
+          )}
+
+          {result.optimization.metaDescription && (
+            <div className="seo-meta-section">
+              <span className="seo-meta-label">Meta Description</span>
+              <p className="seo-meta-text">{result.optimization.metaDescription}</p>
+            </div>
           )}
         </div>
       )}

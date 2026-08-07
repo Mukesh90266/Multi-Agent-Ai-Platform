@@ -16,7 +16,8 @@ export async function runPipelineController(req, res) {
       agentStatus: {
         researcher: "waiting",
         writer: "waiting",
-        editor: "waiting"
+        editor: "waiting",
+        optimizer: "waiting"
       },
       iterations: [],
       research: null,

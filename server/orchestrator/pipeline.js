@@ -6,7 +6,8 @@ import { logger } from '../utils/logger.js';
 import {
   research,
   writeContent,
-  reviewContent
+  reviewContent,
+  optimizeContent
 } from "../agents/index.js";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
@@ -37,7 +38,8 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       agentStatus: {
         researcher: "running",
         writer: "waiting",
-        editor: "waiting"
+        editor: "waiting",
+        optimizer: "waiting"
       },
       iterations,
       research: null,
@@ -82,7 +84,8 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
         agentStatus: {
           researcher: "completed",
           writer: "running",
-          editor: "waiting"
+          editor: "waiting",
+          optimizer: "waiting"
         },
         iterations,
         research: researchResult,
@@ -130,7 +133,8 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
         agentStatus: {
           researcher: "completed",
           writer: "completed",
-          editor: "running"
+          editor: "running",
+          optimizer: "waiting"
         },
         iterations,
         research: researchResult,
@@ -198,6 +202,61 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     }
 
     // ============================================
+    // PHASE 3: SEO OPTIMIZER (ONLY IF APPROVED)
+    // ============================================
+    let optimizerResult = null;
+
+    if (editorDecision === "approved") {
+      logger.phase('SEO OPTIMIZER - STARTING');
+      logger.agent('optimizer', 'started', 'Formatting & SEO optimization');
+
+      stateManager.set(runId, {
+        status: "optimizing",
+        iteration: loopIteration - 1,
+        maxIterations: MAX_ITERATIONS,
+        agentStatus: {
+          researcher: "completed",
+          writer: "completed",
+          editor: "completed",
+          optimizer: "running"
+        },
+        iterations,
+        research: researchResult,
+        draft: currentDraft
+      });
+
+      optimizerResult = await optimizeContent({
+        ...input,
+        research: researchResult,
+        draft: currentDraft.content,
+        editorReview: finalEditorReview
+      });
+
+      iterations.push({
+        phase: "optimize",
+        iteration: 0,
+        agent: "optimizer",
+        status: "completed",
+        timestamp: new Date().toISOString(),
+        output: optimizerResult,
+        summary: `Readability: ${optimizerResult.readabilityScore}/100 | Primary Keyword: "${optimizerResult.seo?.primaryKeyword}" | Slug: ${optimizerResult.slug}`
+      });
+
+      logger.agent('optimizer', 'completed', `Readability: ${optimizerResult.readabilityScore}/100 | Primary Keyword: "${optimizerResult.seo?.primaryKeyword}"`);
+      if (optimizerResult.suggestedTitle) {
+        logger.info(`   Suggested Title: ${optimizerResult.suggestedTitle}`);
+      }
+      if (optimizerResult.seo?.secondaryKeywords?.length) {
+        logger.info(`   Secondary Keywords: ${optimizerResult.seo.secondaryKeywords.join(', ')}`);
+      }
+      if (optimizerResult.metaDescription) {
+        logger.info(`   Meta Desc: ${optimizerResult.metaDescription}`);
+      }
+    } else {
+      logger.info('⏭️ Skipping SEO Optimizer — content not approved.');
+    }
+
+    // ============================================
     // FINAL RESULT
     // ============================================
     const totalIterations = loopIteration - 1;
@@ -232,6 +291,9 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
     logger.info(`Final Decision: ${editorDecision}`);
     logger.info(`Quality Score: ${finalEditorReview?.qualityScore || 'N/A'}/100`);
     logger.info(`Content Approved: ${editorDecision === 'approved' ? '✅ YES' : '⚠️ NO (max iterations reached)'}`);
+    if (optimizerResult) {
+      logger.info(`SEO Optimized: ✅ YES | Readability: ${optimizerResult.readabilityScore}/100`);
+    }
 
     const result = {
       runId,
@@ -244,11 +306,13 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       agentStatus: {
         researcher: "completed",
         writer: "completed",
-        editor: "completed"
+        editor: "completed",
+        optimizer: optimizerResult ? "completed" : "skipped"
       },
       research: researchResult,
       draft: currentDraft,
       editorReview: finalEditorReview,
+      optimization: optimizerResult,
       iterations,
       approved: editorDecision === "approved"
     };
@@ -292,7 +356,8 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       agentStatus: {
         researcher: researchResult ? "completed" : "error",
         writer: currentDraft ? "completed" : "error",
-        editor: "error"
+        editor: "error",
+        optimizer: "error"
       },
       iterations,
       research: researchResult,
