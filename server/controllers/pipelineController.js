@@ -52,6 +52,9 @@ export async function runPipelineController(req, res) {
           console.error('Failed to save pipeline run to MongoDB:', dbError.message);
         }
       }
+    }).catch((pipelineError) => {
+      // Pipeline error in background — state already has error info
+      console.error('Pipeline background error:', pipelineError.message);
     });
 
     res.status(202).json({ success: true, runId, message: "Pipeline started" });
