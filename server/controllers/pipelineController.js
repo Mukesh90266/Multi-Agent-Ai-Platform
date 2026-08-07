@@ -27,15 +27,30 @@ export async function runPipelineController(req, res) {
     // Start pipeline in background and return runId immediately
     runPipeline(input, runId).then(async (result) => {
       if (req.app.locals.mongoReady) {
-        await PipelineRun.create({
-          ...input,
-          status: result.status,
-          agentStatus: result.agentStatus,
-          research: result.research,
-          draft: result.draft,
-          editorReview: result.editorReview,
-          iterations: result.iterations
-        });
+        try {
+          await PipelineRun.create({
+            runId: result.runId,
+            topic: input.topic,
+            contentType: input.contentType,
+            audience: input.audience,
+            tone: input.tone,
+            wordCount: input.wordCount,
+            status: result.status,
+            totalIterations: result.totalIterations,
+            maxIterations: result.maxIterations,
+            reachedMaxIterations: result.reachedMaxIterations,
+            approved: result.approved,
+            agentStatus: result.agentStatus,
+            research: result.research,
+            draft: result.draft,
+            editorReview: result.editorReview,
+            optimization: result.optimization,
+            iterations: result.iterations,
+            revisionHistory: result.revisionHistory
+          });
+        } catch (dbError) {
+          console.error('Failed to save pipeline run to MongoDB:', dbError.message);
+        }
       }
     });
 

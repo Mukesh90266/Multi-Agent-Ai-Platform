@@ -5,8 +5,8 @@ dotenv.config();
 export const config = {
   port: process.env.PORT || 5000,
 
-  // Optional: used only when MongoDB is configured
-  mongoUri: process.env.MONGODB_URI,
+  // MongoDB connection — defaults to local MongoDB for development
+  mongoUri: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/multi-agent-pipeline",
 
   // Groq API configuration
   groqKey: process.env.GROQ_API_KEY,

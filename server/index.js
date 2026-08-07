@@ -40,21 +40,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Optional MongoDB connection
-if (config.mongoUri) {
-  mongoose
-    .connect(config.mongoUri)
-    .then(() => {
-      app.locals.mongoReady = true;
-      logger.info("MongoDB connected");
-    })
-    .catch((error) => {
-      logger.error(
-        "MongoDB unavailable; continuing without persisted history:",
-        error.message
-      );
-    });
-}
+// MongoDB connection
+mongoose
+  .connect(config.mongoUri)
+  .then(() => {
+    app.locals.mongoReady = true;
+    logger.info(`MongoDB connected at ${config.mongoUri}`);
+  })
+  .catch((error) => {
+    logger.warning(
+      `MongoDB not available (${error.message}). Pipeline history will not be persisted.`
+    );
+    logger.warning(
+      'To enable MongoDB: set MONGODB_URI in server/.env or ensure MongoDB is running locally.'
+    );
+  });
 
 // Start Express server
 app.listen(config.port, () => {
