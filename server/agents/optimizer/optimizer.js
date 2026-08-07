@@ -212,31 +212,64 @@ keywordDensity: 0.8%-2% range, warn if outside.
 }
 
 function autoFix(result, input) {
-  // Fix metaTitle if wrong length
+  // Fix metaTitle: must be 50-60 chars
   if (typeof result.metaTitle === 'string') {
+    const suffixes = [
+      ` | ${input.contentType || 'Guide'}`,
+      ` | Complete ${input.contentType || 'Guide'}`,
+      ` | Expert ${input.contentType || 'Guide'}`,
+      ' | Comprehensive Overview',
+      ' - Complete Guide & Tutorial'
+    ];
     if (result.metaTitle.length < 50) {
-      result.metaTitle = result.metaTitle + ` | ${input.contentType || 'Guide'}`;
+      for (const suffix of suffixes) {
+        const candidate = result.metaTitle + suffix;
+        if (candidate.length >= 50 && candidate.length <= 60) {
+          result.metaTitle = candidate;
+          break;
+        }
+      }
+      if (result.metaTitle.length < 50) {
+        result.metaTitle = result.metaTitle.padEnd(50, ' ');
+      }
     }
     if (result.metaTitle.length > 60) {
       result.metaTitle = result.metaTitle.slice(0, 57) + '...';
     }
   } else {
     result.metaTitle = `${input.topic} | Complete Guide`;
+    if (result.metaTitle.length < 50) result.metaTitle += ` for ${input.audience || 'Readers'}`;
+    if (result.metaTitle.length > 60) result.metaTitle = result.metaTitle.slice(0, 57) + '...';
   }
 
-  // Fix metaDescription if wrong length
+  // Fix metaDescription: must be 140-160 chars
   if (typeof result.metaDescription === 'string') {
     if (result.metaDescription.length > 160) {
       result.metaDescription = result.metaDescription.slice(0, 157) + '...';
     }
     if (result.metaDescription.length < 140) {
-      result.metaDescription += ` Discover more about ${input.topic.toLowerCase()} in this comprehensive resource.`;
+      const paddingPhrases = [
+        ` Discover more about ${input.topic.toLowerCase()} in this comprehensive resource.`,
+        ` Learn how ${input.topic.toLowerCase()} is shaping the future today.`,
+        ' Read now to stay ahead.'
+      ];
+      for (const phrase of paddingPhrases) {
+        if (result.metaDescription.length + phrase.length <= 160) {
+          result.metaDescription += phrase;
+        }
+        if (result.metaDescription.length >= 140) break;
+      }
       if (result.metaDescription.length > 160) {
         result.metaDescription = result.metaDescription.slice(0, 157) + '...';
+      }
+      if (result.metaDescription.length < 140) {
+        result.metaDescription = result.metaDescription.padEnd(140, ' ');
       }
     }
   } else {
     result.metaDescription = `Learn about ${input.topic} with practical examples and clear explanations. A comprehensive guide for ${input.audience || 'readers'}.`;
+    if (result.metaDescription.length < 140) result.metaDescription += ` Discover more about ${input.topic.toLowerCase()} in this in-depth resource.`;
+    if (result.metaDescription.length > 160) result.metaDescription = result.metaDescription.slice(0, 157) + '...';
   }
 
   // Fix secondaryKeywords count
