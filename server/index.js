@@ -40,20 +40,54 @@ app.use((err, req, res, next) => {
   });
 });
 
-// MongoDB connection
+// MongoDB connection with Atlas-friendly options
+const isAtlas = config.mongoUri.includes("mongodb+srv://");
+
+const mongoOptions = isAtlas
+  ? {
+      // Atlas-specific: longer timeouts, modern auth, retry
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 30000,
+      retryWrites: true,
+      w: "majority",
+      maxPoolSize: 10
+    }
+  : {
+      // Local MongoDB: fast fail
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000
+    };
+
+// Mask credentials for logging
+const maskedUri = config.mongoUri.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@");
+logger.info(`Connecting to MongoDB: ${maskedUri} (${isAtlas ? "Atlas" : "Local"})`);
+
 mongoose
-  .connect(config.mongoUri)
+  .connect(config.mongoUri, mongoOptions)
   .then(() => {
     app.locals.mongoReady = true;
-    logger.info(`MongoDB connected at ${config.mongoUri}`);
+    logger.info(`✅ MongoDB connected: ${maskedUri}`);
   })
   .catch((error) => {
-    logger.warning(
-      `MongoDB not available (${error.message}). Pipeline history will not be persisted.`
-    );
-    logger.warning(
-      'To enable MongoDB: set MONGODB_URI in server/.env or ensure MongoDB is running locally.'
-    );
+    app.locals.mongoReady = false;
+    const errMsg = error.message || "";
+
+    if (errMsg.includes("querySrv") || errMsg.includes("ECONNREFUSED")) {
+      logger.warning(`MongoDB Atlas DNS/network error: ${errMsg}`);
+      logger.warning("Possible fixes for Atlas:");
+      logger.warning("  1. Add your IP to Atlas Network Access (Security → Network Access → Add IP)");
+      logger.warning("  2. Check if VPN/proxy is blocking DNS SRV lookups");
+      logger.warning("  3. Try replacing mongodb+srv:// with mongodb:// + direct connection string");
+      logger.warning("  4. Verify username/password in the URI are correct");
+    } else if (errMsg.includes("AuthenticationFailed") || errMsg.includes("bad auth")) {
+      logger.warning(`MongoDB auth failed: ${errMsg}`);
+      logger.warning("Check username & password in MONGODB_URI");
+    } else {
+      logger.warning(`MongoDB not available (${errMsg}). Pipeline history will not be persisted.`);
+    }
+
+    logger.warning("Set MONGODB_URI in server/.env or ensure MongoDB is running locally.");
   });
 
 // Start Express server
