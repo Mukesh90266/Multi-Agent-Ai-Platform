@@ -12,7 +12,8 @@ export default function Home() {
   const [agentStatus, setAgentStatus] = useState({
     researcher: "waiting",
     writer: "waiting",
-    editor: "waiting"
+    editor: "waiting",
+    optimizer: "waiting"
   });
 
   const pollIntervalRef = useRef(null);
@@ -36,6 +37,7 @@ export default function Home() {
     if (statusObj?.researcher === "running") return "researcher";
     if (statusObj?.writer === "running") return "writer";
     if (statusObj?.editor === "running") return "editor";
+    if (statusObj?.optimizer === "running") return "optimizer";
     return null;
   }, []);
 
@@ -46,7 +48,8 @@ export default function Home() {
     setAgentStatus({
       researcher: "waiting",
       writer: "waiting",
-      editor: "waiting"
+      editor: "waiting",
+      optimizer: "waiting"
     });
     setCurrentAgent(null);
     clearPolling();
@@ -84,7 +87,9 @@ export default function Home() {
               data.status === "error" ||
               (data.agentStatus?.researcher === "completed" &&
                 data.agentStatus?.writer === "completed" &&
-                data.agentStatus?.editor === "completed");
+                data.agentStatus?.editor === "completed" &&
+                (data.agentStatus?.optimizer === "completed" ||
+                  data.agentStatus?.optimizer === "skipped"));
 
             if (isComplete) {
               clearPolling();
@@ -106,7 +111,8 @@ export default function Home() {
       setAgentStatus({
         researcher: "waiting",
         writer: "waiting",
-        editor: "waiting"
+        editor: "waiting",
+        optimizer: "waiting"
       });
     }
   };
