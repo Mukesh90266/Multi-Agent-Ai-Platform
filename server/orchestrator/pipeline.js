@@ -12,8 +12,19 @@ import {
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const serverDirectory = path.resolve(directory, '..');
-const iterationLogPath = path.join(serverDirectory, 'logs', 'iterationLogs.json');
-const outputPath = path.join(serverDirectory, 'output', 'finalOutput.json');
+const logsDir = path.join(serverDirectory, 'logs');
+const outputDir = path.join(serverDirectory, 'output');
+const iterationLogPath = path.join(logsDir, 'iterationLogs.json');
+const outputPath = path.join(outputDir, 'finalOutput.json');
+
+// Ensure output directories exist before writing
+async function ensureDir(dir) {
+  try {
+    await fs.mkdir(dir, { recursive: true });
+  } catch {
+    // Directory already exists or cannot be created; writeFile will throw if truly broken
+  }
+}
 
 // Maximum number of Writer-Editor revision cycles
 const MAX_ITERATIONS = 3;
@@ -335,12 +346,14 @@ export async function runPipeline(input, runId = crypto.randomUUID()) {
       iterations: result.iterations
     });
 
+    await ensureDir(logsDir);
     await fs.writeFile(
       iterationLogPath,
       JSON.stringify(logs.slice(0, 100), null, 2)
     );
 
     // Save newest complete pipeline result
+    await ensureDir(outputDir);
     await fs.writeFile(
       outputPath,
       JSON.stringify(result, null, 2)
