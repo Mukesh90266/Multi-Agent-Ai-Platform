@@ -58,6 +58,155 @@ const SEOTabIcon = () => (
   </svg>
 );
 
+/* ─── Structured SEO Result Card ─── */
+function SEOResultCard({ optimization }) {
+  if (!optimization) return null;
+
+  const {
+    suggestedTitle,
+    metaTitle,
+    metaDescription,
+    slug,
+    headings,
+    tableOfContents,
+    seo,
+    readabilityScore,
+    mode,
+    optimizedContent
+  } = optimization;
+
+  const primaryKeyword = seo?.primaryKeyword || "";
+  const secondaryKeywords = seo?.secondaryKeywords || [];
+  const keywordDensity = seo?.keywordDensity || {};
+  const densityWarning = seo?.densityWarning;
+
+  return (
+    <div className="seo-result-card">
+      {/* Header */}
+      <div className="seo-result-header">
+        <SEOTabIcon />
+        <span>SEO Optimized</span>
+        {mode && <span className="seo-mode-badge">{mode === "demo" ? "Demo" : "LLM"}</span>}
+      </div>
+
+      {/* Suggested Title */}
+      <div className="seo-result-section">
+        <div className="seo-result-label">Suggested Title</div>
+        <div className="seo-result-title">{suggestedTitle || "—"}</div>
+      </div>
+
+      {/* URL Slug */}
+      <div className="seo-result-section">
+        <div className="seo-result-label">URL Slug</div>
+        <code className="seo-result-slug">/{slug || "—"}</code>
+      </div>
+
+      {/* Primary Keyword + Readability — side by side */}
+      <div className="seo-result-row">
+        <div className="seo-result-section seo-result-section-flex">
+          <div className="seo-result-label">Primary Keyword</div>
+          <span className="seo-result-primary-keyword">{primaryKeyword || "—"}</span>
+        </div>
+        <div className="seo-result-section seo-result-section-flex">
+          <div className="seo-result-label">Readability</div>
+          <div className="seo-result-readability">
+            <span className="seo-readability-value">{readabilityScore ?? "—"}/100</span>
+            <div className="seo-readability-bar">
+              <div
+                className="seo-readability-fill"
+                style={{ width: `${readabilityScore || 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Keywords — tag chips */}
+      {secondaryKeywords.length > 0 && (
+        <div className="seo-result-section">
+          <div className="seo-result-label">Secondary Keywords</div>
+          <div className="seo-result-keyword-tags">
+            {secondaryKeywords.map((kw, i) => (
+              <span key={i} className="seo-result-keyword-chip">{kw}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Keyword Density */}
+      {Object.keys(keywordDensity).length > 0 && (
+        <div className="seo-result-section">
+          <div className="seo-result-label">Keyword Density</div>
+          <div className="seo-result-density-list">
+            {Object.entries(keywordDensity).map(([kw, density]) => (
+              <div key={kw} className="seo-result-density-item">
+                <span className="seo-density-kw">{kw}</span>
+                <span className="seo-density-val">{density}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Meta Title */}
+      <div className="seo-result-section">
+        <div className="seo-result-label">Meta Title <span className="seo-char-count">({metaTitle?.length || 0} chars)</span></div>
+        <p className="seo-result-meta-text">{metaTitle || "—"}</p>
+      </div>
+
+      {/* Meta Description */}
+      <div className="seo-result-section">
+        <div className="seo-result-label">Meta Description <span className="seo-char-count">({metaDescription?.length || 0} chars)</span></div>
+        <p className="seo-result-meta-text">{metaDescription || "—"}</p>
+      </div>
+
+      {/* Table of Contents */}
+      {tableOfContents && tableOfContents.length > 0 && (
+        <div className="seo-result-section">
+          <div className="seo-result-label">Table of Contents</div>
+          <div className="seo-result-toc">
+            {tableOfContents.map((item, i) => (
+              <div key={i} className="seo-toc-item">{item}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Headings Structure */}
+      {headings && (headings.h2?.length > 0 || headings.h3?.length > 0) && (
+        <div className="seo-result-section">
+          <div className="seo-result-label">Heading Structure</div>
+          <div className="seo-result-headings">
+            {headings.h1 && <div className="seo-heading-item seo-heading-h1">H1: {headings.h1}</div>}
+            {headings.h2?.map((h, i) => (
+              <div key={`h2-${i}`} className="seo-heading-item seo-heading-h2">H2: {h}</div>
+            ))}
+            {headings.h3?.map((h, i) => (
+              <div key={`h3-${i}`} className="seo-heading-item seo-heading-h3">H3: {h}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Density Warning */}
+      {densityWarning && (
+        <div className="seo-result-warning">
+          <span className="seo-warning-icon">⚠️</span>
+          <span>{densityWarning}</span>
+        </div>
+      )}
+
+      {/* Optimized Content Preview */}
+      {optimizedContent && (
+        <div className="seo-result-section seo-content-section">
+          <div className="seo-result-label">Optimized Content</div>
+          <pre className="seo-result-content-preview">{optimizedContent}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LiveOutput({ result, loading }) {
   const [activeTab, setActiveTab] = useState("research");
   const [selectedIteration, setSelectedIteration] = useState(1);
@@ -87,7 +236,7 @@ export default function LiveOutput({ result, loading }) {
     { id: "seo", label: "SEO", icon: SEOTabIcon },
   ];
 
-  // Get content based on active tab and selected iteration
+  // Get text content for non-SEO tabs
   const getContent = () => {
     switch (activeTab) {
       case "research":
@@ -108,12 +257,6 @@ export default function LiveOutput({ result, loading }) {
       case "final":
         return result?.draft?.content || "";
 
-      case "seo": {
-        const optimization = result?.optimization;
-        if (!optimization) return "";
-        return JSON.stringify(optimization, null, 2);
-      }
-
       default:
         return "";
     }
@@ -130,13 +273,19 @@ export default function LiveOutput({ result, loading }) {
       case "final":
         return "final-output.md";
       case "seo":
-        return "seo-optimization.json";
+        return "seo-optimization.md";
       default:
         return "output.json";
     }
   };
 
   const handleCopy = () => {
+    if (activeTab === "seo" && result?.optimization) {
+      navigator.clipboard.writeText(JSON.stringify(result.optimization, null, 2));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
     const content = getContent();
     if (content) {
       navigator.clipboard.writeText(content);
@@ -146,8 +295,10 @@ export default function LiveOutput({ result, loading }) {
   };
 
   const content = getContent();
+  const isSEOTab = activeTab === "seo";
+  const seoHasData = isSEOTab && result?.optimization;
   const lineCount = content ? content.split("\n").length : 1;
-  const hasContent = content && content.length > 0;
+  const hasContent = isSEOTab ? !!seoHasData : (content && content.length > 0);
 
   // Get score for current iteration
   const getCurrentScore = () => {
@@ -200,12 +351,12 @@ export default function LiveOutput({ result, loading }) {
           </span>
           <div className="iteration-buttons">
             {Array.from({ length: totalIterations }, (_, i) => i + 1).map((iter) => {
-              const iterData = activeTab === "draft" 
-                ? draftIterations[iter - 1] 
+              const iterData = activeTab === "draft"
+                ? draftIterations[iter - 1]
                 : editorIterations[iter - 1];
               const iterScore = iterData?.output?.qualityScore;
               const isApproved = iterScore >= 80;
-              
+
               return (
                 <button
                   key={iter}
@@ -230,10 +381,15 @@ export default function LiveOutput({ result, loading }) {
               {score >= 80 ? "✅ Approved" : "🔄 Needs Work"} ({score}/100)
             </span>
           )}
+          {isSEOTab && result?.optimization?.readabilityScore != null && (
+            <span className="iteration-badge approved">
+              ✅ Readability {result.optimization.readabilityScore}/100
+            </span>
+          )}
         </div>
         <div className="file-actions">
           <span className="line-count">
-            {loading ? "..." : `${lineCount} lines`}
+            {loading ? "..." : isSEOTab ? "structured" : `${lineCount} lines`}
           </span>
           <button className="copy-btn" onClick={handleCopy} disabled={!hasContent}>
             {copied ? "Copied!" : "Copy"}
@@ -241,31 +397,62 @@ export default function LiveOutput({ result, loading }) {
         </div>
       </div>
 
-      {hasContent ? (
-        <div className="code-container">
-          <pre className="code-content">{content}</pre>
-          {loading && (
-            <div className="live-loading-bar">
-              <div className="loading-spinner-small"></div>
-              <span>Pipeline running...</span>
+      {/* SEO Tab — Structured HTML Card */}
+      {isSEOTab ? (
+        seoHasData ? (
+          <div className="seo-result-scroll">
+            <SEOResultCard optimization={result.optimization} />
+            {loading && (
+              <div className="live-loading-bar">
+                <div className="loading-spinner-small"></div>
+                <span>Pipeline running...</span>
+              </div>
+            )}
+          </div>
+        ) : loading ? (
+          <div className="code-container">
+            <div className="loading-content">
+              <div className="loading-spinner"></div>
+              <span>Processing pipeline...</span>
             </div>
-          )}
-        </div>
-      ) : loading ? (
-        <div className="code-container">
-          <div className="loading-content">
-            <div className="loading-spinner"></div>
-            <span>Processing pipeline...</span>
           </div>
-        </div>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <ClipboardIcon />
+            </div>
+            <div className="empty-title">SEO output will appear here</div>
+            <div className="empty-subtitle">Run the pipeline and get content approved</div>
+          </div>
+        )
       ) : (
-        <div className="empty-state">
-          <div className="empty-icon">
-            <ClipboardIcon />
+        /* Non-SEO tabs — Code/Text view */
+        hasContent ? (
+          <div className="code-container">
+            <pre className="code-content">{content}</pre>
+            {loading && (
+              <div className="live-loading-bar">
+                <div className="loading-spinner-small"></div>
+                <span>Pipeline running...</span>
+              </div>
+            )}
           </div>
-          <div className="empty-title">Output will appear here</div>
-          <div className="empty-subtitle">Run the pipeline to see results</div>
-        </div>
+        ) : loading ? (
+          <div className="code-container">
+            <div className="loading-content">
+              <div className="loading-spinner"></div>
+              <span>Processing pipeline...</span>
+            </div>
+          </div>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <ClipboardIcon />
+            </div>
+            <div className="empty-title">Output will appear here</div>
+            <div className="empty-subtitle">Run the pipeline to see results</div>
+          </div>
+        )
       )}
     </div>
   );
