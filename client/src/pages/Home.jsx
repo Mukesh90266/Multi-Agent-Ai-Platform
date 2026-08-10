@@ -127,12 +127,19 @@ export default function Home() {
     return data.agent;
   };
 
+  const resetDisplayedRun = () => {
+    setResult(null);
+    setCurrentAgent(null);
+  };
+
   const handleAddAgent = (agentId) => {
+    resetDisplayedRun();
     setSelectedSteps((prev) => [...prev, makeClientStep(agentId)]);
     setActiveTemplateId(null);
   };
 
   const handleMoveStep = (index, direction) => {
+    resetDisplayedRun();
     setSelectedSteps((prev) => {
       const next = [...prev];
       const targetIndex = index + direction;
@@ -144,11 +151,13 @@ export default function Home() {
   };
 
   const handleRemoveStep = (index) => {
+    resetDisplayedRun();
     setSelectedSteps((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
     setActiveTemplateId(null);
   };
 
   const handleResetDefault = () => {
+    resetDisplayedRun();
     setSelectedSteps(makeStepsFromIds(DEFAULT_AGENT_IDS));
     setActiveTemplateId("default-rwe");
   };
@@ -265,7 +274,12 @@ export default function Home() {
         </div>
       </aside>
       <main className="right-panel">
-        <LiveOutput result={result} loading={loading} />
+        <LiveOutput
+          result={result}
+          loading={loading}
+          pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
+          agentStatus={agentStatus}
+        />
       </main>
     </div>
   );

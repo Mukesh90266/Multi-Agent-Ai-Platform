@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const BoltIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -31,17 +31,10 @@ const PenIcon = () => (
     <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
   </svg>
 );
-const MessageIcon = () => (
+const EditIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-  </svg>
-);
-const FileIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="16" y1="13" x2="8" y2="13" />
-    <line x1="16" y1="17" x2="8" y2="17" />
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 const BotIcon = () => (
@@ -53,10 +46,28 @@ const BotIcon = () => (
     <path d="M9 18h6" />
   </svg>
 );
-const SEOTabIcon = () => (
+const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-    <line x1="7" y1="7" x2="7.01" y2="7" />
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+const LoaderIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" opacity="0.25" />
+    <path d="M12 2a10 10 0 0 1 10 10" />
+  </svg>
+);
+const AlertIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
 
@@ -68,136 +79,217 @@ function formatOutput(output) {
   return JSON.stringify(output, null, 2);
 }
 
-function AgentOutputs({ outputs = [] }) {
-  if (!outputs.length) {
-    return (
-      <div className="empty-state compact-empty">
-        <div className="empty-icon"><ClipboardIcon /></div>
-        <div className="empty-title">Agent outputs will appear here</div>
-        <div className="empty-subtitle">Every selected agent writes into the shared pipeline context.</div>
-      </div>
-    );
-  }
+function getAgentIcon(step) {
+  if (step.agentId === "researcher") return SearchIcon;
+  if (step.agentId === "writer") return PenIcon;
+  if (step.agentId === "editor") return EditIcon;
+  return BotIcon;
+}
+
+function normalizeStatus(status) {
+  if (status === "error") return "failed";
+  return status || "waiting";
+}
+
+function getStatusLabel(status) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "running") return "Running";
+  if (normalized === "completed") return "Completed";
+  if (normalized === "failed") return "Failed";
+  if (normalized === "skipped") return "Skipped";
+  return "Waiting";
+}
+
+function getStatusDescription(step, status, hasOutput) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "running") return `${step.name} is executing now. Output will stream into this card when the step finishes.`;
+  if (normalized === "completed" && hasOutput) return `${step.name} completed and generated output.`;
+  if (normalized === "completed") return `${step.name} completed, but no output was captured.`;
+  if (normalized === "failed") return `${step.name} failed while running.`;
+  if (normalized === "skipped") return `${step.name} was skipped by the pipeline.`;
+  return `${step.name} is waiting for its turn in this pipeline.`;
+}
+
+function getProgressWidth(status) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "completed" || normalized === "skipped" || normalized === "failed") return "100%";
+  if (normalized === "running") return "60%";
+  return "0%";
+}
+
+function getStatusIcon(status) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "completed" || normalized === "skipped") return CheckIcon;
+  if (normalized === "running") return LoaderIcon;
+  if (normalized === "failed") return AlertIcon;
+  return ClockIcon;
+}
+
+function buildFallbackStepsFromOutputs(outputs) {
+  const seen = new Set();
+  const steps = [];
+
+  outputs.forEach((entry, index) => {
+    const key = entry.stepId || entry.agentId || `${entry.agentName}-${index}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    steps.push({
+      stepId: key,
+      index,
+      agentId: entry.agentId || key,
+      name: entry.agentName || entry.agentId || `Agent ${index + 1}`,
+      type: entry.type || "custom",
+      role: entry.role || "",
+      phase: entry.phase || "agent"
+    });
+  });
+
+  return steps;
+}
+
+function outputBlockTitle(output, index, total) {
+  const parts = [];
+  if (total > 1) parts.push(`Run ${index + 1}`);
+  if (output.iteration != null) parts.push(`Iteration ${output.iteration}`);
+  if (output.phase) parts.push(output.phase);
+  return parts.join(" · ") || `Output ${index + 1}`;
+}
+
+function DynamicAgentCard({ step, status, outputs, error }) {
+  const Icon = getAgentIcon(step);
+  const StatusIcon = getStatusIcon(status);
+  const normalizedStatus = normalizeStatus(status);
+  const hasOutput = outputs.length > 0;
 
   return (
-    <div className="agent-output-list">
-      {outputs.map((entry, index) => (
-        <div className="agent-output-card" key={`${entry.stepId}-${index}`}>
-          <div className="agent-output-card-header">
-            <div>
-              <span className="agent-output-index">#{index + 1}</span>
-              <span className="agent-output-name">{entry.agentName}</span>
-              <span className={`agent-output-type ${entry.type}`}>{entry.type}</span>
-            </div>
-            <span className="agent-output-phase">{entry.phase}</span>
+    <div className={`live-agent-card ${normalizedStatus}`}>
+      <div className="live-agent-card-top">
+        <div className={`live-agent-icon ${step.agentId} ${step.type || "custom"}`}><Icon /></div>
+        <div className="live-agent-heading">
+          <div className="live-agent-title-row">
+            <span className="live-agent-name">{step.name}</span>
+            <span className={`live-agent-type ${step.type || "custom"}`}>
+              {step.type === "built-in" ? "Built-in" : "Custom"}
+            </span>
           </div>
-          {entry.summary && <div className="agent-output-summary">{entry.summary}</div>}
-          <pre className="agent-output-pre">{formatOutput(entry.output)}</pre>
+          {step.role && <div className="live-agent-role">{step.role}</div>}
         </div>
-      ))}
+        <div className={`live-agent-status ${normalizedStatus}`}>
+          <StatusIcon />
+          <span>{getStatusLabel(normalizedStatus)}</span>
+        </div>
+      </div>
+
+      <div className="live-agent-progress">
+        <div className={`live-agent-progress-fill ${normalizedStatus}`} style={{ width: getProgressWidth(normalizedStatus) }} />
+      </div>
+
+      <div className="live-agent-description">
+        {getStatusDescription(step, normalizedStatus, hasOutput)}
+      </div>
+
+      {normalizedStatus === "failed" && error && (
+        <div className="live-agent-error">{error}</div>
+      )}
+
+      <div className="live-agent-output-section">
+        <div className="live-agent-output-header">
+          <span>Generated output</span>
+          <span>{outputs.length ? `${outputs.length} item${outputs.length === 1 ? "" : "s"}` : "No output yet"}</span>
+        </div>
+
+        {outputs.length > 0 ? outputs.map((entry, index) => (
+          <div className="live-agent-output-block" key={`${step.stepId}-${entry.timestamp || index}-${index}`}>
+            <div className="live-agent-output-meta">
+              <span>{outputBlockTitle(entry, index, outputs.length)}</span>
+              {entry.summary && <span>{entry.summary}</span>}
+            </div>
+            <pre className="live-agent-output-pre">{formatOutput(entry.output)}</pre>
+          </div>
+        )) : (
+          <div className="live-agent-output-empty">
+            {normalizedStatus === "running" ? "Running now — output will appear here after this agent finishes." :
+              normalizedStatus === "waiting" ? "Waiting for this agent to execute." :
+                normalizedStatus === "failed" ? "No output was generated before failure." :
+                  "No output captured for this agent."}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function SEOResultCard({ optimization }) {
-  if (!optimization) return null;
-  return (
-    <div className="seo-card">
-      <div className="seo-card-title-block">
-        <div className="seo-card-title-text">
-          <h2 className="seo-card-heading">{optimization.suggestedTitle || "SEO Optimized"}</h2>
-          {optimization.slug && <code className="seo-slug-value">/{optimization.slug}</code>}
-        </div>
-      </div>
-      <div className="seo-card-section">
-        <div className="seo-section-heading">SEO Metadata</div>
-        <pre className="seo-content-preview">{JSON.stringify(optimization, null, 2)}</pre>
-      </div>
-    </div>
-  );
-}
-
-export default function LiveOutput({ result, loading }) {
-  const [activeTab, setActiveTab] = useState("agents");
-  const [selectedIteration, setSelectedIteration] = useState(1);
+export default function LiveOutput({ result, loading, pipelineSteps = [], agentStatus = {} }) {
+  const [activeStepId, setActiveStepId] = useState("all");
   const [copied, setCopied] = useState(false);
 
   const agentOutputs = result?.agentOutputs || [];
 
-  const draftIterations = useMemo(() => {
-    if (!result?.iterations) return [];
-    return result.iterations.filter((it) => it.phase === "write");
-  }, [result]);
+  const steps = useMemo(() => {
+    const currentSteps = result?.pipeline?.steps?.length ? result.pipeline.steps : pipelineSteps;
+    if (currentSteps?.length) return currentSteps;
+    return buildFallbackStepsFromOutputs(agentOutputs);
+  }, [agentOutputs, pipelineSteps, result?.pipeline?.steps]);
 
-  const editorIterations = useMemo(() => {
-    if (!result?.iterations) return [];
-    return result.iterations.filter((it) => it.phase === "review");
-  }, [result]);
+  const outputsByStepId = useMemo(() => {
+    const grouped = new Map();
 
-  const totalIterations = Math.max(draftIterations.length, editorIterations.length);
+    agentOutputs.forEach((entry) => {
+      const key = entry.stepId || entry.agentId;
+      if (!key) return;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(entry);
+    });
 
-  const tabs = [
-    { id: "agents", label: "Agents", icon: BotIcon },
-    { id: "research", label: "Research", icon: SearchIcon },
-    { id: "draft", label: "Draft", icon: PenIcon },
-    { id: "feedback", label: "Editor", icon: MessageIcon },
-    { id: "final", label: "Final", icon: FileIcon },
-    { id: "seo", label: "SEO", icon: SEOTabIcon },
-  ];
+    return grouped;
+  }, [agentOutputs]);
 
-  const getContent = () => {
-    switch (activeTab) {
-      case "agents": return agentOutputs.map((entry, index) => `#${index + 1} ${entry.agentName}\n${formatOutput(entry.output)}`).join("\n\n---\n\n");
-      case "research": return result?.research ? JSON.stringify(result.research, null, 2) : "";
-      case "draft": {
-        if (totalIterations === 0) return "";
-        const iteration = draftIterations[selectedIteration - 1];
-        return iteration?.output?.content || formatOutput(iteration?.output);
-      }
-      case "feedback": {
-        if (totalIterations === 0) return "";
-        const iteration = editorIterations[selectedIteration - 1];
-        return iteration?.output ? JSON.stringify(iteration.output, null, 2) : "";
-      }
-      case "final": return result?.finalOutput?.content || result?.draft?.content || "";
-      case "seo": return result?.optimization ? JSON.stringify(result.optimization, null, 2) : "";
-      default: return "";
-    }
+  const getStepStatus = (step) => {
+    const rawStatus = agentStatus?.[step.stepId] ||
+      result?.agentStatus?.[step.stepId] ||
+      agentStatus?.[step.agentId] ||
+      result?.agentStatus?.[step.agentId];
+
+    if (rawStatus) return normalizeStatus(rawStatus);
+    if (outputsByStepId.has(step.stepId) || outputsByStepId.has(step.agentId)) return "completed";
+    return "waiting";
   };
 
-  const getFileName = () => {
-    switch (activeTab) {
-      case "agents": return "agent-outputs.txt";
-      case "research": return "research-output.json";
-      case "draft": return `draft-v${selectedIteration}.md`;
-      case "feedback": return `editor-review-v${selectedIteration}.json`;
-      case "final": return "final-output.md";
-      case "seo": return "seo-optimization.json";
-      default: return "output.txt";
-    }
-  };
+  useEffect(() => {
+    if (activeStepId === "all") return;
+    const stillExists = steps.some((step) => step.stepId === activeStepId);
+    if (!stillExists) setActiveStepId("all");
+  }, [activeStepId, steps]);
+
+  const visibleSteps = activeStepId === "all"
+    ? steps
+    : steps.filter((step) => step.stepId === activeStepId);
+
+  const outputText = visibleSteps
+    .map((step, index) => {
+      const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
+      const status = getStatusLabel(getStepStatus(step));
+      const outputContent = outputs.length
+        ? outputs.map((entry, outputIndex) => `## ${outputBlockTitle(entry, outputIndex, outputs.length)}\n${formatOutput(entry.output)}`).join("\n\n")
+        : "No output yet.";
+
+      return `# ${index + 1}. ${step.name} — ${status}\n${outputContent}`;
+    })
+    .join("\n\n---\n\n");
+
+  const hasAnyOutput = agentOutputs.length > 0;
+  const hasSelectedSteps = steps.length > 0;
+  const canCopy = Boolean(outputText.trim()) && hasSelectedSteps;
+  const completedCount = steps.filter((step) => getStepStatus(step) === "completed").length;
+  const runningCount = steps.filter((step) => getStepStatus(step) === "running").length;
+  const failedCount = steps.filter((step) => getStepStatus(step) === "failed").length;
 
   const handleCopy = () => {
-    const content = getContent();
-    if (content) {
-      navigator.clipboard.writeText(content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    if (!canCopy) return;
+    navigator.clipboard.writeText(outputText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
-
-  const content = getContent();
-  const isSEOTab = activeTab === "seo";
-  const hasContent = activeTab === "agents" ? agentOutputs.length > 0 : Boolean(content && content.length > 0);
-  const lineCount = content ? content.split("\n").length : 1;
-
-  const getCurrentScore = () => {
-    if (activeTab === "feedback" && editorIterations[selectedIteration - 1]) {
-      return editorIterations[selectedIteration - 1].output?.qualityScore;
-    }
-    return null;
-  };
-  const score = getCurrentScore();
 
   return (
     <div className="live-output-card">
@@ -205,83 +297,88 @@ export default function LiveOutput({ result, loading }) {
         <div className="card-header-left">
           <div className="card-header-icon"><BoltIcon /></div>
           <div>
-            <div className="card-header-title">Live output</div>
+            <div className="card-header-title">Live Output Dashboard</div>
             <div className="card-header-subtitle">
-              {loading ? "Processing dynamic pipeline..." : hasContent ? "Shared context and outputs from every agent" : "Run a pipeline to see results"}
+              {loading ? "Showing the exact agents selected for this run" :
+                hasSelectedSteps ? "Dynamic status and generated output for the selected pipeline" :
+                  "Select agents and run a pipeline to see live output"}
             </div>
           </div>
         </div>
         <div className="card-header-right"><ExpandIcon /></div>
       </div>
 
-      <div className="tabs-container">
-        {tabs.map((tab) => (
-          <button key={tab.id} className={`tab ${activeTab === tab.id ? "active" : ""}`} onClick={() => setActiveTab(tab.id)}>
-            <tab.icon />{tab.label}
-          </button>
-        ))}
+      <div className="dynamic-tabs-container">
+        <button
+          type="button"
+          className={`dynamic-tab ${activeStepId === "all" ? "active" : ""}`}
+          onClick={() => setActiveStepId("all")}
+        >
+          <BotIcon />
+          All selected agents
+        </button>
+        {steps.map((step) => {
+          const Icon = getAgentIcon(step);
+          const status = getStepStatus(step);
+          return (
+            <button
+              type="button"
+              key={step.stepId}
+              className={`dynamic-tab ${activeStepId === step.stepId ? "active" : ""}`}
+              onClick={() => setActiveStepId(step.stepId)}
+            >
+              <Icon />
+              {step.name}
+              <span className={`dynamic-tab-status ${status}`} />
+            </button>
+          );
+        })}
       </div>
 
-      {(activeTab === "draft" || activeTab === "feedback") && totalIterations > 0 && (
-        <div className="iteration-selector">
-          <span className="iteration-selector-label">{activeTab === "draft" ? "Draft Version:" : "Editor Review:"}</span>
-          <div className="iteration-buttons">
-            {Array.from({ length: totalIterations }, (_, i) => i + 1).map((iter) => {
-              const iterData = activeTab === "draft" ? draftIterations[iter - 1] : editorIterations[iter - 1];
-              const iterScore = iterData?.output?.qualityScore;
-              const isApproved = iterScore >= 80;
+      <div className="file-status-bar dynamic-file-status">
+        <div className="file-info">
+          <div className={`file-dot ${failedCount > 0 ? "failed" : runningCount > 0 ? "running" : hasAnyOutput ? "completed" : "waiting"}`} />
+          <span className="file-name">
+            {activeStepId === "all" ? "dynamic-agent-dashboard" : `${visibleSteps[0]?.name || "agent"}-output`}
+          </span>
+          <span className="dynamic-run-summary">
+            {steps.length} selected · {completedCount} completed · {runningCount} running{failedCount ? ` · ${failedCount} failed` : ""}
+          </span>
+        </div>
+        <div className="file-actions">
+          <span className="line-count">{outputText ? `${outputText.split("\n").length} lines` : "0 lines"}</span>
+          <button className="copy-btn" onClick={handleCopy} disabled={!canCopy}>{copied ? "Copied!" : "Copy"}</button>
+        </div>
+      </div>
+
+      <div className="dynamic-dashboard-scroll">
+        {!hasSelectedSteps ? (
+          <div className="empty-state compact-empty">
+            <div className="empty-icon"><ClipboardIcon /></div>
+            <div className="empty-title">No agents selected</div>
+            <div className="empty-subtitle">Build a pipeline to populate this dashboard.</div>
+          </div>
+        ) : (
+          <div className="dynamic-agent-grid">
+            {visibleSteps.map((step) => {
+              const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
               return (
-                <button key={iter} className={`iteration-btn ${selectedIteration === iter ? "active" : ""} ${isApproved ? "approved" : ""}`} onClick={() => setSelectedIteration(iter)}>
-                  v{iter}{iterScore && <span className="iteration-score">{iterScore}</span>}
-                </button>
+                <DynamicAgentCard
+                  key={step.stepId}
+                  step={step}
+                  status={getStepStatus(step)}
+                  outputs={outputs}
+                  error={result?.error}
+                />
               );
             })}
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="file-status-bar">
-        <div className="file-info">
-          <div className="file-dot" />
-          <span className="file-name">{getFileName()}</span>
-          {score && (
-            <span className={`iteration-badge ${score >= 80 ? "approved" : "needs-work"}`}>
-              {score >= 80 ? "✅ Approved" : "🔄 Needs Work"} ({score}/100)
-            </span>
-          )}
-        </div>
-        <div className="file-actions">
-          <span className="line-count">{loading ? "..." : isSEOTab ? "structured" : `${lineCount} lines`}</span>
-          <button className="copy-btn" onClick={handleCopy} disabled={!hasContent}>{copied ? "Copied!" : "Copy"}</button>
-        </div>
+        {loading && (
+          <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>
+        )}
       </div>
-
-      {activeTab === "agents" ? (
-        <div className="code-container agent-output-container">
-          <AgentOutputs outputs={agentOutputs} />
-          {loading && <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>}
-        </div>
-      ) : isSEOTab ? (
-        result?.optimization ? (
-          <div className="seo-card-scroll">
-            <SEOResultCard optimization={result.optimization} />
-            {loading && <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>}
-          </div>
-        ) : loading ? (
-          <div className="code-container"><div className="loading-content"><div className="loading-spinner"></div><span>Processing pipeline...</span></div></div>
-        ) : (
-          <div className="empty-state"><div className="empty-icon"><ClipboardIcon /></div><div className="empty-title">SEO output will appear here</div><div className="empty-subtitle">Add/run an optimizer agent if available</div></div>
-        )
-      ) : hasContent ? (
-        <div className="code-container">
-          <pre className="code-content">{content}</pre>
-          {loading && <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>}
-        </div>
-      ) : loading ? (
-        <div className="code-container"><div className="loading-content"><div className="loading-spinner"></div><span>Processing pipeline...</span></div></div>
-      ) : (
-        <div className="empty-state"><div className="empty-icon"><ClipboardIcon /></div><div className="empty-title">Output will appear here</div><div className="empty-subtitle">Run the pipeline to see results</div></div>
-      )}
     </div>
   );
 }

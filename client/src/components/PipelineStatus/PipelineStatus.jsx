@@ -117,7 +117,7 @@ function getStatusText(agent, status) {
   if (status === "running") return "Executing saved system prompt...";
   if (status === "completed") return "Agent output generated";
   if (status === "skipped") return "Skipped";
-  if (status === "error") return "Error";
+  if (status === "error" || status === "failed") return "Failed";
   return "Waiting for turn";
 }
 
@@ -161,7 +161,7 @@ export default function PipelineStatus({ result, loading, agentStatus, pipelineS
         const isCompleted = status === "completed";
         const isRunning = status === "running";
         const isSkipped = status === "skipped";
-        const isError = status === "error";
+        const isError = status === "error" || status === "failed";
 
         return (
           <div key={agent.stepId} className={`agent-card ${agent.agentId} ${agent.type || "custom"}`}>
@@ -172,7 +172,7 @@ export default function PipelineStatus({ result, loading, agentStatus, pipelineS
               <div className="agent-header">
                 <span className="agent-name">{agent.name}</span>
                 <span className={`agent-badge ${status}`}>
-                  {isCompleted ? "Completed" : isRunning ? "Running" : isSkipped ? "Skipped" : isError ? "Error" : "Waiting"}
+                  {isCompleted ? "Completed" : isRunning ? "Running" : isSkipped ? "Skipped" : isError ? "Failed" : "Waiting"}
                 </span>
               </div>
               <div className="agent-progress">

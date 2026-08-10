@@ -2422,3 +2422,323 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ─── FULLY DYNAMIC LIVE OUTPUT DASHBOARD ─── */
+.dynamic-tabs-container {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dynamic-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: white;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dynamic-tab:hover {
+  border-color: #c7d2fe;
+  color: #4f46e5;
+}
+
+.dynamic-tab.active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4f46e5;
+}
+
+.dynamic-tab svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dynamic-tab-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.dynamic-tab-status.waiting { background: #d1d5db; }
+.dynamic-tab-status.running { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16); }
+.dynamic-tab-status.completed { background: #22c55e; }
+.dynamic-tab-status.failed { background: #ef4444; }
+.dynamic-tab-status.skipped { background: #94a3b8; }
+
+.dynamic-file-status {
+  gap: 12px;
+}
+
+.file-dot.waiting { background: #d1d5db; }
+.file-dot.running { background: #f59e0b; }
+.file-dot.completed { background: #22c55e; }
+.file-dot.failed { background: #ef4444; }
+
+.dynamic-run-summary {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dynamic-dashboard-scroll {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: #f8fafc;
+  padding: 18px;
+}
+
+.dynamic-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.live-agent-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.live-agent-card.running {
+  border-color: #fde68a;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.09);
+}
+
+.live-agent-card.completed {
+  border-color: #bbf7d0;
+}
+
+.live-agent-card.failed {
+  border-color: #fecaca;
+}
+
+.live-agent-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.live-agent-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.live-agent-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.live-agent-icon.researcher { background: #d1fae5; color: #059669; }
+.live-agent-icon.writer { background: #ede9fe; color: #7c3aed; }
+.live-agent-icon.editor { background: #fef3c7; color: #d97706; }
+
+.live-agent-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.live-agent-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.live-agent-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.live-agent-type {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.live-agent-type.built-in {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.live-agent-type.custom {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.live-agent-role {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.live-agent-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.live-agent-status svg {
+  width: 13px;
+  height: 13px;
+}
+
+.live-agent-status.waiting { background: #f1f5f9; color: #64748b; }
+.live-agent-status.running { background: #fef3c7; color: #b45309; }
+.live-agent-status.completed { background: #dcfce7; color: #15803d; }
+.live-agent-status.failed { background: #fee2e2; color: #dc2626; }
+.live-agent-status.skipped { background: #f1f5f9; color: #64748b; }
+
+.live-agent-progress {
+  height: 4px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.live-agent-progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.live-agent-progress-fill.waiting { background: #d1d5db; }
+.live-agent-progress-fill.running { background: #f59e0b; }
+.live-agent-progress-fill.completed { background: #22c55e; }
+.live-agent-progress-fill.failed { background: #ef4444; }
+.live-agent-progress-fill.skipped { background: #94a3b8; }
+
+.live-agent-description {
+  padding: 11px 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+  background: #fbfdff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.live-agent-error {
+  margin: 12px 14px 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.live-agent-output-section {
+  padding: 14px;
+}
+
+.live-agent-output-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.live-agent-output-block {
+  border: 1px solid #334155;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0f172a;
+  margin-bottom: 10px;
+}
+
+.live-agent-output-block:last-child {
+  margin-bottom: 0;
+}
+
+.live-agent-output-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #111827;
+  border-bottom: 1px solid #334155;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.live-agent-output-meta span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.live-agent-output-pre {
+  margin: 0;
+  padding: 12px;
+  color: #e2e8f0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'SF Mono', 'Fira Code', Monaco, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.live-agent-output-empty {
+  padding: 18px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 920px) {
+  .dynamic-agent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .live-agent-card-top,
+  .file-status-bar.dynamic-file-status {
+    flex-wrap: wrap;
+  }
+}
