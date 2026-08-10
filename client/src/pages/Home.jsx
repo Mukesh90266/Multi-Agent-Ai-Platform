@@ -418,11 +418,23 @@ export default function Home() {
     setActiveTemplateId("default-rwe");
   };
 
+  const getSelectedCustomAgents = () => Array.from(new Map(selectedSteps
+    .map((step) => agentsById.get(step.agentId))
+    .filter(isCustomAgent)
+    .map((agent) => [agent.id, agent])).values());
+
+  const validateSelectedPipeline = () => {
+    const missingSelectedAgents = selectedSteps.filter((step) => !agentsById.has(step.agentId));
+
+    if (missingSelectedAgents.length > 0) {
+      throw new Error(
+        "Selected pipeline contains an agent that is no longer in the Agent Library. Remove it from the pipeline and add it again."
+      );
+    }
+  };
+
   const ensureSelectedCustomAgentsSynced = async () => {
-    const selectedCustomAgents = Array.from(new Map(selectedSteps
-      .map((step) => agentsById.get(step.agentId))
-      .filter(isCustomAgent)
-      .map((agent) => [agent.id, agent])).values());
+    const selectedCustomAgents = getSelectedCustomAgents();
 
     if (!selectedCustomAgents.length) return;
 
@@ -444,13 +456,20 @@ export default function Home() {
     clearPolling();
 
     try {
+      validateSelectedPipeline();
+
+      const selectedCustomAgents = getSelectedCustomAgents();
+
       if (!isDefaultPipeline) {
         await ensureSelectedCustomAgentsSynced();
       }
 
       const pipelinePayload = isDefaultPipeline
         ? { templateId: "default-rwe" }
-        : { agentIds: selectedAgentIds };
+        : {
+            agentIds: selectedAgentIds,
+            agentConfigs: selectedCustomAgents
+          };
 
       const startRes = await runPipeline({ ...formData, pipeline: pipelinePayload });
 

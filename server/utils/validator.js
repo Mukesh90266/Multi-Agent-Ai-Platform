@@ -9,8 +9,9 @@ function validatePipelineRequest(body = {}) {
       : null;
 
   const templateId = pipelineBody.templateId || body.pipelineTemplateId || null;
+  const rawAgentConfigs = Array.isArray(pipelineBody.agentConfigs) ? pipelineBody.agentConfigs : [];
 
-  if (!rawAgentIds && !templateId) {
+  if (!rawAgentIds && !templateId && rawAgentConfigs.length === 0) {
     return undefined;
   }
 
@@ -40,6 +41,22 @@ function validatePipelineRequest(body = {}) {
     }
 
     pipeline.agentIds = agentIds;
+  }
+
+  if (rawAgentConfigs.length) {
+    pipeline.agentConfigs = rawAgentConfigs
+      .filter((agent) => agent && typeof agent === "object")
+      .map((agent) => ({
+        id: String(agent.id || "").trim(),
+        type: String(agent.type || "custom").trim(),
+        name: String(agent.name || "").trim(),
+        role: String(agent.role || "").trim(),
+        personality: String(agent.personality || "").trim(),
+        systemPrompt: String(agent.systemPrompt || "").trim(),
+        description: String(agent.description || agent.role || "").trim(),
+        createdAt: agent.createdAt ? String(agent.createdAt).trim() : undefined
+      }))
+      .filter((agent) => agent.id && agent.type === "custom");
   }
 
   return pipeline;

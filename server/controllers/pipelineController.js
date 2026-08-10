@@ -2,6 +2,7 @@ import PipelineRun from "../models/PipelineRun.js";
 import { runPipeline } from "../orchestrator/pipeline.js";
 import {
   buildRunnablePipeline,
+  createCustomAgent,
   getPipelineTemplates,
   serializePipelineForClient
 } from "../services/agentStore.js";
@@ -19,6 +20,16 @@ export async function runPipelineController(req, res) {
   try {
     const validated = validatePipelineInput(req.body);
     const { pipeline: pipelineRequest, ...input } = validated;
+
+    // Custom agents can be cached in the browser. Re-sync any selected custom
+    // agent configs before resolving the runnable pipeline so custom pipelines
+    // do not fail if the backend file storage was restarted/cleared.
+    if (Array.isArray(pipelineRequest?.agentConfigs)) {
+      for (const agentConfig of pipelineRequest.agentConfigs) {
+        await createCustomAgent(agentConfig);
+      }
+    }
+
     const pipeline = await buildRunnablePipeline(pipelineRequest || {});
     const runId = crypto.randomUUID();
 
