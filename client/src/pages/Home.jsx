@@ -9,6 +9,114 @@ import PipelineBuilder from "../components/Agents/PipelineBuilder";
 import { createAgent, getAgents, getPipelineStatus, runPipeline } from "../services/api.js";
 
 const DEFAULT_AGENT_IDS = ["researcher", "writer", "editor"];
+const CUSTOM_AGENTS_STORAGE_KEY = "multi-agent-platform.customAgents";
+
+const CLIENT_BUILT_IN_AGENTS = [
+  {
+    id: "researcher",
+    type: "built-in",
+    name: "Researcher",
+    role: "Collects trustworthy planning notes, key points, definitions, outlines, examples, and source-verification reminders for the user's topic.",
+    personality: "Careful, skeptical, concise, and source-aware.",
+    phase: "research",
+    immutable: true,
+    builtIn: true
+  },
+  {
+    id: "writer",
+    type: "built-in",
+    name: "Writer",
+    role: "Turns the original input and any prior agent outputs into clear, useful Markdown content.",
+    personality: "Practical, engaging, and audience-focused.",
+    phase: "write",
+    immutable: true,
+    builtIn: true
+  },
+  {
+    id: "editor",
+    type: "built-in",
+    name: "Editor",
+    role: "Reviews drafts for quality, accuracy, completeness, structure, tone, and actionability.",
+    personality: "Strict, helpful, professional, and specific.",
+    phase: "review",
+    immutable: true,
+    builtIn: true
+  }
+];
+
+function isCustomAgent(agent) {
+  return agent?.type === "custom" || String(agent?.id || "").startsWith("custom-");
+}
+
+function loadPersistedCustomAgents() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(CUSTOM_AGENTS_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(isCustomAgent) : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePersistedCustomAgents(customAgents) {
+  if (typeof window === "undefined") return;
+
+  const uniqueCustomAgents = Array.from(
+    new Map(customAgents.filter(isCustomAgent).map((agent) => [agent.id, agent])).values()
+  );
+  window.localStorage.setItem(CUSTOM_AGENTS_STORAGE_KEY, JSON.stringify(uniqueCustomAgents));
+}
+
+function mergeAgents(...agentLists) {
+  const merged = new Map();
+
+  for (const agent of CLIENT_BUILT_IN_AGENTS) {
+    merged.set(agent.id, agent);
+  }
+
+  for (const list of agentLists) {
+    for (const agent of list || []) {
+      if (!agent?.id) continue;
+      merged.set(agent.id, {
+        ...agent,
+        type: agent.type || (String(agent.id).startsWith("custom-") ? "custom" : "built-in")
+      });
+    }
+  }
+
+  return Array.from(merged.values());
+}
+
+function slugify(value) {
+  return String(value || "agent")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40) || "agent";
+}
+
+function createLocalCustomAgent(payload) {
+  const now = new Date().toISOString();
+  const randomId = typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID().slice(0, 8)
+    : Math.random().toString(16).slice(2, 10);
+
+  return {
+    id: `custom-${slugify(payload.name)}-${randomId}`,
+    type: "custom",
+    name: String(payload.name || "Custom Agent").trim(),
+    role: String(payload.role || "Custom agent").trim(),
+    personality: String(payload.personality || "Helpful").trim(),
+    systemPrompt: String(payload.systemPrompt || "Follow your configured role.").trim(),
+    description: String(payload.role || "Custom agent").trim(),
+    immutable: false,
+    builtIn: false,
+    phase: "custom",
+    createdAt: now,
+    updatedAt: now
+  };
+}
 
 function makeClientStep(agentId) {
   return {
@@ -57,7 +165,7 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(null);
-  const [agents, setAgents] = useState([]);
+  const [agents, setAgents] = useState(() => mergeAgents(loadPersistedCustomAgents()));
   const [libraryError, setLibraryError] = useState(null);
   const [pipelineError, setPipelineError] = useState(null);
   const [selectedSteps, setSelectedSteps] = useState(() => makeStepsFromIds(DEFAULT_AGENT_IDS));
@@ -78,14 +186,36 @@ export default function Home() {
     selectedSteps.every((step, index) => step.agentId === DEFAULT_AGENT_IDS[index]);
 
   const refreshAgents = useCallback(async () => {
+    const localCustomAgents = loadPersistedCustomAgents();
+
     try {
       setLibraryError(null);
       const data = await getAgents();
+
       if (data.success) {
-        setAgents(data.agents || []);
+        const serverAgents = data.agents || [];
+        const serverCustomIds = new Set(serverAgents.filter(isCustomAgent).map((agent) => agent.id));
+        const missingLocalAgents = localCustomAgents.filter((agent) => !serverCustomIds.has(agent.id));
+        const syncedAgents = [];
+
+        for (const agent of missingLocalAgents) {
+          try {
+            const syncResult = await createAgent(agent);
+            if (syncResult.success && syncResult.agent) {
+              syncedAgents.push(syncResult.agent);
+            }
+          } catch (syncError) {
+            console.warn("Could not sync cached custom agent:", syncError.message);
+          }
+        }
+
+        const mergedAgents = mergeAgents(serverAgents, localCustomAgents, syncedAgents);
+        setAgents(mergedAgents);
+        savePersistedCustomAgents(mergedAgents.filter(isCustomAgent));
       }
     } catch (error) {
-      setLibraryError(error.message || "Could not load agents.");
+      setAgents(mergeAgents(localCustomAgents));
+      setLibraryError("Backend unavailable. Showing cached agents; custom agents will sync when the server is reachable.");
     }
   }, []);
 
@@ -120,12 +250,29 @@ export default function Home() {
   }, []);
 
   const handleCreateAgent = async (payload) => {
-    const data = await createAgent(payload);
-    if (!data.success) {
-      throw new Error(data.message || "Could not create agent.");
+    try {
+      const data = await createAgent(payload);
+      if (!data.success) {
+        throw new Error(data.message || "Could not create agent.");
+      }
+
+      const mergedAgents = mergeAgents(agents, [data.agent]);
+      setAgents(mergedAgents);
+      savePersistedCustomAgents(mergedAgents.filter(isCustomAgent));
+      await refreshAgents();
+      return data.agent;
+    } catch (error) {
+      if (error.response) {
+        throw error;
+      }
+
+      const localAgent = createLocalCustomAgent(payload);
+      const mergedAgents = mergeAgents(agents, [localAgent]);
+      setAgents(mergedAgents);
+      savePersistedCustomAgents(mergedAgents.filter(isCustomAgent));
+      setLibraryError("Backend unavailable. Custom agent saved locally and will sync automatically when the server is reachable.");
+      return localAgent;
     }
-    await refreshAgents();
-    return data.agent;
   };
 
   const resetDisplayedRun = () => {
@@ -185,6 +332,21 @@ export default function Home() {
     setActiveTemplateId("default-rwe");
   };
 
+  const ensureSelectedCustomAgentsSynced = async () => {
+    const selectedCustomAgents = Array.from(new Map(selectedSteps
+      .map((step) => agentsById.get(step.agentId))
+      .filter(isCustomAgent)
+      .map((agent) => [agent.id, agent])).values());
+
+    if (!selectedCustomAgents.length) return;
+
+    savePersistedCustomAgents(selectedCustomAgents);
+
+    for (const agent of selectedCustomAgents) {
+      await createAgent(agent);
+    }
+  };
+
   const runPipelineHandler = async (formData) => {
     if (selectedSteps.length === 0) return;
 
@@ -196,6 +358,8 @@ export default function Home() {
     clearPolling();
 
     try {
+      await ensureSelectedCustomAgentsSynced();
+
       const pipelinePayload = {
         agentIds: selectedSteps.map((step) => step.agentId),
         templateId: isDefaultPipeline ? "default-rwe" : undefined

@@ -1,7 +1,30 @@
 import axios from "axios";
 
+function getApiBaseUrl() {
+  const configuredUrl = import.meta.env.VITE_API_URL || "";
+
+  if (!configuredUrl) return "/api";
+
+  try {
+    const parsed = new URL(configuredUrl);
+    const isConfiguredForLocalhost = ["localhost", "127.0.0.1", "0.0.0.0"].includes(parsed.hostname);
+    const isBrowserOnLocalhost = typeof window !== "undefined" &&
+      ["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname);
+
+    // In Arena/live-preview environments the browser cannot call localhost:5000.
+    // Use the Vite relative proxy instead so /api works after refresh too.
+    if (isConfiguredForLocalhost && !isBrowserOnLocalhost) {
+      return "/api";
+    }
+  } catch {
+    return "/api";
+  }
+
+  return `${configuredUrl.replace(/\/$/, "")}/api`;
+}
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || ""}/api`
+  baseURL: getApiBaseUrl()
 });
 
 export const runPipeline = (payload) => api.post("/pipeline/run", payload).then((r) => r.data);

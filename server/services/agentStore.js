@@ -144,19 +144,28 @@ function slugify(value) {
   return slug || "agent";
 }
 
-function normalizeCustomAgent(payload = {}) {
+function normalizeCustomAgent(payload = {}, existingAgent = null) {
   const name = cleanText(payload.name);
   const role = cleanText(payload.role);
   const personality = cleanText(payload.personality);
   const systemPrompt = cleanText(payload.systemPrompt);
+  const requestedId = cleanText(payload.id);
 
   assertLength("Agent name", name, 2, 80);
   assertLength("Role", role, 2, 300);
   assertLength("Personality", personality, 2, 500);
   assertLength("System prompt", systemPrompt, 10, 6000);
 
+  let id = existingAgent?.id || `custom-${slugify(name)}-${randomUUID().slice(0, 8)}`;
+
+  if (requestedId) {
+    if (!/^custom-[a-zA-Z0-9_-]+$/.test(requestedId) || requestedId.length > 120) {
+      throw new Error("Custom agent id is invalid.");
+    }
+    id = requestedId;
+  }
+
   const now = new Date().toISOString();
-  const id = `custom-${slugify(name)}-${randomUUID().slice(0, 8)}`;
 
   return {
     id,
@@ -169,7 +178,7 @@ function normalizeCustomAgent(payload = {}) {
     immutable: false,
     builtIn: false,
     phase: "custom",
-    createdAt: now,
+    createdAt: existingAgent?.createdAt || cleanText(payload.createdAt) || now,
     updatedAt: now
   };
 }
@@ -196,8 +205,11 @@ export async function getAgentById(agentId) {
 }
 
 export async function createCustomAgent(payload) {
-  const agent = normalizeCustomAgent(payload);
   const agents = await getCustomAgents();
+  const existingAgent = payload?.id
+    ? agents.find((agent) => agent.id === String(payload.id).trim())
+    : null;
+  const agent = normalizeCustomAgent(payload, existingAgent);
 
   const builtInNameConflict = BUILT_IN_AGENTS.some(
     (builtInAgent) => builtInAgent.name.toLowerCase() === agent.name.toLowerCase()
@@ -206,7 +218,13 @@ export async function createCustomAgent(payload) {
     throw new Error("A built-in agent already uses that name. Choose a unique custom agent name.");
   }
 
-  agents.push(agent);
+  const existingIndex = agents.findIndex((existing) => existing.id === agent.id);
+  if (existingIndex >= 0) {
+    agents[existingIndex] = agent;
+  } else {
+    agents.push(agent);
+  }
+
   await writeCustomAgents(agents);
   return agent;
 }
