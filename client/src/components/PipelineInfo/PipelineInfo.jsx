@@ -30,8 +30,10 @@ export default function PipelineInfo({ result, loading }) {
   const getStatus = () => {
     if (loading) return { text: "Running", color: "orange" };
     if (!result) return { text: "Idle", color: "gray" };
-    if (result.status === "approved") return { text: "Completed", color: "green" };
+    if (result.status === "approved") return { text: "Approved", color: "green" };
+    if (result.status === "completed") return { text: "Completed", color: "green" };
     if (result.status === "needs_revision") return { text: "Needs Review", color: "yellow" };
+    if (result.status === "error") return { text: "Error", color: "yellow" };
     return { text: "In Progress", color: "gray" };
   };
 
@@ -45,6 +47,7 @@ export default function PipelineInfo({ result, loading }) {
   const topicText = result?.input?.topic || "—";
   const displayTopic = topicText.length > 20 ? topicText.slice(0, 20) + "..." : topicText;
   const readabilityScore = result?.optimization?.readabilityScore;
+  const pipelineName = result?.pipeline?.name || "—";
 
   return (
     <div>
@@ -60,52 +63,60 @@ export default function PipelineInfo({ result, loading }) {
 
       <div className="info-grid">
         <div className="info-card">
-          <div className="info-icon">
-            <TopicIcon />
-          </div>
+          <div className="info-icon"><TopicIcon /></div>
           <div className="info-content">
-            <div className="info-label">Topic</div>
+            <div className="info-label">Input</div>
             <div className="info-value">{displayTopic}</div>
           </div>
         </div>
 
         <div className="info-card">
-          <div className="info-icon">
-            <HashIcon />
-          </div>
+          <div className="info-icon"><HashIcon /></div>
           <div className="info-content">
-            <div className="info-label">Iterations</div>
-            <div className="info-value">
-              {result?.totalIterations || 1} / {result?.maxIterations || 3}
-            </div>
+            <div className="info-label">Agent steps</div>
+            <div className="info-value">{result?.executionSteps || result?.pipeline?.steps?.length || "—"}</div>
           </div>
         </div>
 
         <div className="info-card">
-          <div className="info-icon">
-            <ClockIcon />
-          </div>
+          <div className="info-icon"><ClockIcon /></div>
           <div className="info-content">
             <div className="info-label">Started at</div>
-            <div className="info-value">{loading ? "Running..." : formatTime(result?.createdAt)}</div>
+            <div className="info-value">{loading ? "Running..." : formatTime(result?.createdAt || result?.lastUpdated)}</div>
           </div>
         </div>
 
         <div className="info-card">
-          <div className="info-icon">
-            <PlayIcon />
-          </div>
+          <div className="info-icon"><PlayIcon /></div>
           <div className="info-content">
             <div className="info-label">Status</div>
             <div className="info-value">{status.text}</div>
           </div>
         </div>
 
+        {result?.pipeline && (
+          <div className="info-card">
+            <div className="info-icon"><PlayIcon /></div>
+            <div className="info-content">
+              <div className="info-label">Pipeline</div>
+              <div className="info-value">{pipelineName}</div>
+            </div>
+          </div>
+        )}
+
+        {result?.maxIterations > 1 && (
+          <div className="info-card">
+            <div className="info-icon"><HashIcon /></div>
+            <div className="info-content">
+              <div className="info-label">Review cycles</div>
+              <div className="info-value">{result?.totalIterations || 0} / {result?.maxIterations}</div>
+            </div>
+          </div>
+        )}
+
         {readabilityScore != null && (
           <div className="info-card">
-            <div className="info-icon">
-              <HashIcon />
-            </div>
+            <div className="info-icon"><HashIcon /></div>
             <div className="info-content">
               <div className="info-label">Readability</div>
               <div className="info-value">{readabilityScore}/100</div>

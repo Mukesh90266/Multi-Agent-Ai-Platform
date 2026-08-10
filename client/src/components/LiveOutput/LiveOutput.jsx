@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const BoltIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -31,9 +31,10 @@ const PenIcon = () => (
     <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
   </svg>
 );
-const MessageIcon = () => (
+const EditIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 const FileIcon = () => (
@@ -44,238 +45,303 @@ const FileIcon = () => (
     <line x1="16" y1="17" x2="8" y2="17" />
   </svg>
 );
-const SEOTabIcon = () => (
+const BotIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-    <line x1="7" y1="7" x2="7.01" y2="7" />
+    <rect x="3" y="8" width="18" height="12" rx="2" />
+    <path d="M12 8V4" />
+    <circle cx="8" cy="14" r="1" />
+    <circle cx="16" cy="14" r="1" />
+    <path d="M9 18h6" />
   </svg>
 );
-const CheckCircleIcon = () => (
+const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+const LoaderIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" opacity="0.25" />
+    <path d="M12 2a10 10 0 0 1 10 10" />
+  </svg>
+);
+const AlertIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
 
-function SEOResultCard({ optimization }) {
-  if (!optimization) return null;
-  const {
-    suggestedTitle, metaTitle, metaDescription, slug,
-    headings, tableOfContents, seo, optimizedContent
-  } = optimization;
-  const primaryKeyword = seo?.primaryKeyword || "";
-  const secondaryKeywords = seo?.secondaryKeywords || [];
-  const keywordDensity = seo?.keywordDensity || {};
-  const densityWarning = seo?.densityWarning;
-  const densityEntries = Object.entries(keywordDensity);
+function formatOutput(output) {
+  if (!output) return "";
+  if (typeof output === "string") return output;
+  if (typeof output.content === "string") return output.content;
+  if (typeof output.optimizedContent === "string") return output.optimizedContent;
+  return JSON.stringify(output, null, 2);
+}
+
+function getAgentIcon(step) {
+  if (step.agentId === "researcher") return SearchIcon;
+  if (step.agentId === "writer") return PenIcon;
+  if (step.agentId === "editor") return EditIcon;
+  return BotIcon;
+}
+
+function normalizeStatus(status) {
+  if (status === "error") return "failed";
+  return status || "waiting";
+}
+
+function getStatusLabel(status) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "running") return "Running";
+  if (normalized === "completed") return "Completed";
+  if (normalized === "failed") return "Failed";
+  if (normalized === "skipped") return "Skipped";
+  return "Waiting";
+}
+
+function getStatusDescription(step, status, hasOutput) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "running") return `${step.name} is executing now. Output will stream into this card when the step finishes.`;
+  if (normalized === "completed" && hasOutput) return `${step.name} completed and generated output.`;
+  if (normalized === "completed") return `${step.name} completed, but no output was captured.`;
+  if (normalized === "failed") return `${step.name} failed while running.`;
+  if (normalized === "skipped") return `${step.name} was skipped by the pipeline.`;
+  return `${step.name} is waiting for its turn in this pipeline.`;
+}
+
+function getProgressWidth(status) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "completed" || normalized === "skipped" || normalized === "failed") return "100%";
+  if (normalized === "running") return "60%";
+  return "0%";
+}
+
+function getStatusIcon(status) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "completed" || normalized === "skipped") return CheckIcon;
+  if (normalized === "running") return LoaderIcon;
+  if (normalized === "failed") return AlertIcon;
+  return ClockIcon;
+}
+
+function buildFallbackStepsFromOutputs(outputs) {
+  const seen = new Set();
+  const steps = [];
+
+  outputs.forEach((entry, index) => {
+    const key = entry.stepId || entry.agentId || `${entry.agentName}-${index}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    steps.push({
+      stepId: key,
+      index,
+      agentId: entry.agentId || key,
+      name: entry.agentName || entry.agentId || `Agent ${index + 1}`,
+      type: entry.type || "custom",
+      role: entry.role || "",
+      phase: entry.phase || "agent"
+    });
+  });
+
+  return steps;
+}
+
+function outputBlockTitle(output, index, total) {
+  const parts = [];
+  if (total > 1) parts.push(`Run ${index + 1}`);
+  if (output.iteration != null) parts.push(`Iteration ${output.iteration}`);
+  if (output.phase) parts.push(output.phase);
+  return parts.join(" · ") || `Output ${index + 1}`;
+}
+
+function FinalOutputCard({ finalOutput }) {
+  const content = finalOutput?.content || formatOutput(finalOutput?.output);
+
+  if (!content) return null;
 
   return (
-    <div className="seo-card">
-      {/* Title Block */}
-      <div className="seo-card-title-block">
-        <div className="seo-card-icon-wrap"><CheckCircleIcon /></div>
-        <div className="seo-card-title-text">
-          <h2 className="seo-card-heading">{suggestedTitle || "SEO Optimized"}</h2>
-          <div className="seo-card-slug">
-            <span className="seo-slug-label">URL</span>
-            <code className="seo-slug-value">/{slug || "—"}</code>
-          </div>
-        </div>
-      </div>
-
-      {/* SEO Metadata */}
-      <div className="seo-card-section">
-        <div className="seo-section-heading">SEO Metadata</div>
-        <div className="seo-meta-grid">
-          <div className="seo-meta-block">
-            <div className="seo-meta-block-label">Meta Title <span className="seo-meta-chars">{metaTitle?.length || 0}/60</span></div>
-            <div className="seo-meta-block-value">{metaTitle || "—"}</div>
-          </div>
-          <div className="seo-meta-block">
-            <div className="seo-meta-block-label">Meta Description <span className="seo-meta-chars">{metaDescription?.length || 0}/160</span></div>
-            <div className="seo-meta-block-value">{metaDescription || "—"}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Keywords */}
-      <div className="seo-card-section">
-        <div className="seo-section-heading">Keyword Analysis</div>
-        <div className="seo-primary-row">
-          <div className="seo-primary-label">Primary</div>
-          <div className="seo-primary-pill">{primaryKeyword}</div>
-        </div>
-        <div className="seo-secondary-row">
-          <div className="seo-secondary-label">Secondary</div>
-          <div className="seo-secondary-tags">
-            {secondaryKeywords.map((kw, i) => (
-              <span key={i} className="seo-secondary-tag">{kw}</span>
-            ))}
-          </div>
-        </div>
-        {densityEntries.length > 0 && (
-          <div className="seo-density-table">
-            <div className="seo-density-header">
-              <span>Keyword</span><span>Density</span><span>Status</span>
+    <div className="final-output-card">
+      <div className="final-output-header">
+        <div className="final-output-title-wrap">
+          <div className="final-output-icon"><FileIcon /></div>
+          <div>
+            <div className="final-output-title">Final Output</div>
+            <div className="final-output-subtitle">
+              {finalOutput?.agentName
+                ? `Produced from ${finalOutput.agentName}`
+                : finalOutput?.type
+                  ? `Final ${finalOutput.type} result`
+                  : "Final pipeline result"}
             </div>
-            {densityEntries.map(([kw, density]) => {
-              const val = parseFloat(density);
-              const inRange = val >= 0.8 && val <= 2.0;
-              return (
-                <div key={kw} className="seo-density-row">
-                  <span className="seo-density-keyword">{kw}</span>
-                  <span className="seo-density-percent">{density}</span>
-                  <span className={`seo-density-status ${inRange ? "good" : "warn"}`}>
-                    {inRange ? "✓ Good" : "⚠ Off"}
-                  </span>
-                </div>
-              );
-            })}
           </div>
-        )}
+        </div>
+        <span className="final-output-badge">Ready</span>
       </div>
-
-      {densityWarning && (
-        <div className="seo-warning-box">
-          <span className="seo-warning-dot">⚠</span>
-          <span>{densityWarning}</span>
-        </div>
-      )}
-
-      {/* Content Structure */}
-      <div className="seo-card-section">
-        <div className="seo-section-heading">Content Structure</div>
-        <div className="seo-structure-grid">
-          {tableOfContents && tableOfContents.length > 0 && (
-            <div className="seo-toc-block">
-              <div className="seo-toc-label">Table of Contents</div>
-              <ol className="seo-toc-list">
-                {tableOfContents.map((item, i) => (
-                  <li key={i} className="seo-toc-item">{item}</li>
-                ))}
-              </ol>
-            </div>
-          )}
-          {headings && (headings.h1 || headings.h2?.length > 0 || headings.h3?.length > 0) && (
-            <div className="seo-headings-block">
-              <div className="seo-headings-label">Heading Hierarchy</div>
-              <div className="seo-headings-tree">
-                {headings.h1 && (
-                  <div className="seo-tree-item h1">
-                    <span className="seo-tree-tag">H1</span>
-                    <span className="seo-tree-text">{headings.h1}</span>
-                  </div>
-                )}
-                {headings.h2?.map((h, i) => (
-                  <div key={`h2-${i}`} className="seo-tree-item h2">
-                    <span className="seo-tree-tag">H2</span>
-                    <span className="seo-tree-text">{h}</span>
-                  </div>
-                ))}
-                {headings.h3?.map((h, i) => (
-                  <div key={`h3-${i}`} className="seo-tree-item h3">
-                    <span className="seo-tree-tag">H3</span>
-                    <span className="seo-tree-text">{h}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {optimizedContent && (
-        <div className="seo-card-section">
-          <div className="seo-section-heading">Optimized Content</div>
-          <pre className="seo-content-preview">{optimizedContent}</pre>
-        </div>
-      )}
+      <pre className="final-output-pre">{content}</pre>
     </div>
   );
 }
 
-export default function LiveOutput({ result, loading }) {
-  const [activeTab, setActiveTab] = useState("research");
-  const [selectedIteration, setSelectedIteration] = useState(1);
+function DynamicAgentCard({ step, status, outputs, error }) {
+  const Icon = getAgentIcon(step);
+  const StatusIcon = getStatusIcon(status);
+  const normalizedStatus = normalizeStatus(status);
+  const hasOutput = outputs.length > 0;
+
+  return (
+    <div className={`live-agent-card ${normalizedStatus}`}>
+      <div className="live-agent-card-top">
+        <div className={`live-agent-icon ${step.agentId} ${step.type || "custom"}`}><Icon /></div>
+        <div className="live-agent-heading">
+          <div className="live-agent-title-row">
+            <span className="live-agent-name">{step.name}</span>
+            <span className={`live-agent-type ${step.type || "custom"}`}>
+              {step.type === "built-in" ? "Built-in" : "Custom"}
+            </span>
+          </div>
+          {step.role && <div className="live-agent-role">{step.role}</div>}
+        </div>
+        <div className={`live-agent-status ${normalizedStatus}`}>
+          <StatusIcon />
+          <span>{getStatusLabel(normalizedStatus)}</span>
+        </div>
+      </div>
+
+      <div className="live-agent-progress">
+        <div className={`live-agent-progress-fill ${normalizedStatus}`} style={{ width: getProgressWidth(normalizedStatus) }} />
+      </div>
+
+      <div className="live-agent-description">
+        {getStatusDescription(step, normalizedStatus, hasOutput)}
+      </div>
+
+      {normalizedStatus === "failed" && error && (
+        <div className="live-agent-error">{error}</div>
+      )}
+
+      <div className="live-agent-output-section">
+        <div className="live-agent-output-header">
+          <span>Generated output</span>
+          <span>{outputs.length ? `${outputs.length} item${outputs.length === 1 ? "" : "s"}` : "No output yet"}</span>
+        </div>
+
+        {outputs.length > 0 ? outputs.map((entry, index) => (
+          <div className="live-agent-output-block" key={`${step.stepId}-${entry.timestamp || index}-${index}`}>
+            <div className="live-agent-output-meta">
+              <span>{outputBlockTitle(entry, index, outputs.length)}</span>
+              {entry.summary && <span>{entry.summary}</span>}
+            </div>
+            <pre className="live-agent-output-pre">{formatOutput(entry.output)}</pre>
+          </div>
+        )) : (
+          <div className="live-agent-output-empty">
+            {normalizedStatus === "running" ? "Running now — output will appear here after this agent finishes." :
+              normalizedStatus === "waiting" ? "Waiting for this agent to execute." :
+                normalizedStatus === "failed" ? "No output was generated before failure." :
+                  "No output captured for this agent."}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function LiveOutput({ result, loading, pipelineSteps = [], agentStatus = {} }) {
+  const [activeStepId, setActiveStepId] = useState("all");
   const [copied, setCopied] = useState(false);
 
-  const getDraftIterations = () => {
-    if (!result?.iterations) return [];
-    return result.iterations.filter(it => it.phase === "write");
-  };
-  const getEditorIterations = () => {
-    if (!result?.iterations) return [];
-    return result.iterations.filter(it => it.phase === "review");
-  };
-  const draftIterations = getDraftIterations();
-  const editorIterations = getEditorIterations();
-  const totalIterations = Math.max(draftIterations.length, editorIterations.length);
+  const agentOutputs = result?.agentOutputs || [];
+  const finalOutputContent = result?.finalOutput?.content || formatOutput(result?.finalOutput?.output);
+  const hasFinalOutput = Boolean(finalOutputContent?.trim());
+  const isFinalOutputTab = activeStepId === "__final__";
 
-  const tabs = [
-    { id: "research", label: "Research", icon: SearchIcon },
-    { id: "draft", label: "Draft", icon: PenIcon },
-    { id: "feedback", label: "Editor", icon: MessageIcon },
-    { id: "final", label: "Final", icon: FileIcon },
-    { id: "seo", label: "SEO", icon: SEOTabIcon },
-  ];
+  const steps = useMemo(() => {
+    const currentSteps = result?.pipeline?.steps?.length ? result.pipeline.steps : pipelineSteps;
+    if (currentSteps?.length) return currentSteps;
+    return buildFallbackStepsFromOutputs(agentOutputs);
+  }, [agentOutputs, pipelineSteps, result?.pipeline?.steps]);
 
-  const getContent = () => {
-    switch (activeTab) {
-      case "research": return result?.research ? JSON.stringify(result.research, null, 2) : "";
-      case "draft": {
-        if (totalIterations === 0) return "";
-        const iteration = draftIterations[selectedIteration - 1];
-        return iteration?.output?.content || "";
-      }
-      case "feedback": {
-        if (totalIterations === 0) return "";
-        const iteration = editorIterations[selectedIteration - 1];
-        return iteration?.output ? JSON.stringify(iteration.output, null, 2) : "";
-      }
-      case "final": return result?.draft?.content || "";
-      default: return "";
-    }
+  const outputsByStepId = useMemo(() => {
+    const grouped = new Map();
+
+    agentOutputs.forEach((entry) => {
+      const key = entry.stepId || entry.agentId;
+      if (!key) return;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(entry);
+    });
+
+    return grouped;
+  }, [agentOutputs]);
+
+  const getStepStatus = (step) => {
+    const rawStatus = agentStatus?.[step.stepId] ||
+      result?.agentStatus?.[step.stepId] ||
+      agentStatus?.[step.agentId] ||
+      result?.agentStatus?.[step.agentId];
+
+    if (rawStatus) return normalizeStatus(rawStatus);
+    if (outputsByStepId.has(step.stepId) || outputsByStepId.has(step.agentId)) return "completed";
+    return "waiting";
   };
 
-  const getFileName = () => {
-    switch (activeTab) {
-      case "research": return "research-output.json";
-      case "draft": return `draft-v${selectedIteration}.md`;
-      case "feedback": return `editor-review-v${selectedIteration}.json`;
-      case "final": return "final-output.md";
-      case "seo": return "seo-optimization.md";
-      default: return "output.json";
-    }
-  };
-
-  const handleCopy = () => {
-    if (activeTab === "seo" && result?.optimization) {
-      navigator.clipboard.writeText(JSON.stringify(result.optimization, null, 2));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  useEffect(() => {
+    if (activeStepId === "all") return;
+    if (activeStepId === "__final__") {
+      if (!hasFinalOutput) setActiveStepId("all");
       return;
     }
-    const content = getContent();
-    if (content) {
-      navigator.clipboard.writeText(content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+    const stillExists = steps.some((step) => step.stepId === activeStepId);
+    if (!stillExists) setActiveStepId("all");
+  }, [activeStepId, hasFinalOutput, steps]);
 
-  const content = getContent();
-  const isSEOTab = activeTab === "seo";
-  const seoHasData = isSEOTab && result?.optimization;
-  const lineCount = content ? content.split("\n").length : 1;
-  const hasContent = isSEOTab ? !!seoHasData : (content && content.length > 0);
+  const visibleSteps = activeStepId === "all"
+    ? steps
+    : isFinalOutputTab
+      ? []
+      : steps.filter((step) => step.stepId === activeStepId);
 
-  const getCurrentScore = () => {
-    if (activeTab === "feedback" && editorIterations[selectedIteration - 1]) {
-      return editorIterations[selectedIteration - 1].output?.qualityScore;
-    }
-    return null;
+  const agentOutputText = visibleSteps
+    .map((step, index) => {
+      const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
+      const status = getStatusLabel(getStepStatus(step));
+      const outputContent = outputs.length
+        ? outputs.map((entry, outputIndex) => `## ${outputBlockTitle(entry, outputIndex, outputs.length)}\n${formatOutput(entry.output)}`).join("\n\n")
+        : "No output yet.";
+
+      return `# ${index + 1}. ${step.name} — ${status}\n${outputContent}`;
+    })
+    .join("\n\n---\n\n");
+
+  const outputText = isFinalOutputTab
+    ? `# Final Output\n${finalOutputContent}`
+    : [
+        hasFinalOutput && activeStepId === "all" ? `# Final Output\n${finalOutputContent}` : "",
+        agentOutputText
+      ].filter(Boolean).join("\n\n---\n\n");
+
+  const hasAnyOutput = agentOutputs.length > 0 || hasFinalOutput;
+  const hasSelectedSteps = steps.length > 0;
+  const canCopy = Boolean(outputText.trim()) && hasSelectedSteps;
+  const completedCount = steps.filter((step) => getStepStatus(step) === "completed").length;
+  const runningCount = steps.filter((step) => getStepStatus(step) === "running").length;
+  const failedCount = steps.filter((step) => getStepStatus(step) === "failed").length;
+
+  const handleCopy = () => {
+    if (!canCopy) return;
+    navigator.clipboard.writeText(outputText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
-  const score = getCurrentScore();
 
   return (
     <div className="live-output-card">
@@ -283,82 +349,110 @@ export default function LiveOutput({ result, loading }) {
         <div className="card-header-left">
           <div className="card-header-icon"><BoltIcon /></div>
           <div>
-            <div className="card-header-title">Live output</div>
+            <div className="card-header-title">Live Output Dashboard</div>
             <div className="card-header-subtitle">
-              {loading ? "Processing pipeline..." : hasContent ? "All iterations from each agent" : "Run the pipeline to see results"}
+              {loading ? "Showing the exact agents selected for this run" :
+                hasSelectedSteps ? "Dynamic status and generated output for the selected pipeline" :
+                  "Select agents and run a pipeline to see live output"}
             </div>
           </div>
         </div>
         <div className="card-header-right"><ExpandIcon /></div>
       </div>
 
-      <div className="tabs-container">
-        {tabs.map((tab) => (
-          <button key={tab.id} className={`tab ${activeTab === tab.id ? "active" : ""}`} onClick={() => setActiveTab(tab.id)}>
-            <tab.icon />{tab.label}
+      <div className="dynamic-tabs-container">
+        <button
+          type="button"
+          className={`dynamic-tab ${activeStepId === "all" ? "active" : ""}`}
+          onClick={() => setActiveStepId("all")}
+        >
+          <BotIcon />
+          All selected agents
+        </button>
+        {hasFinalOutput && (
+          <button
+            type="button"
+            className={`dynamic-tab ${isFinalOutputTab ? "active" : ""}`}
+            onClick={() => setActiveStepId("__final__")}
+          >
+            <FileIcon />
+            Final Output
+            <span className="dynamic-tab-status completed" />
           </button>
-        ))}
+        )}
+        {steps.map((step) => {
+          const Icon = getAgentIcon(step);
+          const status = getStepStatus(step);
+          return (
+            <button
+              type="button"
+              key={step.stepId}
+              className={`dynamic-tab ${activeStepId === step.stepId ? "active" : ""}`}
+              onClick={() => setActiveStepId(step.stepId)}
+            >
+              <Icon />
+              {step.name}
+              <span className={`dynamic-tab-status ${status}`} />
+            </button>
+          );
+        })}
       </div>
 
-      {(activeTab === "draft" || activeTab === "feedback") && totalIterations > 0 && (
-        <div className="iteration-selector">
-          <span className="iteration-selector-label">{activeTab === "draft" ? "Draft Version:" : "Editor Review:"}</span>
-          <div className="iteration-buttons">
-            {Array.from({ length: totalIterations }, (_, i) => i + 1).map((iter) => {
-              const iterData = activeTab === "draft" ? draftIterations[iter - 1] : editorIterations[iter - 1];
-              const iterScore = iterData?.output?.qualityScore;
-              const isApproved = iterScore >= 80;
-              return (
-                <button key={iter} className={`iteration-btn ${selectedIteration === iter ? "active" : ""} ${isApproved ? "approved" : ""}`} onClick={() => setSelectedIteration(iter)}>
-                  v{iter}{iterScore && <span className="iteration-score">{iterScore}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div className="file-status-bar">
+      <div className="file-status-bar dynamic-file-status">
         <div className="file-info">
-          <div className="file-dot" />
-          <span className="file-name">{getFileName()}</span>
-          {score && (
-            <span className={`iteration-badge ${score >= 80 ? "approved" : "needs-work"}`}>
-              {score >= 80 ? "✅ Approved" : "🔄 Needs Work"} ({score}/100)
-            </span>
-          )}
+          <div className={`file-dot ${failedCount > 0 ? "failed" : runningCount > 0 ? "running" : hasAnyOutput ? "completed" : "waiting"}`} />
+          <span className="file-name">
+            {isFinalOutputTab
+              ? "final-output.md"
+              : activeStepId === "all"
+                ? "dynamic-agent-dashboard"
+                : `${visibleSteps[0]?.name || "agent"}-output`}
+          </span>
+          <span className="dynamic-run-summary">
+            {steps.length} selected · {completedCount} completed · {runningCount} running{failedCount ? ` · ${failedCount} failed` : ""}
+          </span>
         </div>
         <div className="file-actions">
-          <span className="line-count">{loading ? "..." : isSEOTab ? "structured" : `${lineCount} lines`}</span>
-          <button className="copy-btn" onClick={handleCopy} disabled={!hasContent}>{copied ? "Copied!" : "Copy"}</button>
+          <span className="line-count">{outputText ? `${outputText.split("\n").length} lines` : "0 lines"}</span>
+          <button className="copy-btn" onClick={handleCopy} disabled={!canCopy}>{copied ? "Copied!" : "Copy"}</button>
         </div>
       </div>
 
-      {isSEOTab ? (
-        seoHasData ? (
-          <div className="seo-card-scroll">
-            <SEOResultCard optimization={result.optimization} />
-            {loading && (
-              <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>
+      <div className="dynamic-dashboard-scroll">
+        {!hasSelectedSteps ? (
+          <div className="empty-state compact-empty">
+            <div className="empty-icon"><ClipboardIcon /></div>
+            <div className="empty-title">No agents selected</div>
+            <div className="empty-subtitle">Build a pipeline to populate this dashboard.</div>
+          </div>
+        ) : isFinalOutputTab ? (
+          <FinalOutputCard finalOutput={result?.finalOutput} />
+        ) : (
+          <>
+            {hasFinalOutput && activeStepId === "all" && (
+              <FinalOutputCard finalOutput={result?.finalOutput} />
             )}
-          </div>
-        ) : loading ? (
-          <div className="code-container"><div className="loading-content"><div className="loading-spinner"></div><span>Processing pipeline...</span></div></div>
-        ) : (
-          <div className="empty-state"><div className="empty-icon"><ClipboardIcon /></div><div className="empty-title">SEO output will appear here</div><div className="empty-subtitle">Run the pipeline and get content approved</div></div>
-        )
-      ) : (
-        hasContent ? (
-          <div className="code-container">
-            <pre className="code-content">{content}</pre>
-            {loading && (<div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>)}
-          </div>
-        ) : loading ? (
-          <div className="code-container"><div className="loading-content"><div className="loading-spinner"></div><span>Processing pipeline...</span></div></div>
-        ) : (
-          <div className="empty-state"><div className="empty-icon"><ClipboardIcon /></div><div className="empty-title">Output will appear here</div><div className="empty-subtitle">Run the pipeline to see results</div></div>
-        )
-      )}
+            <div className="dynamic-agent-grid">
+              {visibleSteps.map((step) => {
+                const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
+                return (
+                  <DynamicAgentCard
+                    key={step.stepId}
+                    step={step}
+                    status={getStepStatus(step)}
+                    outputs={outputs}
+                    error={result?.error}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {loading && (
+          <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>
+        )}
+      </div>
     </div>
   );
 }
