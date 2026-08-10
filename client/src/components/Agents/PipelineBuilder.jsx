@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 const ArrowUpIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polyline points="18 15 12 9 6 15" />
@@ -29,7 +31,66 @@ const RefreshIcon = () => (
   </svg>
 );
 
-export default function PipelineBuilder({ selectedSteps, agentsById, onMoveStep, onRemoveStep, onResetDefault, disabled, isDefaultPipeline }) {
+const GripIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="9" cy="5" r="1" />
+    <circle cx="9" cy="12" r="1" />
+    <circle cx="9" cy="19" r="1" />
+    <circle cx="15" cy="5" r="1" />
+    <circle cx="15" cy="12" r="1" />
+    <circle cx="15" cy="19" r="1" />
+  </svg>
+);
+
+export default function PipelineBuilder({
+  selectedSteps,
+  agentsById,
+  onMoveStep,
+  onReorderStep,
+  onRemoveStep,
+  onResetDefault,
+  disabled,
+  isDefaultPipeline
+}) {
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  const clearDragState = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragStart = (event, index) => {
+    if (disabled) return;
+    setDraggedIndex(index);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+  };
+
+  const handleDragOver = (event, index) => {
+    if (disabled) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (event, targetIndex) => {
+    if (disabled) return;
+    event.preventDefault();
+
+    const rawSourceIndex = event.dataTransfer.getData("text/plain");
+    const sourceIndexFromEvent = Number(rawSourceIndex);
+    const sourceIndex = rawSourceIndex !== "" && Number.isInteger(sourceIndexFromEvent)
+      ? sourceIndexFromEvent
+      : draggedIndex;
+
+    if (sourceIndex != null && sourceIndex !== targetIndex) {
+      onReorderStep?.(sourceIndex, targetIndex);
+    }
+
+    clearDragState();
+  };
+
   return (
     <div className="pipeline-builder">
       <div className="section-header-row">
@@ -40,7 +101,7 @@ export default function PipelineBuilder({ selectedSteps, agentsById, onMoveStep,
       </div>
 
       <div className="pipeline-builder-hint">
-        Select agents from the library, then reorder them into the exact execution sequence.
+        Select agents from the library, then drag & drop or use arrows to reorder the exact execution sequence.
       </div>
 
       {isDefaultPipeline && (
@@ -52,11 +113,25 @@ export default function PipelineBuilder({ selectedSteps, agentsById, onMoveStep,
       {selectedSteps.length === 0 ? (
         <div className="pipeline-empty">Add at least one agent to run a pipeline.</div>
       ) : (
-        <div className="pipeline-step-list">
+        <div className="pipeline-step-list" onDragLeave={() => setDragOverIndex(null)}>
           {selectedSteps.map((step, index) => {
             const agent = agentsById.get(step.agentId);
+            const isDragging = draggedIndex === index;
+            const isDragOver = dragOverIndex === index && draggedIndex !== index;
+
             return (
-              <div className="pipeline-step-card" key={step.clientId}>
+              <div
+                className={`pipeline-step-card ${isDragging ? "dragging" : ""} ${isDragOver ? "drag-over" : ""}`}
+                key={step.clientId}
+                draggable={!disabled}
+                onDragStart={(event) => handleDragStart(event, index)}
+                onDragOver={(event) => handleDragOver(event, index)}
+                onDrop={(event) => handleDrop(event, index)}
+                onDragEnd={clearDragState}
+              >
+                <div className="pipeline-step-drag-handle" title="Drag to reorder">
+                  <GripIcon />
+                </div>
                 <div className="pipeline-step-number">{index + 1}</div>
                 <div className="pipeline-step-main">
                   <div className="pipeline-step-name">{agent?.name || step.agentId}</div>

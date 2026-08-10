@@ -150,6 +150,27 @@ export default function Home() {
     setActiveTemplateId(null);
   };
 
+  const handleReorderStep = (sourceIndex, targetIndex) => {
+    resetDisplayedRun();
+    setSelectedSteps((prev) => {
+      if (
+        sourceIndex === targetIndex ||
+        sourceIndex < 0 ||
+        targetIndex < 0 ||
+        sourceIndex >= prev.length ||
+        targetIndex >= prev.length
+      ) {
+        return prev;
+      }
+
+      const next = [...prev];
+      const [movedStep] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, movedStep);
+      return next;
+    });
+    setActiveTemplateId(null);
+  };
+
   const handleRemoveStep = (index) => {
     resetDisplayedRun();
     setSelectedSteps((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
@@ -243,6 +264,7 @@ export default function Home() {
             selectedSteps={selectedSteps}
             agentsById={agentsById}
             onMoveStep={handleMoveStep}
+            onReorderStep={handleReorderStep}
             onRemoveStep={handleRemoveStep}
             onResetDefault={handleResetDefault}
             disabled={loading}

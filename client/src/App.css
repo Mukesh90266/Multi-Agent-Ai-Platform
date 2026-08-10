@@ -2742,3 +2742,43 @@ body {
     flex-wrap: wrap;
   }
 }
+
+/* Pipeline Builder drag-and-drop */
+.pipeline-step-card[draggable="true"] {
+  cursor: grab;
+}
+
+.pipeline-step-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.pipeline-step-card.dragging {
+  opacity: 0.55;
+  transform: scale(0.99);
+  border-style: dashed;
+}
+
+.pipeline-step-card.drag-over {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  transform: translateY(-1px);
+}
+
+.pipeline-step-drag-handle {
+  width: 22px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.pipeline-step-drag-handle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pipeline-step-card:hover .pipeline-step-drag-handle {
+  color: #6366f1;
+}
