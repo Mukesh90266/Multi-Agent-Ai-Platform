@@ -1,46 +1,60 @@
-# Multi-Agent AI Platform — Multi-Agent Pipeline
+# Multi-Agent AI Platform
 
-A multi-agent content creation system with **Researcher**, **Writer**, and **Editor** agents working in a collaborative loop.
+A configurable multi-agent content platform. It includes the original **Researcher → Writer → Editor** workflow as a built-in/default pipeline, and now also lets users create custom prompt-driven agents and arrange them into dynamic pipelines.
 
-## Architecture
+## What changed
 
+- Built-in agents remain available:
+  - **Researcher** — creates structured research notes
+  - **Writer** — creates/revises Markdown drafts
+  - **Editor** — reviews drafts with a decision, quality score, and revision instructions
+- Users can create custom agents with:
+  - Agent name
+  - Role
+  - Personality
+  - System prompt
+- Custom agents are persisted in `server/data/customAgents.json` at runtime.
+- The frontend includes:
+  - Agent Builder
+  - Agent Library
+  - Pipeline Builder with reorder/remove controls
+  - Live output for every executed agent
+- The orchestrator now executes selected pipeline steps through a shared dynamic agent executor instead of a hardcoded `research() → writeContent() → reviewContent()` sequence.
+
+## Default pipeline
+
+The pre-built default pipeline is still:
+
+```text
+Researcher → Writer → Editor
 ```
-┌─────────────────┐
-│   Researcher    │  ← Runs ONCE (phase 0)
-│   (generates    │
-│   research)     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────┐
-│           WRITER-EDITOR LOOP                │
-│         (up to 3 iterations)                 │
-│                                             │
-│   ┌──────────┐    ┌──────────┐              │
-│   │  Writer  │───▶│  Editor  │              │
-│   │ (draft)  │◀───│ (review) │              │
-│   └──────────┘    └──────────┘              │
-│        │               │                    │
-│        │  if needs     │                    │
-│        │  revision     │                    │
-│        └───────────────┘                    │
-│              │                              │
-│              │ if approved or max=3        │
-│              ▼                              │
-└─────────────────────────────────────────────┘
+
+For backwards compatibility, the default pipeline keeps the existing Writer ↔ Editor review loop:
+
+```text
+Researcher runs once
+Writer ↔ Editor repeats up to 3 times until Editor quality score >= 80
 ```
 
-## Pipeline Flow
+This loop is attached to the default pipeline configuration and still runs through the same dynamic execution path used by custom pipelines.
 
-1. **Researcher Agent** (runs once)
-   - Analyzes topic, audience, content type, and tone
-   - Generates key points, definitions, outline, examples, and sources
-   - Output: structured research notes
+## Custom pipeline examples
 
-2. **Writer-Editor Loop** (up to 3 iterations)
-   - **Writer**: Creates/revises content based on research and editor feedback
-   - **Editor**: Reviews draft and provides feedback or approval
-   - Loop continues until Editor approves OR max iterations reached
+Users can now build and run pipelines such as:
+
+```text
+Researcher → Writer → Fact Checker → Editor
+Writer → Translator → Editor
+Custom Agent A → Custom Agent B
+```
+
+Each agent receives a shared pipeline context containing:
+
+- Original user input
+- Pipeline order
+- Outputs from previous agents
+
+Custom agents do **not** depend on Researcher, Writer, or Editor. They execute according to their saved role, personality, and system prompt.
 
 ## Setup
 
@@ -48,7 +62,7 @@ A multi-agent content creation system with **Researcher**, **Writer**, and **Edi
 npm install
 npm install --prefix server
 npm install --prefix client
-cp .env server/.env # optional; add your GROQ_API_KEY for full LLM support
+cp server/.env.example server/.env # optional; add GROQ_API_KEY for full LLM support
 npm run dev
 ```
 
@@ -56,85 +70,91 @@ Open `http://localhost:5173`.
 
 ## API Endpoints
 
-### POST /api/pipeline/run
+### Agents
 
-Start a new pipeline run.
+#### GET `/api/agents`
+
+Returns built-in and custom agents plus built-in pipeline templates.
+
+#### POST `/api/agents`
+
+Create a custom agent.
+
+```json
+{
+  "name": "Fact Checker",
+  "role": "Checks claims and flags uncertainty",
+  "personality": "Skeptical and concise",
+  "systemPrompt": "Review the original input and previous outputs. Identify factual claims and flag anything uncertain."
+}
+```
+
+### Pipelines
+
+#### GET `/api/pipeline/templates`
+
+Returns pre-built pipeline templates. Currently includes the default Researcher → Writer → Editor pipeline.
+
+#### POST `/api/pipeline/run`
+
+Start a pipeline run. If no `pipeline` is supplied, the default pre-built pipeline is used.
 
 ```json
 {
   "topic": "JavaScript Async/Await",
-  "contentType": "blog post",
-  "audience": "intermediate developers",
-  "tone": "educational",
-  "wordCount": 800
+  "contentType": "Blog post",
+  "audience": "Intermediate developers",
+  "tone": "Educational",
+  "wordCount": 800,
+  "pipeline": {
+    "agentIds": ["researcher", "writer", "editor"],
+    "templateId": "default-rwe"
+  }
 }
 ```
 
-**Response:**
+A custom pipeline can omit `templateId`:
+
 ```json
 {
-  "success": true,
-  "runId": "uuid-here",
-  "message": "Pipeline started"
+  "topic": "Translate this article to Spanish",
+  "contentType": "Translation",
+  "audience": "General",
+  "tone": "Clear",
+  "wordCount": 800,
+  "pipeline": {
+    "agentIds": ["writer", "custom-translator-abc123"]
+  }
 }
 ```
 
-### GET /api/pipeline/status/:runId
+#### GET `/api/pipeline/status/:runId`
 
-Check pipeline status and get full results.
+Returns live state and final outputs, including:
 
-**Response includes:**
-- `status`: "approved", "needs_revision", or "error"
-- `totalIterations`: Number of Writer-Editor cycles (1-3)
-- `maxIterations`: 3
-- `reachedMaxIterations`: boolean
-- `research`: Research agent output
-- `draft`: Final approved/revised content
-- `editorReview`: Final editor decision with quality score
-- `iterations`: Array of all iteration logs
-- `approved`: boolean
+- `pipeline.steps`
+- `agentStatus`
+- `agentOutputs`
+- `iterations`
+- `research`, `draft`, and `editorReview` when built-in agents are used
+- `finalOutput`
 
-### GET /api/history
+### History
 
-Returns prior pipeline runs.
+#### GET `/api/history`
+
+Returns prior pipeline runs when MongoDB is connected.
 
 ## Modes
 
-- **With GROQ_API_KEY**: All agents use the Groq LLM for intelligent content generation and review
-- **Without a key**: Deterministic demo mode (useful for UI testing and development)
-
-## Logging
-
-Each iteration is logged with detailed visibility:
-
-```
-═══ RESEARCHER AGENT - STARTING ═══
-
-▶ [RESEARCHER] started - Topic: JavaScript Async/Await
-✓ [RESEARCHER] completed - 5 key points, 1 sources
-   Summary: A research brief on JavaScript Async/Await...
-
-═══ WRITER-EDITOR ITERATION 1/3 ═══
-
-▶ [WRITER] started - Initial Draft
-✓ [WRITER] completed - Generated 250 words
-▶ [EDITOR] started
-✓ [EDITOR] completed - Decision: approved (85/100)
-   Strengths: Basic structure is present; Covers main topics...
-
-═══ PIPELINE COMPLETED ═══
-
-Total Writer-Editor Cycles: 1
-Final Decision: approved
-Quality Score: 85/100
-Content Approved: YES ✓
-```
+- **With `GROQ_API_KEY`**: Agents use the Groq-compatible OpenAI client.
+- **Without a key**: Deterministic demo mode for development and UI testing.
 
 ## Configuration
 
 | Variable | Description | Default |
-|----------|-------------|---------|
-| `GROQ_API_KEY` | API key for Groq LLM | (none) |
-| `PORT` | Server port | 5000 |
-| `MONGO_URI` | MongoDB connection string | (none) |
-| `MODEL` | LLM model to use | `mixtral-8x7b-32768` |
+|---|---|---|
+| `GROQ_API_KEY` | API key for Groq LLM | none |
+| `GROQ_MODEL` | Model name | `llama-3.3-70b-versatile` |
+| `PORT` | Server port | `5000` |
+| `MONGODB_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017/multi-agent-pipeline` |

@@ -14,7 +14,7 @@ export async function getHistory(req, res) {
     const runs = await PipelineRun.find()
       .sort({ createdAt: -1 })
       .limit(30)
-      .select('-iterations -draft.content -optimization.optimizedContent -research.keyPoints -research.definitions -research.examples -research.sources');
+      .select('-iterations -agentOutputs.output -agentOutputs.text -draft.content -finalOutput.content -optimization.optimizedContent -research.keyPoints -research.definitions -research.examples -research.sources');
 
     res.json({
       success: true,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const BoltIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -44,174 +44,100 @@ const FileIcon = () => (
     <line x1="16" y1="17" x2="8" y2="17" />
   </svg>
 );
+const BotIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="8" width="18" height="12" rx="2" />
+    <path d="M12 8V4" />
+    <circle cx="8" cy="14" r="1" />
+    <circle cx="16" cy="14" r="1" />
+    <path d="M9 18h6" />
+  </svg>
+);
 const SEOTabIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
     <line x1="7" y1="7" x2="7.01" y2="7" />
   </svg>
 );
-const CheckCircleIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-);
+
+function formatOutput(output) {
+  if (!output) return "";
+  if (typeof output === "string") return output;
+  if (typeof output.content === "string") return output.content;
+  if (typeof output.optimizedContent === "string") return output.optimizedContent;
+  return JSON.stringify(output, null, 2);
+}
+
+function AgentOutputs({ outputs = [] }) {
+  if (!outputs.length) {
+    return (
+      <div className="empty-state compact-empty">
+        <div className="empty-icon"><ClipboardIcon /></div>
+        <div className="empty-title">Agent outputs will appear here</div>
+        <div className="empty-subtitle">Every selected agent writes into the shared pipeline context.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="agent-output-list">
+      {outputs.map((entry, index) => (
+        <div className="agent-output-card" key={`${entry.stepId}-${index}`}>
+          <div className="agent-output-card-header">
+            <div>
+              <span className="agent-output-index">#{index + 1}</span>
+              <span className="agent-output-name">{entry.agentName}</span>
+              <span className={`agent-output-type ${entry.type}`}>{entry.type}</span>
+            </div>
+            <span className="agent-output-phase">{entry.phase}</span>
+          </div>
+          {entry.summary && <div className="agent-output-summary">{entry.summary}</div>}
+          <pre className="agent-output-pre">{formatOutput(entry.output)}</pre>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function SEOResultCard({ optimization }) {
   if (!optimization) return null;
-  const {
-    suggestedTitle, metaTitle, metaDescription, slug,
-    headings, tableOfContents, seo, optimizedContent
-  } = optimization;
-  const primaryKeyword = seo?.primaryKeyword || "";
-  const secondaryKeywords = seo?.secondaryKeywords || [];
-  const keywordDensity = seo?.keywordDensity || {};
-  const densityWarning = seo?.densityWarning;
-  const densityEntries = Object.entries(keywordDensity);
-
   return (
     <div className="seo-card">
-      {/* Title Block */}
       <div className="seo-card-title-block">
-        <div className="seo-card-icon-wrap"><CheckCircleIcon /></div>
         <div className="seo-card-title-text">
-          <h2 className="seo-card-heading">{suggestedTitle || "SEO Optimized"}</h2>
-          <div className="seo-card-slug">
-            <span className="seo-slug-label">URL</span>
-            <code className="seo-slug-value">/{slug || "—"}</code>
-          </div>
+          <h2 className="seo-card-heading">{optimization.suggestedTitle || "SEO Optimized"}</h2>
+          {optimization.slug && <code className="seo-slug-value">/{optimization.slug}</code>}
         </div>
       </div>
-
-      {/* SEO Metadata */}
       <div className="seo-card-section">
         <div className="seo-section-heading">SEO Metadata</div>
-        <div className="seo-meta-grid">
-          <div className="seo-meta-block">
-            <div className="seo-meta-block-label">Meta Title <span className="seo-meta-chars">{metaTitle?.length || 0}/60</span></div>
-            <div className="seo-meta-block-value">{metaTitle || "—"}</div>
-          </div>
-          <div className="seo-meta-block">
-            <div className="seo-meta-block-label">Meta Description <span className="seo-meta-chars">{metaDescription?.length || 0}/160</span></div>
-            <div className="seo-meta-block-value">{metaDescription || "—"}</div>
-          </div>
-        </div>
+        <pre className="seo-content-preview">{JSON.stringify(optimization, null, 2)}</pre>
       </div>
-
-      {/* Keywords */}
-      <div className="seo-card-section">
-        <div className="seo-section-heading">Keyword Analysis</div>
-        <div className="seo-primary-row">
-          <div className="seo-primary-label">Primary</div>
-          <div className="seo-primary-pill">{primaryKeyword}</div>
-        </div>
-        <div className="seo-secondary-row">
-          <div className="seo-secondary-label">Secondary</div>
-          <div className="seo-secondary-tags">
-            {secondaryKeywords.map((kw, i) => (
-              <span key={i} className="seo-secondary-tag">{kw}</span>
-            ))}
-          </div>
-        </div>
-        {densityEntries.length > 0 && (
-          <div className="seo-density-table">
-            <div className="seo-density-header">
-              <span>Keyword</span><span>Density</span><span>Status</span>
-            </div>
-            {densityEntries.map(([kw, density]) => {
-              const val = parseFloat(density);
-              const inRange = val >= 0.8 && val <= 2.0;
-              return (
-                <div key={kw} className="seo-density-row">
-                  <span className="seo-density-keyword">{kw}</span>
-                  <span className="seo-density-percent">{density}</span>
-                  <span className={`seo-density-status ${inRange ? "good" : "warn"}`}>
-                    {inRange ? "✓ Good" : "⚠ Off"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {densityWarning && (
-        <div className="seo-warning-box">
-          <span className="seo-warning-dot">⚠</span>
-          <span>{densityWarning}</span>
-        </div>
-      )}
-
-      {/* Content Structure */}
-      <div className="seo-card-section">
-        <div className="seo-section-heading">Content Structure</div>
-        <div className="seo-structure-grid">
-          {tableOfContents && tableOfContents.length > 0 && (
-            <div className="seo-toc-block">
-              <div className="seo-toc-label">Table of Contents</div>
-              <ol className="seo-toc-list">
-                {tableOfContents.map((item, i) => (
-                  <li key={i} className="seo-toc-item">{item}</li>
-                ))}
-              </ol>
-            </div>
-          )}
-          {headings && (headings.h1 || headings.h2?.length > 0 || headings.h3?.length > 0) && (
-            <div className="seo-headings-block">
-              <div className="seo-headings-label">Heading Hierarchy</div>
-              <div className="seo-headings-tree">
-                {headings.h1 && (
-                  <div className="seo-tree-item h1">
-                    <span className="seo-tree-tag">H1</span>
-                    <span className="seo-tree-text">{headings.h1}</span>
-                  </div>
-                )}
-                {headings.h2?.map((h, i) => (
-                  <div key={`h2-${i}`} className="seo-tree-item h2">
-                    <span className="seo-tree-tag">H2</span>
-                    <span className="seo-tree-text">{h}</span>
-                  </div>
-                ))}
-                {headings.h3?.map((h, i) => (
-                  <div key={`h3-${i}`} className="seo-tree-item h3">
-                    <span className="seo-tree-tag">H3</span>
-                    <span className="seo-tree-text">{h}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {optimizedContent && (
-        <div className="seo-card-section">
-          <div className="seo-section-heading">Optimized Content</div>
-          <pre className="seo-content-preview">{optimizedContent}</pre>
-        </div>
-      )}
     </div>
   );
 }
 
 export default function LiveOutput({ result, loading }) {
-  const [activeTab, setActiveTab] = useState("research");
+  const [activeTab, setActiveTab] = useState("agents");
   const [selectedIteration, setSelectedIteration] = useState(1);
   const [copied, setCopied] = useState(false);
 
-  const getDraftIterations = () => {
+  const agentOutputs = result?.agentOutputs || [];
+
+  const draftIterations = useMemo(() => {
     if (!result?.iterations) return [];
-    return result.iterations.filter(it => it.phase === "write");
-  };
-  const getEditorIterations = () => {
+    return result.iterations.filter((it) => it.phase === "write");
+  }, [result]);
+
+  const editorIterations = useMemo(() => {
     if (!result?.iterations) return [];
-    return result.iterations.filter(it => it.phase === "review");
-  };
-  const draftIterations = getDraftIterations();
-  const editorIterations = getEditorIterations();
+    return result.iterations.filter((it) => it.phase === "review");
+  }, [result]);
+
   const totalIterations = Math.max(draftIterations.length, editorIterations.length);
 
   const tabs = [
+    { id: "agents", label: "Agents", icon: BotIcon },
     { id: "research", label: "Research", icon: SearchIcon },
     { id: "draft", label: "Draft", icon: PenIcon },
     { id: "feedback", label: "Editor", icon: MessageIcon },
@@ -221,40 +147,37 @@ export default function LiveOutput({ result, loading }) {
 
   const getContent = () => {
     switch (activeTab) {
+      case "agents": return agentOutputs.map((entry, index) => `#${index + 1} ${entry.agentName}\n${formatOutput(entry.output)}`).join("\n\n---\n\n");
       case "research": return result?.research ? JSON.stringify(result.research, null, 2) : "";
       case "draft": {
         if (totalIterations === 0) return "";
         const iteration = draftIterations[selectedIteration - 1];
-        return iteration?.output?.content || "";
+        return iteration?.output?.content || formatOutput(iteration?.output);
       }
       case "feedback": {
         if (totalIterations === 0) return "";
         const iteration = editorIterations[selectedIteration - 1];
         return iteration?.output ? JSON.stringify(iteration.output, null, 2) : "";
       }
-      case "final": return result?.draft?.content || "";
+      case "final": return result?.finalOutput?.content || result?.draft?.content || "";
+      case "seo": return result?.optimization ? JSON.stringify(result.optimization, null, 2) : "";
       default: return "";
     }
   };
 
   const getFileName = () => {
     switch (activeTab) {
+      case "agents": return "agent-outputs.txt";
       case "research": return "research-output.json";
       case "draft": return `draft-v${selectedIteration}.md`;
       case "feedback": return `editor-review-v${selectedIteration}.json`;
       case "final": return "final-output.md";
-      case "seo": return "seo-optimization.md";
-      default: return "output.json";
+      case "seo": return "seo-optimization.json";
+      default: return "output.txt";
     }
   };
 
   const handleCopy = () => {
-    if (activeTab === "seo" && result?.optimization) {
-      navigator.clipboard.writeText(JSON.stringify(result.optimization, null, 2));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      return;
-    }
     const content = getContent();
     if (content) {
       navigator.clipboard.writeText(content);
@@ -265,9 +188,8 @@ export default function LiveOutput({ result, loading }) {
 
   const content = getContent();
   const isSEOTab = activeTab === "seo";
-  const seoHasData = isSEOTab && result?.optimization;
+  const hasContent = activeTab === "agents" ? agentOutputs.length > 0 : Boolean(content && content.length > 0);
   const lineCount = content ? content.split("\n").length : 1;
-  const hasContent = isSEOTab ? !!seoHasData : (content && content.length > 0);
 
   const getCurrentScore = () => {
     if (activeTab === "feedback" && editorIterations[selectedIteration - 1]) {
@@ -285,7 +207,7 @@ export default function LiveOutput({ result, loading }) {
           <div>
             <div className="card-header-title">Live output</div>
             <div className="card-header-subtitle">
-              {loading ? "Processing pipeline..." : hasContent ? "All iterations from each agent" : "Run the pipeline to see results"}
+              {loading ? "Processing dynamic pipeline..." : hasContent ? "Shared context and outputs from every agent" : "Run a pipeline to see results"}
             </div>
           </div>
         </div>
@@ -334,30 +256,31 @@ export default function LiveOutput({ result, loading }) {
         </div>
       </div>
 
-      {isSEOTab ? (
-        seoHasData ? (
+      {activeTab === "agents" ? (
+        <div className="code-container agent-output-container">
+          <AgentOutputs outputs={agentOutputs} />
+          {loading && <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>}
+        </div>
+      ) : isSEOTab ? (
+        result?.optimization ? (
           <div className="seo-card-scroll">
             <SEOResultCard optimization={result.optimization} />
-            {loading && (
-              <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>
-            )}
+            {loading && <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>}
           </div>
         ) : loading ? (
           <div className="code-container"><div className="loading-content"><div className="loading-spinner"></div><span>Processing pipeline...</span></div></div>
         ) : (
-          <div className="empty-state"><div className="empty-icon"><ClipboardIcon /></div><div className="empty-title">SEO output will appear here</div><div className="empty-subtitle">Run the pipeline and get content approved</div></div>
+          <div className="empty-state"><div className="empty-icon"><ClipboardIcon /></div><div className="empty-title">SEO output will appear here</div><div className="empty-subtitle">Add/run an optimizer agent if available</div></div>
         )
+      ) : hasContent ? (
+        <div className="code-container">
+          <pre className="code-content">{content}</pre>
+          {loading && <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>}
+        </div>
+      ) : loading ? (
+        <div className="code-container"><div className="loading-content"><div className="loading-spinner"></div><span>Processing pipeline...</span></div></div>
       ) : (
-        hasContent ? (
-          <div className="code-container">
-            <pre className="code-content">{content}</pre>
-            {loading && (<div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>)}
-          </div>
-        ) : loading ? (
-          <div className="code-container"><div className="loading-content"><div className="loading-spinner"></div><span>Processing pipeline...</span></div></div>
-        ) : (
-          <div className="empty-state"><div className="empty-icon"><ClipboardIcon /></div><div className="empty-title">Output will appear here</div><div className="empty-subtitle">Run the pipeline to see results</div></div>
-        )
+        <div className="empty-state"><div className="empty-icon"><ClipboardIcon /></div><div className="empty-title">Output will appear here</div><div className="empty-subtitle">Run the pipeline to see results</div></div>
       )}
     </div>
   );

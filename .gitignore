@@ -4,3 +4,4 @@ client/.env
 *.log
 server/logs/iterationLogs.json
 server/output/finalOutput.json
+server/data/customAgents.json

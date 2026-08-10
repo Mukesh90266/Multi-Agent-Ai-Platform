@@ -16,16 +16,20 @@ const PipelineRunSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["approved", "needs_revision", "error"],
-      default: "needs_revision"
+      enum: ["approved", "needs_revision", "completed", "error"],
+      default: "completed"
     },
 
     totalIterations: Number,
     maxIterations: Number,
+    executionSteps: Number,
     reachedMaxIterations: Boolean,
     approved: Boolean,
 
+    pipeline: mongoose.Schema.Types.Mixed,
     agentStatus: mongoose.Schema.Types.Mixed,
+    agentOutputs: [mongoose.Schema.Types.Mixed],
+    finalOutput: mongoose.Schema.Types.Mixed,
 
     research: mongoose.Schema.Types.Mixed,
 

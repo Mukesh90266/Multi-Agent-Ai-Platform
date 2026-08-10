@@ -1,3 +1,48 @@
+function validatePipelineRequest(body = {}) {
+  const pipelineBody = body.pipeline && typeof body.pipeline === "object" ? body.pipeline : {};
+  const rawAgentIds = Array.isArray(pipelineBody.agentIds)
+    ? pipelineBody.agentIds
+    : Array.isArray(body.agentIds)
+      ? body.agentIds
+      : null;
+
+  const templateId = pipelineBody.templateId || body.pipelineTemplateId || null;
+
+  if (!rawAgentIds && !templateId) {
+    return undefined;
+  }
+
+  const pipeline = {};
+
+  if (templateId) {
+    pipeline.templateId = String(templateId).trim();
+  }
+
+  if (rawAgentIds) {
+    const agentIds = rawAgentIds
+      .map((agentId) => String(agentId || "").trim())
+      .filter(Boolean);
+
+    if (agentIds.length < 1) {
+      throw new Error("Pipeline must include at least one agent.");
+    }
+
+    if (agentIds.length > 12) {
+      throw new Error("Pipeline can include at most 12 agents for this version.");
+    }
+
+    for (const agentId of agentIds) {
+      if (agentId.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(agentId)) {
+        throw new Error(`Invalid agent id in pipeline: ${agentId}`);
+      }
+    }
+
+    pipeline.agentIds = agentIds;
+  }
+
+  return pipeline;
+}
+
 export function validatePipelineInput(body = {}) {
   const topic = String(body.topic || "").trim();
 
@@ -20,10 +65,20 @@ export function validatePipelineInput(body = {}) {
     contentType: String(body.contentType || "Blog post").trim(),
     audience: String(body.audience || "General audience").trim(),
     tone: String(body.tone || "Educational").trim(),
-    wordCount
+    wordCount,
+    pipeline: validatePipelineRequest(body)
   };
 }
+
 export function validateResearch(data) {
-  if (!data || typeof data !== 'object' || !Array.isArray(data.keyPoints) || !Array.isArray(data.suggestedOutline)) throw new Error('Researcher returned an invalid structured response.');
+  if (
+    !data ||
+    typeof data !== "object" ||
+    !Array.isArray(data.keyPoints) ||
+    !Array.isArray(data.suggestedOutline)
+  ) {
+    throw new Error("Researcher returned an invalid structured response.");
+  }
+
   return data;
 }

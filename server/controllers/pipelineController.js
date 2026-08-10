@@ -1,63 +1,88 @@
-import PipelineRun from '../models/PipelineRun.js';
-import { runPipeline } from '../orchestrator/pipeline.js';
-import { stateManager } from '../state/stateManager.js';
-import { validatePipelineInput } from '../utils/validator.js';
+import PipelineRun from "../models/PipelineRun.js";
+import { runPipeline } from "../orchestrator/pipeline.js";
+import {
+  buildRunnablePipeline,
+  getPipelineTemplates,
+  serializePipelineForClient
+} from "../services/agentStore.js";
+import { stateManager } from "../state/stateManager.js";
+import { validatePipelineInput } from "../utils/validator.js";
+
+function createWaitingStatus(pipeline) {
+  return pipeline.steps.reduce((status, step) => {
+    status[step.stepId] = "waiting";
+    return status;
+  }, {});
+}
 
 export async function runPipelineController(req, res) {
   try {
-    const input = validatePipelineInput(req.body);
+    const validated = validatePipelineInput(req.body);
+    const { pipeline: pipelineRequest, ...input } = validated;
+    const pipeline = await buildRunnablePipeline(pipelineRequest || {});
     const runId = crypto.randomUUID();
 
-    // Initialize state immediately so status endpoint never returns 404
     stateManager.set(runId, {
+      runId,
+      input,
       status: "starting",
       iteration: 0,
-      maxIterations: 3,
-      agentStatus: {
-        researcher: "waiting",
-        writer: "waiting",
-        editor: "waiting",
-        optimizer: "waiting"
-      },
+      maxIterations: pipeline.loop?.maxIterations || 1,
+      agentStatus: createWaitingStatus(pipeline),
+      pipeline: serializePipelineForClient(pipeline),
+      currentStep: null,
       iterations: [],
+      agentOutputs: [],
       research: null,
-      draft: null
+      draft: null,
+      editorReview: null,
+      finalOutput: null,
+      revisionHistory: []
     });
 
-    // Start pipeline in background and return runId immediately
-    runPipeline(input, runId).then(async (result) => {
-      if (req.app.locals.mongoReady) {
-        try {
-          await PipelineRun.create({
-            runId: result.runId,
-            topic: input.topic,
-            contentType: input.contentType,
-            audience: input.audience,
-            tone: input.tone,
-            wordCount: input.wordCount,
-            status: result.status,
-            totalIterations: result.totalIterations,
-            maxIterations: result.maxIterations,
-            reachedMaxIterations: result.reachedMaxIterations,
-            approved: result.approved,
-            agentStatus: result.agentStatus,
-            research: result.research,
-            draft: result.draft,
-            editorReview: result.editorReview,
-            optimization: result.optimization,
-            iterations: result.iterations,
-            revisionHistory: result.revisionHistory
-          });
-        } catch (dbError) {
-          console.error('Failed to save pipeline run to MongoDB:', dbError.message);
+    runPipeline(input, runId, { pipeline })
+      .then(async (result) => {
+        if (req.app.locals.mongoReady) {
+          try {
+            await PipelineRun.create({
+              runId: result.runId,
+              topic: input.topic,
+              contentType: input.contentType,
+              audience: input.audience,
+              tone: input.tone,
+              wordCount: input.wordCount,
+              status: result.status,
+              totalIterations: result.totalIterations,
+              maxIterations: result.maxIterations,
+              executionSteps: result.executionSteps,
+              reachedMaxIterations: result.reachedMaxIterations,
+              approved: result.approved,
+              pipeline: result.pipeline,
+              agentStatus: result.agentStatus,
+              agentOutputs: result.agentOutputs,
+              finalOutput: result.finalOutput,
+              research: result.research,
+              draft: result.draft,
+              editorReview: result.editorReview,
+              optimization: result.optimization,
+              iterations: result.iterations,
+              revisionHistory: result.revisionHistory
+            });
+          } catch (dbError) {
+            console.error("Failed to save pipeline run to MongoDB:", dbError.message);
+          }
         }
-      }
-    }).catch((pipelineError) => {
-      // Pipeline error in background — state already has error info
-      console.error('Pipeline background error:', pipelineError.message);
-    });
+      })
+      .catch((pipelineError) => {
+        console.error("Pipeline background error:", pipelineError.message);
+      });
 
-    res.status(202).json({ success: true, runId, message: "Pipeline started" });
+    res.status(202).json({
+      success: true,
+      runId,
+      pipeline: serializePipelineForClient(pipeline),
+      message: "Pipeline started"
+    });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -73,6 +98,14 @@ export async function getPipelineStatusController(req, res) {
     }
 
     res.status(200).json({ success: true, ...state });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+export async function listPipelineTemplatesController(req, res) {
+  try {
+    res.status(200).json({ success: true, templates: getPipelineTemplates() });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

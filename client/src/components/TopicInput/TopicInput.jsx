@@ -7,7 +7,7 @@ const SendIcon = () => (
   </svg>
 );
 
-export default function TopicInput({ onSubmit, disabled }) {
+export default function TopicInput({ onSubmit, disabled, selectedCount = 0, isDefaultPipeline = false }) {
   const [form, setForm] = useState({
     topic: "",
     contentType: "Blog post",
@@ -23,7 +23,7 @@ export default function TopicInput({ onSubmit, disabled }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (form.topic.trim().length >= 3) {
+    if (form.topic.trim().length >= 3 && selectedCount > 0) {
       onSubmit(form);
     }
   };
@@ -31,18 +31,22 @@ export default function TopicInput({ onSubmit, disabled }) {
   return (
     <div className="section">
       <div className="section-header">
-        <span className="section-title">Configure pipeline</span>
+        <span className="section-title">Configure run</span>
+        <div className="topic-pipeline-pill">
+          {selectedCount} agent{selectedCount === 1 ? "" : "s"} selected
+          {isDefaultPipeline && <span> · default loop</span>}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label className="form-label">Research topic</label>
+          <label className="form-label">Original user input / topic</label>
           <textarea
             name="topic"
             className="form-textarea"
             value={form.topic}
             onChange={handleChange}
-            placeholder="What would you like to research?"
+            placeholder="What should the selected agents work on?"
             disabled={disabled}
             rows={3}
           />
@@ -101,9 +105,9 @@ export default function TopicInput({ onSubmit, disabled }) {
           </div>
         </div>
 
-        <button type="submit" className="run-button" disabled={disabled || form.topic.trim().length < 3}>
+        <button type="submit" className="run-button" disabled={disabled || form.topic.trim().length < 3 || selectedCount === 0}>
           <SendIcon />
-          Run pipeline
+          Run selected pipeline
         </button>
       </form>
     </div>

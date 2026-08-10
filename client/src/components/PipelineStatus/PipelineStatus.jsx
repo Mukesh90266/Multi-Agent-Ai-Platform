@@ -21,6 +21,16 @@ const EditIcon = () => (
   </svg>
 );
 
+const BotIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="8" width="18" height="12" rx="2" />
+    <path d="M12 8V4" />
+    <circle cx="8" cy="14" r="1" />
+    <circle cx="16" cy="14" r="1" />
+    <path d="M9 18h6" />
+  </svg>
+);
+
 const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="12" r="10" />
@@ -77,68 +87,52 @@ const SEOTagIcon = () => (
   </svg>
 );
 
-export default function PipelineStatus({ result, loading, currentAgent, agentStatus }) {
-  const agents = [
-    {
-      id: "researcher",
-      name: "Researcher",
-      icon: SearchIcon,
-      statusText: {
-        waiting: "Waiting for input",
-        running: "Collecting research data...",
-        completed: "Research collected successfully",
-      },
-    },
-    {
-      id: "writer",
-      name: "Writer",
-      icon: PenIcon,
-      statusText: {
-        waiting: "Waiting for research",
-        running: "Generating content...",
-        completed: "Draft content generated",
-      },
-    },
-    {
-      id: "editor",
-      name: "Editor",
-      icon: EditIcon,
-      statusText: {
-        waiting: "Waiting for writer",
-        running: "Reviewing content...",
-        completed: "Review completed",
-      },
-    },
-    {
-      id: "optimizer",
-      name: "SEO Optimizer",
-      icon: SEOTagIcon,
-      statusText: {
-        waiting: "Waiting for approval",
-        running: "Optimizing format & SEO...",
-        completed: "SEO optimization done",
-        skipped: "Skipped (content not approved)",
-      },
-    },
-  ];
+function getAgentIcon(agent) {
+  if (agent.agentId === "researcher") return SearchIcon;
+  if (agent.agentId === "writer") return PenIcon;
+  if (agent.agentId === "editor") return EditIcon;
+  return BotIcon;
+}
 
-  // Use real-time agentStatus if available, otherwise fall back to result
-  const getAgentStatus = (agentId) => {
-    if (agentStatus) {
-      return agentStatus[agentId] || "waiting";
+function getStatusText(agent, status) {
+  const builtInText = {
+    researcher: {
+      waiting: "Waiting for input",
+      running: "Collecting research data...",
+      completed: "Research collected successfully"
+    },
+    writer: {
+      waiting: "Waiting for turn",
+      running: "Generating content...",
+      completed: "Draft content generated"
+    },
+    editor: {
+      waiting: "Waiting for draft",
+      running: "Reviewing content...",
+      completed: "Review completed"
     }
+  };
 
-    if (!result && !loading) return "waiting";
+  if (builtInText[agent.agentId]?.[status]) return builtInText[agent.agentId][status];
+  if (status === "running") return "Executing saved system prompt...";
+  if (status === "completed") return "Agent output generated";
+  if (status === "skipped") return "Skipped";
+  if (status === "error") return "Error";
+  return "Waiting for turn";
+}
 
-    // If result exists, use it
-    if (result?.agentStatus?.[agentId]) {
-      return result.agentStatus[agentId];
-    }
+export default function PipelineStatus({ result, loading, agentStatus, pipelineSteps = [] }) {
+  const steps = result?.pipeline?.steps || pipelineSteps;
 
+  const getAgentStatus = (step) => {
+    if (agentStatus?.[step.stepId]) return agentStatus[step.stepId];
+    if (result?.agentStatus?.[step.stepId]) return result.agentStatus[step.stepId];
+    if (agentStatus?.[step.agentId]) return agentStatus[step.agentId];
     return "waiting";
   };
 
-  const editorStatus = getAgentStatus("editor");
+  const editorStatus = steps.some((step) => step.agentId === "editor" && getAgentStatus(step) === "running") ? "running" :
+    steps.some((step) => step.agentId === "editor" && getAgentStatus(step) === "completed") ? "completed" : "waiting";
   const isEditorRunning = editorStatus === "running";
   const isEditorCompleted = editorStatus === "completed";
 
@@ -147,29 +141,8 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
   const summary = editorReview?.summary;
   const revisionHistory = result?.revisionHistory || [];
   const reachedMaxIterations = result?.reachedMaxIterations;
-  const totalIterations = result?.totalIterations || 0;
-  const maxIterations = result?.maxIterations || 3;
-
-  // Calculate final decision based on QUALITY SCORE, not decision field
-  // Score >= 80 = Approved, Score < 80 = Needs Revision
+  const maxIterations = result?.maxIterations || 1;
   const isApproved = qualityScore >= 80;
-  const isNeedsRevision = qualityScore < 80;
-
-  // Calculate revision summary
-  const getRevisionSummary = () => {
-    if (revisionHistory.length === 0) return null;
-    
-    const iterationsWithRevisions = revisionHistory.filter(r => r.hadRevisions);
-    const totalRevisions = iterationsWithRevisions.reduce((sum, r) => sum + r.revisionCount, 0);
-    
-    return {
-      totalCycles: revisionHistory.length,
-      revisionCycles: iterationsWithRevisions.length,
-      totalRevisions
-    };
-  };
-
-  const revisionSummary = getRevisionSummary();
 
   return (
     <div>
@@ -180,37 +153,38 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
         </span>
       </div>
 
-      {agents.map((agent) => {
-        const status = getAgentStatus(agent.id);
+      {steps.length === 0 ? (
+        <div className="pipeline-empty status-empty">No agents selected.</div>
+      ) : steps.map((agent) => {
+        const status = getAgentStatus(agent);
+        const Icon = getAgentIcon(agent);
         const isCompleted = status === "completed";
         const isRunning = status === "running";
-        const isWaiting = status === "waiting";
         const isSkipped = status === "skipped";
+        const isError = status === "error";
 
         return (
-          <div key={agent.id} className={`agent-card ${agent.id}`}>
-            <div className={`agent-icon ${agent.id}`}>
-              <agent.icon />
+          <div key={agent.stepId} className={`agent-card ${agent.agentId} ${agent.type || "custom"}`}>
+            <div className={`agent-icon ${agent.agentId} ${agent.type || "custom"}`}>
+              <Icon />
             </div>
             <div className="agent-info">
               <div className="agent-header">
                 <span className="agent-name">{agent.name}</span>
                 <span className={`agent-badge ${status}`}>
-                  {isCompleted ? "Completed" : isRunning ? "Running" : isSkipped ? "Skipped" : "Waiting"}
+                  {isCompleted ? "Completed" : isRunning ? "Running" : isSkipped ? "Skipped" : isError ? "Error" : "Waiting"}
                 </span>
               </div>
               <div className="agent-progress">
                 <div
                   className="agent-progress-fill"
-                  style={{
-                    width: isCompleted ? "100%" : isRunning ? "60%" : "0%",
-                  }}
+                  style={{ width: isCompleted ? "100%" : isRunning ? "60%" : isSkipped ? "100%" : "0%" }}
                 />
               </div>
-              <span className="agent-status">{agent.statusText[status] || agent.statusText.waiting}</span>
+              <span className="agent-status">{getStatusText(agent, status)}</span>
             </div>
             <div className="agent-right">
-              {isCompleted ? <CheckIcon /> : isRunning ? <LoaderIcon /> : <ClockIcon />}
+              {isCompleted || isSkipped ? <CheckIcon /> : isRunning ? <LoaderIcon /> : isError ? <AlertIcon /> : <ClockIcon />}
             </div>
           </div>
         );
@@ -223,10 +197,9 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
             <span>Editor Agent</span>
           </div>
           <p className="editor-info-text">
-            This agent reviews the Writer&apos;s draft and produces structured feedback
-            (what&apos;s weak, what&apos;s missing, what needs improvement) along with a quality
-            score. Output should clearly indicate whether the content is{" "}
-            <strong>&quot;approved&quot;</strong> or <strong>&quot;needs revision.&quot;</strong>
+            The built-in Editor reviews the latest available draft/output and returns structured
+            feedback with a quality score. In the default pre-built pipeline, this can trigger
+            Writer revisions through the dynamic executor.
           </p>
         </div>
       )}
@@ -248,34 +221,28 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
               <span>Quality Score</span>
             </div>
             <div className="editor-verdict-score-bar">
-              <div
-                className="editor-verdict-score-fill"
-                style={{ width: `${qualityScore || 0}%` }}
-              />
+              <div className="editor-verdict-score-fill" style={{ width: `${qualityScore || 0}%` }} />
             </div>
             <div className="editor-verdict-score-value">{qualityScore || 0}/100</div>
           </div>
 
-          {/* Revision Summary - Show when there were iterations */}
-          {revisionSummary && (
+          {revisionHistory.length > 0 && (
             <div className="editor-revision-summary">
               <div className="revision-summary-header">
                 <span className="revision-cycle-icon">🔄</span>
                 <span>Revision History</span>
               </div>
               <div className="revision-history-list">
-                {revisionHistory.map((r, idx) => {
-                  const iterationApproved = r.qualityScore >= 80;
+                {revisionHistory.map((revision, index) => {
+                  const iterationApproved = revision.qualityScore >= 80;
                   return (
-                    <div key={idx} className={`revision-history-item ${iterationApproved ? 'approved' : 'revision-needed'}`}>
-                      <span className="revision-decision-icon">
-                        {iterationApproved ? '✅' : '🔄'}
-                      </span>
-                      <span className="revision-iteration">Iteration {r.iteration}:</span>
-                      <span className="revision-decision">{iterationApproved ? 'APPROVED' : 'NEEDS WORK'}</span>
-                      <span className="revision-score">({r.qualityScore}/100)</span>
-                      {!iterationApproved && r.revisionCount > 0 && (
-                        <span className="revision-count">- {r.revisionCount} revisions</span>
+                    <div key={index} className={`revision-history-item ${iterationApproved ? "approved" : "revision-needed"}`}>
+                      <span className="revision-decision-icon">{iterationApproved ? "✅" : "🔄"}</span>
+                      <span className="revision-iteration">Iteration {revision.iteration}:</span>
+                      <span className="revision-decision">{iterationApproved ? "APPROVED" : "NEEDS WORK"}</span>
+                      <span className="revision-score">({revision.qualityScore}/100)</span>
+                      {!iterationApproved && revision.revisionCount > 0 && (
+                        <span className="revision-count">- {revision.revisionCount} revisions</span>
                       )}
                     </div>
                   );
@@ -283,81 +250,22 @@ export default function PipelineStatus({ result, loading, currentAgent, agentSta
               </div>
               {reachedMaxIterations && qualityScore < 80 && (
                 <div className="max-iterations-warning">
-                  ⚠️ Max iterations ({maxIterations}) reached. Quality score below 80. Needs improvement.
+                  ⚠️ Max iterations ({maxIterations}) reached. Quality score below 80.
                 </div>
               )}
             </div>
           )}
 
-          {summary && (
-            <p className="editor-verdict-summary">{summary}</p>
-          )}
+          {summary && <p className="editor-verdict-summary">{summary}</p>}
         </div>
       )}
 
-      {/* SEO Optimizer Result Panel */}
       {result?.optimization && (
         <div className="editor-verdict-panel approved optimizer-panel">
           <div className="editor-verdict-header">
-            <div className="editor-verdict-icon">
-              <SEOTagIcon />
-            </div>
-            <div className="editor-verdict-title">
-              SEO Optimized
-            </div>
+            <div className="editor-verdict-icon"><SEOTagIcon /></div>
+            <div className="editor-verdict-title">SEO Optimized</div>
           </div>
-
-          <div className="seo-meta-grid">
-            {result.optimization.suggestedTitle && (
-              <div className="seo-meta-item">
-                <span className="seo-meta-label">Suggested Title</span>
-                <span className="seo-meta-value">{result.optimization.suggestedTitle}</span>
-              </div>
-            )}
-            {result.optimization.slug && (
-              <div className="seo-meta-item">
-                <span className="seo-meta-label">URL Slug</span>
-                <span className="seo-meta-value seo-slug">/{result.optimization.slug}</span>
-              </div>
-            )}
-            {result.optimization.seo?.primaryKeyword && (
-              <div className="seo-meta-item">
-                <span className="seo-meta-label">Primary Keyword</span>
-                <span className="seo-meta-value seo-keyword">{result.optimization.seo.primaryKeyword}</span>
-              </div>
-            )}
-            {result.optimization.readabilityScore != null && (
-              <div className="seo-meta-item">
-                <span className="seo-meta-label">Readability</span>
-                <span className="seo-meta-value">{result.optimization.readabilityScore}/100</span>
-              </div>
-            )}
-          </div>
-
-          {result.optimization.seo?.secondaryKeywords?.length > 0 && (
-            <div className="seo-keywords-section">
-              <span className="seo-meta-label">Secondary Keywords</span>
-              <div className="seo-keyword-tags">
-                {result.optimization.seo.secondaryKeywords.map((kw, i) => (
-                  <span key={i} className="seo-keyword-tag">{kw}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {result.optimization.metaTitle && (
-            <div className="seo-meta-section">
-              <span className="seo-meta-label">Meta Title</span>
-              <p className="seo-meta-text">{result.optimization.metaTitle}</p>
-            </div>
-          )}
-
-          {result.optimization.metaDescription && (
-            <div className="seo-meta-section">
-              <span className="seo-meta-label">Meta Description</span>
-              <p className="seo-meta-text">{result.optimization.metaDescription}</p>
-            </div>
-          )}
         </div>
       )}
     </div>
