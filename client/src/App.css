@@ -2782,3 +2782,12 @@ body {
 .pipeline-step-card:hover .pipeline-step-drag-handle {
   color: #6366f1;
 }
+
+.run-error-section {
+  padding-top: 0;
+}
+
+.run-error-section .builder-message {
+  margin-top: 0;
+  margin-bottom: 0;
+}

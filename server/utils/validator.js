@@ -1,3 +1,5 @@
+const MAX_PIPELINE_INPUT_LENGTH = 20000;
+
 function validatePipelineRequest(body = {}) {
   const pipelineBody = body.pipeline && typeof body.pipeline === "object" ? body.pipeline : {};
   const rawAgentIds = Array.isArray(pipelineBody.agentIds)
@@ -47,11 +49,11 @@ export function validatePipelineInput(body = {}) {
   const topic = String(body.topic || "").trim();
 
   if (topic.length < 3) {
-    throw new Error("Topic must be at least 3 characters long.");
+    throw new Error("Input must be at least 3 characters long.");
   }
 
-  if (topic.length > 300) {
-    throw new Error("Topic must be less than 300 characters long.");
+  if (topic.length > MAX_PIPELINE_INPUT_LENGTH) {
+    throw new Error(`Input must be less than ${MAX_PIPELINE_INPUT_LENGTH.toLocaleString()} characters long.`);
   }
 
   const wordCount = Number(body.wordCount || 800);

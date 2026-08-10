@@ -59,6 +59,7 @@ export default function Home() {
   const [currentAgent, setCurrentAgent] = useState(null);
   const [agents, setAgents] = useState([]);
   const [libraryError, setLibraryError] = useState(null);
+  const [pipelineError, setPipelineError] = useState(null);
   const [selectedSteps, setSelectedSteps] = useState(() => makeStepsFromIds(DEFAULT_AGENT_IDS));
   const [activeTemplateId, setActiveTemplateId] = useState("default-rwe");
   const [agentStatus, setAgentStatus] = useState({});
@@ -130,6 +131,7 @@ export default function Home() {
   const resetDisplayedRun = () => {
     setResult(null);
     setCurrentAgent(null);
+    setPipelineError(null);
   };
 
   const handleAddAgent = (agentId) => {
@@ -188,6 +190,7 @@ export default function Home() {
 
     setLoading(true);
     setResult(null);
+    setPipelineError(null);
     setAgentStatus(createWaitingStatus(localPipelineSteps));
     setCurrentAgent(null);
     clearPolling();
@@ -239,6 +242,7 @@ export default function Home() {
       }, 1500);
     } catch (error) {
       console.error("Pipeline error:", error);
+      setPipelineError(error.response?.data?.message || error.message || "Pipeline request failed.");
       setLoading(false);
       setCurrentAgent(null);
       setAgentStatus(createWaitingStatus(localPipelineSteps));
@@ -258,6 +262,11 @@ export default function Home() {
           selectedCount={selectedSteps.length}
           isDefaultPipeline={isDefaultPipeline}
         />
+        {pipelineError && (
+          <div className="section run-error-section">
+            <div className="builder-message error">{pipelineError}</div>
+          </div>
+        )}
 
         <div className="section section-divider">
           <PipelineBuilder
