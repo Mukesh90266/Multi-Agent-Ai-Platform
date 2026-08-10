@@ -44,6 +44,7 @@ export default function PipelineInfo({ result, loading }) {
 
   const topicText = result?.input?.topic || "—";
   const displayTopic = topicText.length > 20 ? topicText.slice(0, 20) + "..." : topicText;
+  const readabilityScore = result?.optimization?.readabilityScore;
 
   return (
     <div>
@@ -99,6 +100,18 @@ export default function PipelineInfo({ result, loading }) {
             <div className="info-value">{status.text}</div>
           </div>
         </div>
+
+        {readabilityScore != null && (
+          <div className="info-card">
+            <div className="info-icon">
+              <HashIcon />
+            </div>
+            <div className="info-content">
+              <div className="info-label">Readability</div>
+              <div className="info-value">{readabilityScore}/100</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

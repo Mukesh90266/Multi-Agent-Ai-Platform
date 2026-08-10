@@ -32,7 +32,8 @@ export const logger = {
     const agentColors = {
       researcher: LOG_COLORS.blue,
       writer: LOG_COLORS.green,
-      editor: LOG_COLORS.magenta
+      editor: LOG_COLORS.magenta,
+      optimizer: LOG_COLORS.red
     };
     const color = agentColors[agent] || LOG_COLORS.white;
     const icon = status === 'started' ? '▶' : '✓';

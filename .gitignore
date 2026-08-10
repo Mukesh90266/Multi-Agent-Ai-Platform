@@ -2,3 +2,5 @@ node_modules
 .env
 client/.env
 *.log
+server/logs/iterationLogs.json
+server/output/finalOutput.json
