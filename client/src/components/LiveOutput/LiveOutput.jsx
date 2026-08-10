@@ -37,6 +37,14 @@ const EditIcon = () => (
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
+const FileIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+);
 const BotIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <rect x="3" y="8" width="18" height="12" rx="2" />
@@ -155,6 +163,34 @@ function outputBlockTitle(output, index, total) {
   return parts.join(" · ") || `Output ${index + 1}`;
 }
 
+function FinalOutputCard({ finalOutput }) {
+  const content = finalOutput?.content || formatOutput(finalOutput?.output);
+
+  if (!content) return null;
+
+  return (
+    <div className="final-output-card">
+      <div className="final-output-header">
+        <div className="final-output-title-wrap">
+          <div className="final-output-icon"><FileIcon /></div>
+          <div>
+            <div className="final-output-title">Final Output</div>
+            <div className="final-output-subtitle">
+              {finalOutput?.agentName
+                ? `Produced from ${finalOutput.agentName}`
+                : finalOutput?.type
+                  ? `Final ${finalOutput.type} result`
+                  : "Final pipeline result"}
+            </div>
+          </div>
+        </div>
+        <span className="final-output-badge">Ready</span>
+      </div>
+      <pre className="final-output-pre">{content}</pre>
+    </div>
+  );
+}
+
 function DynamicAgentCard({ step, status, outputs, error }) {
   const Icon = getAgentIcon(step);
   const StatusIcon = getStatusIcon(status);
@@ -224,6 +260,9 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
   const [copied, setCopied] = useState(false);
 
   const agentOutputs = result?.agentOutputs || [];
+  const finalOutputContent = result?.finalOutput?.content || formatOutput(result?.finalOutput?.output);
+  const hasFinalOutput = Boolean(finalOutputContent?.trim());
+  const isFinalOutputTab = activeStepId === "__final__";
 
   const steps = useMemo(() => {
     const currentSteps = result?.pipeline?.steps?.length ? result.pipeline.steps : pipelineSteps;
@@ -257,15 +296,21 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
 
   useEffect(() => {
     if (activeStepId === "all") return;
+    if (activeStepId === "__final__") {
+      if (!hasFinalOutput) setActiveStepId("all");
+      return;
+    }
     const stillExists = steps.some((step) => step.stepId === activeStepId);
     if (!stillExists) setActiveStepId("all");
-  }, [activeStepId, steps]);
+  }, [activeStepId, hasFinalOutput, steps]);
 
   const visibleSteps = activeStepId === "all"
     ? steps
-    : steps.filter((step) => step.stepId === activeStepId);
+    : isFinalOutputTab
+      ? []
+      : steps.filter((step) => step.stepId === activeStepId);
 
-  const outputText = visibleSteps
+  const agentOutputText = visibleSteps
     .map((step, index) => {
       const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
       const status = getStatusLabel(getStepStatus(step));
@@ -277,7 +322,14 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
     })
     .join("\n\n---\n\n");
 
-  const hasAnyOutput = agentOutputs.length > 0;
+  const outputText = isFinalOutputTab
+    ? `# Final Output\n${finalOutputContent}`
+    : [
+        hasFinalOutput && activeStepId === "all" ? `# Final Output\n${finalOutputContent}` : "",
+        agentOutputText
+      ].filter(Boolean).join("\n\n---\n\n");
+
+  const hasAnyOutput = agentOutputs.length > 0 || hasFinalOutput;
   const hasSelectedSteps = steps.length > 0;
   const canCopy = Boolean(outputText.trim()) && hasSelectedSteps;
   const completedCount = steps.filter((step) => getStepStatus(step) === "completed").length;
@@ -317,6 +369,17 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
           <BotIcon />
           All selected agents
         </button>
+        {hasFinalOutput && (
+          <button
+            type="button"
+            className={`dynamic-tab ${isFinalOutputTab ? "active" : ""}`}
+            onClick={() => setActiveStepId("__final__")}
+          >
+            <FileIcon />
+            Final Output
+            <span className="dynamic-tab-status completed" />
+          </button>
+        )}
         {steps.map((step) => {
           const Icon = getAgentIcon(step);
           const status = getStepStatus(step);
@@ -339,7 +402,11 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
         <div className="file-info">
           <div className={`file-dot ${failedCount > 0 ? "failed" : runningCount > 0 ? "running" : hasAnyOutput ? "completed" : "waiting"}`} />
           <span className="file-name">
-            {activeStepId === "all" ? "dynamic-agent-dashboard" : `${visibleSteps[0]?.name || "agent"}-output`}
+            {isFinalOutputTab
+              ? "final-output.md"
+              : activeStepId === "all"
+                ? "dynamic-agent-dashboard"
+                : `${visibleSteps[0]?.name || "agent"}-output`}
           </span>
           <span className="dynamic-run-summary">
             {steps.length} selected · {completedCount} completed · {runningCount} running{failedCount ? ` · ${failedCount} failed` : ""}
@@ -358,21 +425,28 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
             <div className="empty-title">No agents selected</div>
             <div className="empty-subtitle">Build a pipeline to populate this dashboard.</div>
           </div>
+        ) : isFinalOutputTab ? (
+          <FinalOutputCard finalOutput={result?.finalOutput} />
         ) : (
-          <div className="dynamic-agent-grid">
-            {visibleSteps.map((step) => {
-              const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
-              return (
-                <DynamicAgentCard
-                  key={step.stepId}
-                  step={step}
-                  status={getStepStatus(step)}
-                  outputs={outputs}
-                  error={result?.error}
-                />
-              );
-            })}
-          </div>
+          <>
+            {hasFinalOutput && activeStepId === "all" && (
+              <FinalOutputCard finalOutput={result?.finalOutput} />
+            )}
+            <div className="dynamic-agent-grid">
+              {visibleSteps.map((step) => {
+                const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
+                return (
+                  <DynamicAgentCard
+                    key={step.stepId}
+                    step={step}
+                    status={getStepStatus(step)}
+                    outputs={outputs}
+                    error={result?.error}
+                  />
+                );
+              })}
+            </div>
+          </>
         )}
 
         {loading && (

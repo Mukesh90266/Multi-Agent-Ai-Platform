@@ -2815,3 +2815,83 @@ body {
   margin-top: 0;
   margin-bottom: 0;
 }
+
+/* Final output card in dynamic live dashboard */
+.final-output-card {
+  background: white;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  margin-bottom: 16px;
+}
+
+.final-output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+}
+
+.final-output-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.final-output-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.final-output-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.final-output-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.final-output-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.final-output-badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.final-output-pre {
+  margin: 0;
+  padding: 16px;
+  color: #e2e8f0;
+  background: #0f172a;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'SF Mono', 'Fira Code', Monaco, monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  max-height: 560px;
+  overflow: auto;
+}

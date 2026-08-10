@@ -71,15 +71,30 @@ function outputSummaryForFinal(output) {
 }
 
 function deriveFinalOutput(context) {
+  const latest = context.outputs.at(-1);
+
+  // If the latest step produced content, that is the final result for dynamic/custom pipelines.
+  // Exception: an Editor review is feedback, so content pipelines should keep the latest draft as final.
+  if (latest && (latest.phase !== "review" || !context.draft?.content)) {
+    return {
+      type: latest.phase || "agent",
+      agentId: latest.agentId,
+      agentName: latest.agentName,
+      content: getOutputText(latest.output),
+      output: outputSummaryForFinal(latest.output)
+    };
+  }
+
   if (context.draft?.content) {
     return {
       type: "draft",
+      agentId: "writer",
+      agentName: "Writer",
       content: context.draft.content,
       output: context.draft
     };
   }
 
-  const latest = context.outputs.at(-1);
   if (!latest) return null;
 
   return {
