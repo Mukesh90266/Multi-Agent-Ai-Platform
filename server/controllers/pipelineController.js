@@ -84,6 +84,7 @@ export async function runPipelineController(req, res) {
       message: "Pipeline started"
     });
   } catch (error) {
+    console.error("Pipeline request rejected:", error.stack || error.message);
     res.status(400).json({ success: false, message: error.message });
   }
 }

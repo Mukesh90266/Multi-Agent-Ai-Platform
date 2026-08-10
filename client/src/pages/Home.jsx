@@ -223,10 +223,13 @@ export default function Home() {
     () => createLocalPipelineSteps(selectedSteps, agentsById),
     [selectedSteps, agentsById]
   );
+  const selectedAgentIds = useMemo(
+    () => selectedSteps.map((step) => step.agentId),
+    [selectedSteps]
+  );
   const isDefaultPipeline =
-    activeTemplateId === "default-rwe" &&
-    selectedSteps.length === DEFAULT_AGENT_IDS.length &&
-    selectedSteps.every((step, index) => step.agentId === DEFAULT_AGENT_IDS[index]);
+    selectedAgentIds.length === DEFAULT_AGENT_IDS.length &&
+    selectedAgentIds.every((agentId, index) => agentId === DEFAULT_AGENT_IDS[index]);
 
   const refreshAgents = useCallback(async () => {
     const deletedIds = loadDeletedCustomAgentIds();
@@ -441,12 +444,13 @@ export default function Home() {
     clearPolling();
 
     try {
-      await ensureSelectedCustomAgentsSynced();
+      if (!isDefaultPipeline) {
+        await ensureSelectedCustomAgentsSynced();
+      }
 
-      const pipelinePayload = {
-        agentIds: selectedSteps.map((step) => step.agentId),
-        templateId: isDefaultPipeline ? "default-rwe" : undefined
-      };
+      const pipelinePayload = isDefaultPipeline
+        ? { templateId: "default-rwe" }
+        : { agentIds: selectedAgentIds };
 
       const startRes = await runPipeline({ ...formData, pipeline: pipelinePayload });
 
