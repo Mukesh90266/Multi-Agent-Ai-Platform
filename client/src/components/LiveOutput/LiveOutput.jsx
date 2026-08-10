@@ -83,7 +83,8 @@ function formatOutput(output) {
   if (!output) return "";
   if (typeof output === "string") return output;
   if (typeof output.content === "string") return output.content;
-  if (typeof output.optimizedContent === "string") return output.optimizedContent;
+  if (typeof output.optimizedContent === "string")
+    return output.optimizedContent;
   return JSON.stringify(output, null, 2);
 }
 
@@ -110,17 +111,26 @@ function getStatusLabel(status) {
 
 function getStatusDescription(step, status, hasOutput) {
   const normalized = normalizeStatus(status);
-  if (normalized === "running") return `${step.name} is executing now. Output will stream into this card when the step finishes.`;
-  if (normalized === "completed" && hasOutput) return `${step.name} completed and generated output.`;
-  if (normalized === "completed") return `${step.name} completed, but no output was captured.`;
+  if (normalized === "running")
+    return `${step.name} is executing now. Output will stream into this card when the step finishes.`;
+  if (normalized === "completed" && hasOutput)
+    return `${step.name} completed and generated output.`;
+  if (normalized === "completed")
+    return `${step.name} completed, but no output was captured.`;
   if (normalized === "failed") return `${step.name} failed while running.`;
-  if (normalized === "skipped") return `${step.name} was skipped by the pipeline.`;
+  if (normalized === "skipped")
+    return `${step.name} was skipped by the pipeline.`;
   return `${step.name} is waiting for its turn in this pipeline.`;
 }
 
 function getProgressWidth(status) {
   const normalized = normalizeStatus(status);
-  if (normalized === "completed" || normalized === "skipped" || normalized === "failed") return "100%";
+  if (
+    normalized === "completed" ||
+    normalized === "skipped" ||
+    normalized === "failed"
+  )
+    return "100%";
   if (normalized === "running") return "60%";
   return "0%";
 }
@@ -148,7 +158,7 @@ function buildFallbackStepsFromOutputs(outputs) {
       name: entry.agentName || entry.agentId || `Agent ${index + 1}`,
       type: entry.type || "custom",
       role: entry.role || "",
-      phase: entry.phase || "agent"
+      phase: entry.phase || "agent",
     });
   });
 
@@ -172,7 +182,9 @@ function FinalOutputCard({ finalOutput }) {
     <div className="final-output-card">
       <div className="final-output-header">
         <div className="final-output-title-wrap">
-          <div className="final-output-icon"><FileIcon /></div>
+          <div className="final-output-icon">
+            <FileIcon />
+          </div>
           <div>
             <div className="final-output-title">Final Output</div>
             <div className="final-output-subtitle">
@@ -200,7 +212,11 @@ function DynamicAgentCard({ step, status, outputs, error }) {
   return (
     <div className={`live-agent-card ${normalizedStatus}`}>
       <div className="live-agent-card-top">
-        <div className={`live-agent-icon ${step.agentId} ${step.type || "custom"}`}><Icon /></div>
+        <div
+          className={`live-agent-icon ${step.agentId} ${step.type || "custom"}`}
+        >
+          <Icon />
+        </div>
         <div className="live-agent-heading">
           <div className="live-agent-title-row">
             <span className="live-agent-name">{step.name}</span>
@@ -217,7 +233,10 @@ function DynamicAgentCard({ step, status, outputs, error }) {
       </div>
 
       <div className="live-agent-progress">
-        <div className={`live-agent-progress-fill ${normalizedStatus}`} style={{ width: getProgressWidth(normalizedStatus) }} />
+        <div
+          className={`live-agent-progress-fill ${normalizedStatus}`}
+          style={{ width: getProgressWidth(normalizedStatus) }}
+        />
       </div>
 
       <div className="live-agent-description">
@@ -231,23 +250,37 @@ function DynamicAgentCard({ step, status, outputs, error }) {
       <div className="live-agent-output-section">
         <div className="live-agent-output-header">
           <span>Generated output</span>
-          <span>{outputs.length ? `${outputs.length} item${outputs.length === 1 ? "" : "s"}` : "No output yet"}</span>
+          <span>
+            {outputs.length
+              ? `${outputs.length} item${outputs.length === 1 ? "" : "s"}`
+              : "No output yet"}
+          </span>
         </div>
 
-        {outputs.length > 0 ? outputs.map((entry, index) => (
-          <div className="live-agent-output-block" key={`${step.stepId}-${entry.timestamp || index}-${index}`}>
-            <div className="live-agent-output-meta">
-              <span>{outputBlockTitle(entry, index, outputs.length)}</span>
-              {entry.summary && <span>{entry.summary}</span>}
+        {outputs.length > 0 ? (
+          outputs.map((entry, index) => (
+            <div
+              className="live-agent-output-block"
+              key={`${step.stepId}-${entry.timestamp || index}-${index}`}
+            >
+              <div className="live-agent-output-meta">
+                <span>{outputBlockTitle(entry, index, outputs.length)}</span>
+                {entry.summary && <span>{entry.summary}</span>}
+              </div>
+              <pre className="live-agent-output-pre">
+                {formatOutput(entry.output)}
+              </pre>
             </div>
-            <pre className="live-agent-output-pre">{formatOutput(entry.output)}</pre>
-          </div>
-        )) : (
+          ))
+        ) : (
           <div className="live-agent-output-empty">
-            {normalizedStatus === "running" ? "Running now — output will appear here after this agent finishes." :
-              normalizedStatus === "waiting" ? "Waiting for this agent to execute." :
-                normalizedStatus === "failed" ? "No output was generated before failure." :
-                  "No output captured for this agent."}
+            {normalizedStatus === "running"
+              ? "Running now — output will appear here after this agent finishes."
+              : normalizedStatus === "waiting"
+                ? "Waiting for this agent to execute."
+                : normalizedStatus === "failed"
+                  ? "No output was generated before failure."
+                  : "No output captured for this agent."}
           </div>
         )}
       </div>
@@ -255,17 +288,25 @@ function DynamicAgentCard({ step, status, outputs, error }) {
   );
 }
 
-export default function LiveOutput({ result, loading, pipelineSteps = [], agentStatus = {} }) {
+export default function LiveOutput({
+  result,
+  loading,
+  pipelineSteps = [],
+  agentStatus = {},
+}) {
   const [activeStepId, setActiveStepId] = useState("all");
   const [copied, setCopied] = useState(false);
 
   const agentOutputs = result?.agentOutputs || [];
-  const finalOutputContent = result?.finalOutput?.content || formatOutput(result?.finalOutput?.output);
+  const finalOutputContent =
+    result?.finalOutput?.content || formatOutput(result?.finalOutput?.output);
   const hasFinalOutput = Boolean(finalOutputContent?.trim());
   const isFinalOutputTab = activeStepId === "__final__";
 
   const steps = useMemo(() => {
-    const currentSteps = result?.pipeline?.steps?.length ? result.pipeline.steps : pipelineSteps;
+    const currentSteps = result?.pipeline?.steps?.length
+      ? result.pipeline.steps
+      : pipelineSteps;
     if (currentSteps?.length) return currentSteps;
     return buildFallbackStepsFromOutputs(agentOutputs);
   }, [agentOutputs, pipelineSteps, result?.pipeline?.steps]);
@@ -284,13 +325,15 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
   }, [agentOutputs]);
 
   const getStepStatus = (step) => {
-    const rawStatus = agentStatus?.[step.stepId] ||
+    const rawStatus =
+      agentStatus?.[step.stepId] ||
       result?.agentStatus?.[step.stepId] ||
       agentStatus?.[step.agentId] ||
       result?.agentStatus?.[step.agentId];
 
     if (rawStatus) return normalizeStatus(rawStatus);
-    if (outputsByStepId.has(step.stepId) || outputsByStepId.has(step.agentId)) return "completed";
+    if (outputsByStepId.has(step.stepId) || outputsByStepId.has(step.agentId))
+      return "completed";
     return "waiting";
   };
 
@@ -304,18 +347,27 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
     if (!stillExists) setActiveStepId("all");
   }, [activeStepId, hasFinalOutput, steps]);
 
-  const visibleSteps = activeStepId === "all"
-    ? steps
-    : isFinalOutputTab
-      ? []
-      : steps.filter((step) => step.stepId === activeStepId);
+  const visibleSteps =
+    activeStepId === "all"
+      ? steps
+      : isFinalOutputTab
+        ? []
+        : steps.filter((step) => step.stepId === activeStepId);
 
   const agentOutputText = visibleSteps
     .map((step, index) => {
-      const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
+      const outputs =
+        outputsByStepId.get(step.stepId) ||
+        outputsByStepId.get(step.agentId) ||
+        [];
       const status = getStatusLabel(getStepStatus(step));
       const outputContent = outputs.length
-        ? outputs.map((entry, outputIndex) => `## ${outputBlockTitle(entry, outputIndex, outputs.length)}\n${formatOutput(entry.output)}`).join("\n\n")
+        ? outputs
+            .map(
+              (entry, outputIndex) =>
+                `## ${outputBlockTitle(entry, outputIndex, outputs.length)}\n${formatOutput(entry.output)}`,
+            )
+            .join("\n\n")
         : "No output yet.";
 
       return `# ${index + 1}. ${step.name} — ${status}\n${outputContent}`;
@@ -325,16 +377,26 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
   const outputText = isFinalOutputTab
     ? `# Final Output\n${finalOutputContent}`
     : [
-        hasFinalOutput && activeStepId === "all" ? `# Final Output\n${finalOutputContent}` : "",
-        agentOutputText
-      ].filter(Boolean).join("\n\n---\n\n");
+        hasFinalOutput && activeStepId === "all"
+          ? `# Final Output\n${finalOutputContent}`
+          : "",
+        agentOutputText,
+      ]
+        .filter(Boolean)
+        .join("\n\n---\n\n");
 
   const hasAnyOutput = agentOutputs.length > 0 || hasFinalOutput;
   const hasSelectedSteps = steps.length > 0;
   const canCopy = Boolean(outputText.trim()) && hasSelectedSteps;
-  const completedCount = steps.filter((step) => getStepStatus(step) === "completed").length;
-  const runningCount = steps.filter((step) => getStepStatus(step) === "running").length;
-  const failedCount = steps.filter((step) => getStepStatus(step) === "failed").length;
+  const completedCount = steps.filter(
+    (step) => getStepStatus(step) === "completed",
+  ).length;
+  const runningCount = steps.filter(
+    (step) => getStepStatus(step) === "running",
+  ).length;
+  const failedCount = steps.filter(
+    (step) => getStepStatus(step) === "failed",
+  ).length;
 
   const handleCopy = () => {
     if (!canCopy) return;
@@ -347,17 +409,23 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
     <div className="live-output-card">
       <div className="card-header">
         <div className="card-header-left">
-          <div className="card-header-icon"><BoltIcon /></div>
+          <div className="card-header-icon">
+            <BoltIcon />
+          </div>
           <div>
             <div className="card-header-title">Live Output Dashboard</div>
             <div className="card-header-subtitle">
-              {loading ? "Showing the exact agents selected for this run" :
-                hasSelectedSteps ? "Dynamic status and generated output for the selected pipeline" :
-                  "Select agents and run a pipeline to see live output"}
+              {loading
+                ? "Showing the exact agents selected for this run"
+                : hasSelectedSteps
+                  ? "Dynamic status and generated output for the selected pipeline"
+                  : "Select agents and run a pipeline to see live output"}
             </div>
           </div>
         </div>
-        <div className="card-header-right"><ExpandIcon /></div>
+        <div className="card-header-right">
+          <ExpandIcon />
+        </div>
       </div>
 
       <div className="dynamic-tabs-container">
@@ -369,17 +437,6 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
           <BotIcon />
           All selected agents
         </button>
-        {hasFinalOutput && (
-          <button
-            type="button"
-            className={`dynamic-tab ${isFinalOutputTab ? "active" : ""}`}
-            onClick={() => setActiveStepId("__final__")}
-          >
-            <FileIcon />
-            Final Output
-            <span className="dynamic-tab-status completed" />
-          </button>
-        )}
         {steps.map((step) => {
           const Icon = getAgentIcon(step);
           const status = getStepStatus(step);
@@ -396,11 +453,24 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
             </button>
           );
         })}
+        {hasFinalOutput && (
+          <button
+            type="button"
+            className={`dynamic-tab ${isFinalOutputTab ? "active" : ""}`}
+            onClick={() => setActiveStepId("__final__")}
+          >
+            <FileIcon />
+            Final Output
+            <span className="dynamic-tab-status completed" />
+          </button>
+        )}
       </div>
 
       <div className="file-status-bar dynamic-file-status">
         <div className="file-info">
-          <div className={`file-dot ${failedCount > 0 ? "failed" : runningCount > 0 ? "running" : hasAnyOutput ? "completed" : "waiting"}`} />
+          <div
+            className={`file-dot ${failedCount > 0 ? "failed" : runningCount > 0 ? "running" : hasAnyOutput ? "completed" : "waiting"}`}
+          />
           <span className="file-name">
             {isFinalOutputTab
               ? "final-output.md"
@@ -409,21 +479,31 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
                 : `${visibleSteps[0]?.name || "agent"}-output`}
           </span>
           <span className="dynamic-run-summary">
-            {steps.length} selected · {completedCount} completed · {runningCount} running{failedCount ? ` · ${failedCount} failed` : ""}
+            {steps.length} selected · {completedCount} completed ·{" "}
+            {runningCount} running
+            {failedCount ? ` · ${failedCount} failed` : ""}
           </span>
         </div>
         <div className="file-actions">
-          <span className="line-count">{outputText ? `${outputText.split("\n").length} lines` : "0 lines"}</span>
-          <button className="copy-btn" onClick={handleCopy} disabled={!canCopy}>{copied ? "Copied!" : "Copy"}</button>
+          <span className="line-count">
+            {outputText ? `${outputText.split("\n").length} lines` : "0 lines"}
+          </span>
+          <button className="copy-btn" onClick={handleCopy} disabled={!canCopy}>
+            {copied ? "Copied!" : "Copy"}
+          </button>
         </div>
       </div>
 
       <div className="dynamic-dashboard-scroll">
         {!hasSelectedSteps ? (
           <div className="empty-state compact-empty">
-            <div className="empty-icon"><ClipboardIcon /></div>
+            <div className="empty-icon">
+              <ClipboardIcon />
+            </div>
             <div className="empty-title">No agents selected</div>
-            <div className="empty-subtitle">Build a pipeline to populate this dashboard.</div>
+            <div className="empty-subtitle">
+              Build a pipeline to populate this dashboard.
+            </div>
           </div>
         ) : isFinalOutputTab ? (
           <FinalOutputCard finalOutput={result?.finalOutput} />
@@ -434,7 +514,10 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
             )}
             <div className="dynamic-agent-grid">
               {visibleSteps.map((step) => {
-                const outputs = outputsByStepId.get(step.stepId) || outputsByStepId.get(step.agentId) || [];
+                const outputs =
+                  outputsByStepId.get(step.stepId) ||
+                  outputsByStepId.get(step.agentId) ||
+                  [];
                 return (
                   <DynamicAgentCard
                     key={step.stepId}
@@ -450,7 +533,10 @@ export default function LiveOutput({ result, loading, pipelineSteps = [], agentS
         )}
 
         {loading && (
-          <div className="live-loading-bar"><div className="loading-spinner-small"></div><span>Pipeline running...</span></div>
+          <div className="live-loading-bar">
+            <div className="loading-spinner-small"></div>
+            <span>Pipeline running...</span>
+          </div>
         )}
       </div>
     </div>
