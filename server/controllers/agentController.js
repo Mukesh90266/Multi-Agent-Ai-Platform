@@ -1,5 +1,6 @@
 import {
   createCustomAgent,
+  deleteCustomAgent,
   getAllAgents,
   getCustomAgents,
   getPipelineTemplates,
@@ -32,6 +33,21 @@ export async function createAgentController(req, res) {
     res.status(201).json({
       success: true,
       agent: toPublicAgent(agent),
+      customAgents: customAgents.map((customAgent) => toPublicAgent(customAgent))
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function deleteAgentController(req, res) {
+  try {
+    const result = await deleteCustomAgent(req.params.agentId);
+    const customAgents = await getCustomAgents();
+
+    res.status(200).json({
+      success: true,
+      ...result,
       customAgents: customAgents.map((customAgent) => toPublicAgent(customAgent))
     });
   } catch (error) {

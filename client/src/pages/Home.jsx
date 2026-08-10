@@ -6,10 +6,11 @@ import LiveOutput from "../components/LiveOutput/LiveOutput";
 import AgentBuilder from "../components/Agents/AgentBuilder";
 import AgentLibrary from "../components/Agents/AgentLibrary";
 import PipelineBuilder from "../components/Agents/PipelineBuilder";
-import { createAgent, getAgents, getPipelineStatus, runPipeline } from "../services/api.js";
+import { createAgent, deleteAgent, getAgents, getPipelineStatus, runPipeline } from "../services/api.js";
 
 const DEFAULT_AGENT_IDS = ["researcher", "writer", "editor"];
 const CUSTOM_AGENTS_STORAGE_KEY = "multi-agent-platform.customAgents";
+const DELETED_CUSTOM_AGENTS_STORAGE_KEY = "multi-agent-platform.deletedCustomAgentIds";
 
 const CLIENT_BUILT_IN_AGENTS = [
   {
@@ -53,19 +54,61 @@ function loadPersistedCustomAgents() {
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(CUSTOM_AGENTS_STORAGE_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed.filter(isCustomAgent) : [];
+    const deletedIds = loadDeletedCustomAgentIds();
+    return Array.isArray(parsed)
+      ? parsed.filter((agent) => isCustomAgent(agent) && !deletedIds.has(agent.id))
+      : [];
   } catch {
     return [];
   }
 }
 
+function loadDeletedCustomAgentIds() {
+  if (typeof window === "undefined") return new Set();
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(DELETED_CUSTOM_AGENTS_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed.filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDeletedCustomAgentIds(deletedIds) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(DELETED_CUSTOM_AGENTS_STORAGE_KEY, JSON.stringify(Array.from(deletedIds)));
+}
+
+function rememberDeletedCustomAgentId(agentId) {
+  const deletedIds = loadDeletedCustomAgentIds();
+  deletedIds.add(agentId);
+  saveDeletedCustomAgentIds(deletedIds);
+}
+
+function forgetDeletedCustomAgentId(agentId) {
+  const deletedIds = loadDeletedCustomAgentIds();
+  deletedIds.delete(agentId);
+  saveDeletedCustomAgentIds(deletedIds);
+}
+
 function savePersistedCustomAgents(customAgents) {
   if (typeof window === "undefined") return;
 
+  const deletedIds = loadDeletedCustomAgentIds();
   const uniqueCustomAgents = Array.from(
-    new Map(customAgents.filter(isCustomAgent).map((agent) => [agent.id, agent])).values()
+    new Map(
+      customAgents
+        .filter((agent) => isCustomAgent(agent) && !deletedIds.has(agent.id))
+        .map((agent) => [agent.id, agent])
+    ).values()
   );
   window.localStorage.setItem(CUSTOM_AGENTS_STORAGE_KEY, JSON.stringify(uniqueCustomAgents));
+}
+
+function removePersistedCustomAgent(agentId) {
+  const nextCustomAgents = loadPersistedCustomAgents().filter((agent) => agent.id !== agentId);
+  savePersistedCustomAgents(nextCustomAgents);
+  rememberDeletedCustomAgentId(agentId);
 }
 
 function mergeAgents(...agentLists) {
@@ -186,6 +229,7 @@ export default function Home() {
     selectedSteps.every((step, index) => step.agentId === DEFAULT_AGENT_IDS[index]);
 
   const refreshAgents = useCallback(async () => {
+    const deletedIds = loadDeletedCustomAgentIds();
     const localCustomAgents = loadPersistedCustomAgents();
 
     try {
@@ -193,7 +237,18 @@ export default function Home() {
       const data = await getAgents();
 
       if (data.success) {
-        const serverAgents = data.agents || [];
+        for (const deletedId of deletedIds) {
+          try {
+            await deleteAgent(deletedId);
+            forgetDeletedCustomAgentId(deletedId);
+          } catch (deleteError) {
+            console.warn("Could not sync deleted custom agent:", deleteError.message);
+          }
+        }
+
+        const activeDeletedIds = loadDeletedCustomAgentIds();
+        const idsToHideThisRefresh = new Set([...deletedIds, ...activeDeletedIds]);
+        const serverAgents = (data.agents || []).filter((agent) => !idsToHideThisRefresh.has(agent.id));
         const serverCustomIds = new Set(serverAgents.filter(isCustomAgent).map((agent) => agent.id));
         const missingLocalAgents = localCustomAgents.filter((agent) => !serverCustomIds.has(agent.id));
         const syncedAgents = [];
@@ -203,13 +258,15 @@ export default function Home() {
             const syncResult = await createAgent(agent);
             if (syncResult.success && syncResult.agent) {
               syncedAgents.push(syncResult.agent);
+              forgetDeletedCustomAgentId(syncResult.agent.id);
             }
           } catch (syncError) {
             console.warn("Could not sync cached custom agent:", syncError.message);
           }
         }
 
-        const mergedAgents = mergeAgents(serverAgents, localCustomAgents, syncedAgents);
+        const mergedAgents = mergeAgents(serverAgents, localCustomAgents, syncedAgents)
+          .filter((agent) => !loadDeletedCustomAgentIds().has(agent.id));
         setAgents(mergedAgents);
         savePersistedCustomAgents(mergedAgents.filter(isCustomAgent));
       }
@@ -256,6 +313,7 @@ export default function Home() {
         throw new Error(data.message || "Could not create agent.");
       }
 
+      forgetDeletedCustomAgentId(data.agent.id);
       const mergedAgents = mergeAgents(agents, [data.agent]);
       setAgents(mergedAgents);
       savePersistedCustomAgents(mergedAgents.filter(isCustomAgent));
@@ -267,6 +325,7 @@ export default function Home() {
       }
 
       const localAgent = createLocalCustomAgent(payload);
+      forgetDeletedCustomAgentId(localAgent.id);
       const mergedAgents = mergeAgents(agents, [localAgent]);
       setAgents(mergedAgents);
       savePersistedCustomAgents(mergedAgents.filter(isCustomAgent));
@@ -285,6 +344,30 @@ export default function Home() {
     resetDisplayedRun();
     setSelectedSteps((prev) => [...prev, makeClientStep(agentId)]);
     setActiveTemplateId(null);
+  };
+
+  const handleDeleteAgent = async (agent) => {
+    if (!isCustomAgent(agent) || loading) return;
+
+    const confirmed = window.confirm(`Delete custom agent "${agent.name}"? This will also remove it from the current pipeline.`);
+    if (!confirmed) return;
+
+    resetDisplayedRun();
+    rememberDeletedCustomAgentId(agent.id);
+
+    const nextAgents = agents.filter((existingAgent) => existingAgent.id !== agent.id);
+    setAgents(mergeAgents(nextAgents));
+    savePersistedCustomAgents(nextAgents.filter(isCustomAgent));
+    setSelectedSteps((prev) => prev.filter((step) => step.agentId !== agent.id));
+    setActiveTemplateId(null);
+
+    try {
+      await deleteAgent(agent.id);
+      forgetDeletedCustomAgentId(agent.id);
+      setLibraryError(null);
+    } catch (error) {
+      setLibraryError("Agent deleted locally. Backend delete will sync when the server is reachable.");
+    }
   };
 
   const handleMoveStep = (index, direction) => {
@@ -447,7 +530,12 @@ export default function Home() {
 
         <div className="section section-divider">
           {libraryError && <div className="builder-message error">{libraryError}</div>}
-          <AgentLibrary agents={agents} onAddAgent={handleAddAgent} disabled={loading} />
+          <AgentLibrary
+            agents={agents}
+            onAddAgent={handleAddAgent}
+            onDeleteAgent={handleDeleteAgent}
+            disabled={loading}
+          />
         </div>
 
         <div className="section section-divider">

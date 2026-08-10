@@ -229,6 +229,32 @@ export async function createCustomAgent(payload) {
   return agent;
 }
 
+export async function deleteCustomAgent(agentId) {
+  const id = cleanText(agentId);
+
+  if (!id) {
+    throw new Error("Agent id is required.");
+  }
+
+  if (BUILT_IN_AGENTS.some((agent) => agent.id === id)) {
+    throw new Error("Built-in agents cannot be deleted.");
+  }
+
+  if (!/^custom-[a-zA-Z0-9_-]+$/.test(id) || id.length > 120) {
+    throw new Error("Custom agent id is invalid.");
+  }
+
+  const agents = await getCustomAgents();
+  const nextAgents = agents.filter((agent) => agent.id !== id);
+  const deleted = nextAgents.length !== agents.length;
+
+  if (deleted) {
+    await writeCustomAgents(nextAgents);
+  }
+
+  return { deleted, agentId: id };
+}
+
 function summarizePipelineStep(agent, index, duplicateCount) {
   const stepNumber = index + 1;
   const stepId = duplicateCount > 1 ? `${agent.id}__${stepNumber}` : agent.id;

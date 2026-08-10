@@ -32,4 +32,5 @@ export const getPipelineStatus = (runId) => api.get(`/pipeline/status/${runId}`)
 export const getPipelineTemplates = () => api.get("/pipeline/templates").then((r) => r.data);
 export const getAgents = () => api.get("/agents").then((r) => r.data);
 export const createAgent = (payload) => api.post("/agents", payload).then((r) => r.data);
+export const deleteAgent = (agentId) => api.delete(`/agents/${agentId}`).then((r) => r.data);
 export const getHistory = () => api.get("/history").then((r) => r.data);

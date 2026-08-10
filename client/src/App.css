@@ -1992,6 +1992,7 @@ body {
 .reset-pipeline-btn svg,
 .pipeline-step-actions svg,
 .library-add-btn svg,
+.library-delete-btn svg,
 .agent-builder-toggle svg,
 .save-agent-btn svg {
   width: 14px;
@@ -2077,6 +2078,7 @@ body {
 .pipeline-step-actions button:disabled,
 .reset-pipeline-btn:disabled,
 .library-add-btn:disabled,
+.library-delete-btn:disabled,
 .agent-builder-toggle:disabled,
 .save-agent-btn:disabled {
   opacity: 0.55;
@@ -2192,7 +2194,15 @@ body {
   font-size: 11px;
 }
 
-.library-add-btn {
+.library-agent-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.library-add-btn,
+.library-delete-btn {
   width: 28px;
   height: 28px;
   border: none;
@@ -2200,14 +2210,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #6366f1;
   color: white;
   cursor: pointer;
   flex-shrink: 0;
 }
 
+.library-add-btn {
+  background: #6366f1;
+}
+
 .library-add-btn:hover:not(:disabled) {
   background: #4f46e5;
+}
+
+.library-delete-btn {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.library-delete-btn:hover:not(:disabled) {
+  background: #fecaca;
+  color: #b91c1c;
 }
 
 .library-empty-custom {

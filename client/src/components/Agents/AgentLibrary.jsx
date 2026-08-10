@@ -36,6 +36,16 @@ const PlusIcon = () => (
   </svg>
 );
 
+const TrashIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+  </svg>
+);
+
 function getIcon(agent) {
   if (agent.id === "researcher") return SearchIcon;
   if (agent.id === "writer") return PenIcon;
@@ -43,8 +53,9 @@ function getIcon(agent) {
   return BotIcon;
 }
 
-function AgentCard({ agent, onAddAgent, disabled }) {
+function AgentCard({ agent, onAddAgent, onDeleteAgent, disabled }) {
   const Icon = getIcon(agent);
+  const canDelete = agent.type === "custom" && !agent.immutable;
 
   return (
     <div className={`library-agent-card ${agent.type}`}>
@@ -61,20 +72,33 @@ function AgentCard({ agent, onAddAgent, disabled }) {
           <div className="library-agent-personality">{agent.personality}</div>
         )}
       </div>
-      <button
-        type="button"
-        className="library-add-btn"
-        onClick={() => onAddAgent(agent.id)}
-        disabled={disabled}
-        title={`Add ${agent.name} to pipeline`}
-      >
-        <PlusIcon />
-      </button>
+      <div className="library-agent-actions">
+        <button
+          type="button"
+          className="library-add-btn"
+          onClick={() => onAddAgent(agent.id)}
+          disabled={disabled}
+          title={`Add ${agent.name} to pipeline`}
+        >
+          <PlusIcon />
+        </button>
+        {canDelete && (
+          <button
+            type="button"
+            className="library-delete-btn"
+            onClick={() => onDeleteAgent(agent)}
+            disabled={disabled}
+            title={`Delete ${agent.name}`}
+          >
+            <TrashIcon />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-export default function AgentLibrary({ agents, onAddAgent, disabled }) {
+export default function AgentLibrary({ agents, onAddAgent, onDeleteAgent, disabled }) {
   const builtInAgents = agents.filter((agent) => agent.type === "built-in");
   const customAgents = agents.filter((agent) => agent.type === "custom");
 
@@ -88,7 +112,13 @@ export default function AgentLibrary({ agents, onAddAgent, disabled }) {
       <div className="library-group-label">Built-in agents</div>
       <div className="library-list">
         {builtInAgents.map((agent) => (
-          <AgentCard key={agent.id} agent={agent} onAddAgent={onAddAgent} disabled={disabled} />
+          <AgentCard
+            key={agent.id}
+            agent={agent}
+            onAddAgent={onAddAgent}
+            onDeleteAgent={onDeleteAgent}
+            disabled={disabled}
+          />
         ))}
       </div>
 
@@ -96,7 +126,13 @@ export default function AgentLibrary({ agents, onAddAgent, disabled }) {
       {customAgents.length > 0 ? (
         <div className="library-list">
           {customAgents.map((agent) => (
-            <AgentCard key={agent.id} agent={agent} onAddAgent={onAddAgent} disabled={disabled} />
+            <AgentCard
+              key={agent.id}
+              agent={agent}
+              onAddAgent={onAddAgent}
+              onDeleteAgent={onDeleteAgent}
+              disabled={disabled}
+            />
           ))}
         </div>
       ) : (
