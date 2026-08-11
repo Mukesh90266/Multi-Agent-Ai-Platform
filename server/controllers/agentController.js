@@ -6,6 +6,7 @@ import {
   getPipelineTemplates,
   toPublicAgent
 } from "../services/agentStore.js";
+import { getAllTools } from "../tools/toolRegistry.js";
 
 export async function listAgentsController(req, res) {
   try {
@@ -18,7 +19,8 @@ export async function listAgentsController(req, res) {
       agents: agents.map((agent) => toPublicAgent(agent)),
       builtInAgents: builtInAgents.map((agent) => toPublicAgent(agent)),
       customAgents: customAgents.map((agent) => toPublicAgent(agent)),
-      templates: getPipelineTemplates()
+      templates: getPipelineTemplates(),
+      tools: getAllTools()
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

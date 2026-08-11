@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import { normalizeToolIds } from "../tools/toolRegistry.js";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const serverDirectory = path.resolve(directory, "..");
@@ -18,11 +19,12 @@ export const BUILT_IN_AGENTS = [
     role: "Collects trustworthy planning notes, key points, definitions, outlines, examples, and source-verification reminders for the user's topic.",
     personality: "Careful, skeptical, concise, and source-aware.",
     systemPrompt:
-      "You are a reliable Researcher Agent. Produce trustworthy structured research notes. Never fabricate sources, URLs, citations, statistics, quotations, or dates.",
-    description: "Generates structured research notes for the content pipeline.",
+      "You are a reliable Researcher Agent. Produce trustworthy structured research notes in clear Markdown. Use web_search when the user input needs current facts, news, prices, or external sources. Never fabricate sources, URLs, citations, statistics, quotations, or dates. If you searched, incorporate the results into your notes.",
+    description: "Generates structured research notes for the content pipeline. Can call Web Search when needed.",
     immutable: true,
     builtIn: true,
-    phase: "research"
+    phase: "research",
+    tools: ["web_search"]
   },
   {
     id: "writer",
@@ -35,7 +37,8 @@ export const BUILT_IN_AGENTS = [
     description: "Creates or revises draft content using available pipeline context.",
     immutable: true,
     builtIn: true,
-    phase: "write"
+    phase: "write",
+    tools: []
   },
   {
     id: "editor",
@@ -44,11 +47,12 @@ export const BUILT_IN_AGENTS = [
     role: "Reviews drafts for quality, accuracy, completeness, structure, tone, and actionability.",
     personality: "Strict, helpful, professional, and specific.",
     systemPrompt:
-      "You are a strict, helpful, and professional Editor Agent. Return structured feedback with a decision, quality score, strengths, weaknesses, missing points, and revision instructions.",
-    description: "Reviews content and decides whether it is approved or needs revision.",
+      "You are a strict, helpful, and professional Editor Agent. Return structured feedback as Markdown covering decision, quality score (0-100), strengths, weaknesses, missing points, and revision instructions. Use verification_api when claims in the draft need checking based on the user input or draft content.",
+    description: "Reviews content and decides whether it is approved or needs revision. Can call Verification API when needed.",
     immutable: true,
     builtIn: true,
-    phase: "review"
+    phase: "review",
+    tools: ["verification_api"]
   }
 ];
 
@@ -83,7 +87,8 @@ function publicAgent(agent, { includePrompt = true } = {}) {
     builtIn: agent.type === "built-in",
     createdAt: agent.createdAt,
     updatedAt: agent.updatedAt,
-    phase: agent.phase || "agent"
+    phase: agent.phase || "agent",
+    tools: normalizeToolIds(agent.tools)
   };
 
   if (includePrompt) {
@@ -150,6 +155,7 @@ function normalizeCustomAgent(payload = {}, existingAgent = null) {
   const personality = cleanText(payload.personality);
   const systemPrompt = cleanText(payload.systemPrompt);
   const requestedId = cleanText(payload.id);
+  const tools = normalizeToolIds(payload.tools);
 
   assertLength("Agent name", name, 2, 80);
   assertLength("Role", role, 2, 300);
@@ -178,6 +184,7 @@ function normalizeCustomAgent(payload = {}, existingAgent = null) {
     immutable: false,
     builtIn: false,
     phase: "custom",
+    tools,
     createdAt: existingAgent?.createdAt || cleanText(payload.createdAt) || now,
     updatedAt: now
   };
@@ -190,7 +197,8 @@ export async function getCustomAgents() {
     type: "custom",
     immutable: false,
     builtIn: false,
-    phase: agent.phase || "custom"
+    phase: agent.phase || "custom",
+    tools: normalizeToolIds(agent.tools)
   }));
 }
 
@@ -269,7 +277,8 @@ function summarizePipelineStep(agent, index, duplicateCount) {
     personality: agent.personality,
     description: agent.description || "",
     phase: agent.phase || "agent",
-    builtIn: agent.type === "built-in"
+    builtIn: agent.type === "built-in",
+    tools: normalizeToolIds(agent.tools)
   };
 }
 

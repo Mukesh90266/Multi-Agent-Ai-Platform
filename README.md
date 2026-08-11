@@ -5,21 +5,46 @@ A configurable multi-agent content platform. It includes the original **Research
 ## What changed
 
 - Built-in agents remain available:
-  - **Researcher** — creates structured research notes
+  - **Researcher** — creates structured research notes (`web_search` tool)
   - **Writer** — creates/revises Markdown drafts
-  - **Editor** — reviews drafts with a decision, quality score, and revision instructions
+  - **Editor** — reviews drafts with a decision, quality score, and revision instructions (`verification_api` tool)
 - Users can create custom agents with:
   - Agent name
   - Role
   - Personality
   - System prompt
+  - Optional **tools** (capabilities, not pipeline steps)
 - Custom agents are persisted in `server/data/customAgents.json` at runtime.
 - The frontend includes:
-  - Agent Builder
+  - Agent Builder (with tool assignment)
   - Agent Library
   - Pipeline Builder with reorder/remove controls
-  - Live output for every executed agent
+  - Live output for every executed agent, including tool-call traces
 - The orchestrator now executes selected pipeline steps through a shared dynamic agent executor instead of a hardcoded `research() → writeContent() → reviewContent()` sequence.
+- **Dynamic tool calling** runs *inside* whichever agent needs it (first, middle, or last). Tools are looked up from a registry; the LLM decides from the user input whether a tool is required.
+
+## Dynamic tool calling
+
+Tools are **agent capabilities**, not fixed pipeline positions.
+
+```text
+Any Agent
+  → LLM (user input + role + prior outputs + allowed tools)
+  → Tool needed?
+       No  → final agent output
+       Yes → Tool Registry → external tool/API → result → LLM continues
+  → Agent output
+  → Next pipeline agent
+```
+
+Built-in tools:
+
+| Tool id | Name | Purpose |
+|---|---|---|
+| `web_search` | Web Search | Current/external information for a query |
+| `verification_api` | Verification API | Check factual claims |
+
+Assign tools when creating a custom agent, or rely on built-in defaults. Tool use does **not** depend on agent order in the pipeline.
 
 ## Default pipeline
 
@@ -85,9 +110,14 @@ Create a custom agent.
   "name": "Fact Checker",
   "role": "Checks claims and flags uncertainty",
   "personality": "Skeptical and concise",
-  "systemPrompt": "Review the original input and previous outputs. Identify factual claims and flag anything uncertain."
+  "systemPrompt": "Review the original input and previous outputs. Identify factual claims and flag anything uncertain. Use tools when verification is needed.",
+  "tools": ["web_search", "verification_api"]
 }
 ```
+
+#### GET `/api/tools`
+
+Returns the tool registry (id, name, description, parameters) used by Agent Builder and the executor.
 
 ### Pipelines
 

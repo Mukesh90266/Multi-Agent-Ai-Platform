@@ -88,6 +88,51 @@ function formatOutput(output) {
   return JSON.stringify(output, null, 2);
 }
 
+function formatToolResultSummary(result) {
+  if (!result) return "No result";
+  if (typeof result === "string") return result;
+  if (result.summary) return result.summary;
+  if (result.error) return `Error: ${result.error}`;
+  return JSON.stringify(result);
+}
+
+function ToolCallsPanel({ toolCalls }) {
+  if (!Array.isArray(toolCalls) || toolCalls.length === 0) return null;
+
+  return (
+    <div className="tool-calls-panel">
+      <div className="tool-calls-header">
+        <span>Tool calls during this agent</span>
+        <span>
+          {toolCalls.length} call{toolCalls.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      {toolCalls.map((call, index) => (
+        <div
+          className={`tool-call-item ${call.ok === false ? "failed" : "ok"}`}
+          key={`${call.tool}-${call.timestamp || index}-${index}`}
+        >
+          <div className="tool-call-title-row">
+            <span className="tool-call-name">{call.toolName || call.tool}</span>
+            <span className="tool-call-badge">{call.ok === false ? "failed" : "ok"}>
+              {call.ok === false ? "Failed" : "OK"}
+            </span>
+          </div>
+          {call.reason && <div className="tool-call-reason">{call.reason}</div>}
+          {call.args && Object.keys(call.args).length > 0 && (
+            <div className="tool-call-args">
+              Args: {JSON.stringify(call.args)}
+            </div>
+          )}
+          <div className="tool-call-result">
+            {formatToolResultSummary(call.result)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function getAgentIcon(step) {
   if (step.agentId === "researcher") return SearchIcon;
   if (step.agentId === "writer") return PenIcon;
@@ -208,6 +253,14 @@ function DynamicAgentCard({ step, status, outputs, error }) {
   const StatusIcon = getStatusIcon(status);
   const normalizedStatus = normalizeStatus(status);
   const hasOutput = outputs.length > 0;
+  const assignedTools = Array.isArray(step.tools) ? step.tools : [];
+  const allToolCalls = outputs.flatMap((entry) =>
+    Array.isArray(entry.toolCalls)
+      ? entry.toolCalls
+      : Array.isArray(entry.output?.toolCalls)
+        ? entry.output.toolCalls
+        : []
+  );
 
   return (
     <div className={`live-agent-card ${normalizedStatus}`}>
@@ -225,6 +278,19 @@ function DynamicAgentCard({ step, status, outputs, error }) {
             </span>
           </div>
           {step.role && <div className="live-agent-role">{step.role}</div>}
+          {assignedTools.length > 0 && (
+            <div className="live-agent-tools">
+              {assignedTools.map((toolId) => (
+                <span key={toolId} className="tool-chip">
+                  {toolId === "web_search"
+                    ? "Web Search"
+                    : toolId === "verification_api"
+                      ? "Verification"
+                      : toolId}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className={`live-agent-status ${normalizedStatus}`}>
           <StatusIcon />
@@ -246,6 +312,8 @@ function DynamicAgentCard({ step, status, outputs, error }) {
       {normalizedStatus === "failed" && error && (
         <div className="live-agent-error">{error}</div>
       )}
+
+      <ToolCallsPanel toolCalls={allToolCalls} />
 
       <div className="live-agent-output-section">
         <div className="live-agent-output-header">

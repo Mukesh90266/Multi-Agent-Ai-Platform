@@ -7,6 +7,7 @@ import { config } from "./config/config.js";
 import pipelineRoutes from "./routes/pipelineRoutes.js";
 import historyRoutes from "./routes/historyRoutes.js";
 import agentRoutes from "./routes/agentRoutes.js";
+import toolRoutes from "./routes/toolRoutes.js";
 import { logger } from "./utils/logger.js";
 
 console.log("Groq key detected:", Boolean(config.groqKey));
@@ -31,6 +32,7 @@ app.get("/api/health", (req, res) => {
 // API routes
 app.use("/api/pipeline", pipelineRoutes);
 app.use("/api/agents", agentRoutes);
+app.use("/api/tools", toolRoutes);
 app.use("/api/history", historyRoutes);
 
 // Global error handler

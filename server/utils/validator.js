@@ -54,6 +54,9 @@ function validatePipelineRequest(body = {}) {
         personality: String(agent.personality || "").trim(),
         systemPrompt: String(agent.systemPrompt || "").trim(),
         description: String(agent.description || agent.role || "").trim(),
+        tools: Array.isArray(agent.tools)
+          ? agent.tools.map((toolId) => String(toolId || "").trim()).filter(Boolean)
+          : [],
         createdAt: agent.createdAt ? String(agent.createdAt).trim() : undefined
       }))
       .filter((agent) => agent.id && agent.type === "custom");

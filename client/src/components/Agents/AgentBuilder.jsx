@@ -17,10 +17,11 @@ const emptyForm = {
   name: "",
   role: "",
   personality: "",
-  systemPrompt: ""
+  systemPrompt: "",
+  tools: []
 };
 
-export default function AgentBuilder({ onCreateAgent, disabled }) {
+export default function AgentBuilder({ onCreateAgent, disabled, availableTools = [] }) {
   const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -29,6 +30,18 @@ export default function AgentBuilder({ onCreateAgent, disabled }) {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleToolToggle = (toolId) => {
+    setForm((prev) => {
+      const hasTool = prev.tools.includes(toolId);
+      return {
+        ...prev,
+        tools: hasTool
+          ? prev.tools.filter((id) => id !== toolId)
+          : [...prev.tools, toolId]
+      };
+    });
   };
 
   const canSubmit =
@@ -44,7 +57,13 @@ export default function AgentBuilder({ onCreateAgent, disabled }) {
     setSaving(true);
     setMessage(null);
     try {
-      const created = await onCreateAgent(form);
+      const created = await onCreateAgent({
+        name: form.name,
+        role: form.role,
+        personality: form.personality,
+        systemPrompt: form.systemPrompt,
+        tools: form.tools
+      });
       setForm(emptyForm);
       setExpanded(false);
       setMessage({ type: "success", text: `${created?.name || "Agent"} saved to your library.` });
@@ -69,7 +88,7 @@ export default function AgentBuilder({ onCreateAgent, disabled }) {
         <span className="agent-builder-toggle-icon"><SparkIcon /></span>
         <span>
           <strong>Agent Builder</strong>
-          <small>Create custom prompt-driven agents</small>
+          <small>Create custom prompt-driven agents with optional tools</small>
         </span>
         <span className="agent-builder-plus"><PlusIcon /></span>
       </button>
@@ -127,6 +146,41 @@ export default function AgentBuilder({ onCreateAgent, disabled }) {
               rows={5}
               disabled={disabled || saving}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Tools (optional)</label>
+            <p className="tool-picker-hint">
+              Tools are agent capabilities — not pipeline steps. The LLM decides from the user input whether to call them during this agent&apos;s execution.
+            </p>
+            {availableTools.length > 0 ? (
+              <div className="tool-picker-list">
+                {availableTools.map((tool) => {
+                  const checked = form.tools.includes(tool.id);
+                  return (
+                    <label
+                      key={tool.id}
+                      className={`tool-picker-item ${checked ? "selected" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleToolToggle(tool.id)}
+                        disabled={disabled || saving}
+                      />
+                      <span className="tool-picker-text">
+                        <strong>{tool.name}</strong>
+                        <small>{tool.description}</small>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="tool-picker-empty">
+                Loading tools… Default options: Web Search, Verification API.
+              </div>
+            )}
           </div>
 
           <button type="submit" className="save-agent-btn" disabled={!canSubmit || disabled || saving}>

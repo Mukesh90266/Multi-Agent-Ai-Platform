@@ -135,6 +135,12 @@ function applyExecutionToContext(context, step, execution) {
     context.editorReview = output;
   }
 
+  const toolCalls = Array.isArray(execution.toolCalls)
+    ? execution.toolCalls
+    : Array.isArray(output?.toolCalls)
+      ? output.toolCalls
+      : [];
+
   const agentOutput = {
     stepId: step.stepId,
     stepIndex: step.index,
@@ -147,7 +153,9 @@ function applyExecutionToContext(context, step, execution) {
     status: execution.status || "completed",
     output,
     text: getOutputText(output),
-    summary: execution.summary || `${step.name} completed`
+    summary: execution.summary || `${step.name} completed`,
+    tools: Array.isArray(step.tools) ? step.tools : [],
+    toolCalls
   };
 
   context.outputs.push(agentOutput);
@@ -164,7 +172,9 @@ function applyExecutionToContext(context, step, execution) {
     status: execution.status || "completed",
     timestamp,
     output,
-    summary: execution.summary || `${step.name} completed`
+    summary: execution.summary || `${step.name} completed`,
+    tools: Array.isArray(step.tools) ? step.tools : [],
+    toolCalls
   };
 
   if (execution.qualityScore != null) {
