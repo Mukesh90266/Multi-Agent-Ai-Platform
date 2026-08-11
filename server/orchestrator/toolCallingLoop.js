@@ -102,6 +102,12 @@ TOOL RESULT RULES:
 - In that case answer from your knowledge, be explicit about uncertainty/cutoff, and never invent live URLs.
 - Never write phrases like "demo and not a live search" or "Demo Mode" in the user-facing answer.
 
+LINK / FORMATTING RULES:
+- Use clean Markdown links only: [Label](https://example.com)
+- Never nest links like [[url](url)](url) or duplicate the same URL multiple times in one link.
+- Prefer plain URLs on their own line if unsure about Markdown.
+- Do not wrap the same URL inside itself repeatedly.
+
 RESPONSE FORMAT — return ONLY valid JSON with one of these shapes:
 
 Tool call:
@@ -211,12 +217,73 @@ function heuristicShouldUseTool(toolIds, context) {
   return null;
 }
 
+function extractUrl(text) {
+  const match = String(text || "").match(/https?:\/\/[^\s)\]}>"']+/i);
+  return match ? match[0].replace(/[.,;:]+$/g, "") : "";
+}
+
+/**
+ * Fix common LLM link glitches:
+ * - [[https://x](https://x)](https://x)
+ * - [https://x](https://x)
+ * - nested / duplicated markdown links
+ */
+function sanitizeBrokenLinks(content) {
+  let text = String(content || "");
+
+  // Nested: [[label](url)](url) or [[url](url)](url)
+  text = text.replace(
+    /\[\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)\]\((https?:\/\/[^)\s]+)\)/gi,
+    (_, label, url1, url2) => {
+      const url = extractUrl(url2) || extractUrl(url1) || url1;
+      const cleanLabel = String(label || "").trim();
+      if (!cleanLabel || cleanLabel.startsWith("http")) {
+        return url;
+      }
+      return `[${cleanLabel}](${url})`;
+    }
+  );
+
+  // Repeated nesting leftovers: [ [url](url) ](url)
+  text = text.replace(
+    /\[\s*\[(https?:\/\/[^)\s]+)\]\((https?:\/\/[^)\s]+)\)\s*\]\((https?:\/\/[^)\s]+)\)/gi,
+    (_, a, b, c) => extractUrl(c) || extractUrl(b) || a
+  );
+
+  // Standard markdown where label is the same URL: [https://x](https://x) -> bare URL
+  text = text.replace(
+    /\[(https?:\/\/[^\]\s]+)\]\((https?:\/\/[^)\s]+)\)/gi,
+    (_, labelUrl, href) => extractUrl(href) || extractUrl(labelUrl) || href
+  );
+
+  // Collapse accidental "url](url)" fragments after cleanup
+  text = text.replace(/(https?:\/\/[^\s)\]}>"']+)\]\(\1\)/gi, "$1");
+
+  // Remove double-wrapped bare urls: (https://x](https://x))
+  text = text.replace(
+    /\((https?:\/\/[^)\s]+)\]\((https?:\/\/[^)\s]+)\)\)/gi,
+    (_, a, b) => extractUrl(b) || a
+  );
+
+  return text;
+}
+
 function sanitizeUserFacingContent(content) {
-  return String(content || "")
+  let text = String(content || "");
+
+  text = text
     .replace(/\bDemo Mode\b/gi, "offline fallback")
     .replace(/as the provided search results are from a demo and not a live search[^.]*\./gi, "")
-    .replace(/\bdemo search\b/gi, "limited search")
-    .trim();
+    .replace(/\bdemo search\b/gi, "limited search");
+
+  // Run a few times for deeply nested link junk
+  for (let i = 0; i < 3; i += 1) {
+    const next = sanitizeBrokenLinks(text);
+    if (next === text) break;
+    text = next;
+  }
+
+  return text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function parseFinalContent(decision, agent, context, toolTrace) {
