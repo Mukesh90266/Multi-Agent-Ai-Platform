@@ -88,13 +88,15 @@ AVAILABLE TOOLS:
 ${toolsBlock}
 
 DECISION RULES (based primarily on the user input, plus your role and prior outputs):
-1. Read the ORIGINAL USER INPUT carefully.
-2. If fulfilling your role for that input needs external/current/verified data and a listed tool can help → action "tool_call".
-3. If the user input + previous agent outputs + your knowledge are enough → action "final_answer".
-4. You may call tools multiple times (different queries/claims) before the final answer.
-5. Only use tools from AVAILABLE TOOLS. Never invent tool names.
-6. After tool results arrive, incorporate them and continue until you can produce the final answer.
-7. Do not mention these decision rules in the final answer unless useful to the user.
+1. Read the ORIGINAL USER INPUT carefully. Having tools does NOT mean you must use them.
+2. DEFAULT to "final_answer" when the input is a simple topic, definition, explanation, tutorial, overview, or general knowledge question (examples: "machine learning", "what is React", "explain async/await", "photosynthesis").
+3. Use "tool_call" ONLY when the user input clearly needs external/current/live/verified data that you cannot reliably know — e.g. latest news, today's price, current events, "as of 2026", live stats, or explicit verify/fact-check requests.
+4. Do NOT call web_search just because a tool is available or the topic is technical.
+5. If previous agent outputs already contain enough material, prefer final_answer over another tool call.
+6. You may call tools multiple times only when each call is justified by the user input.
+7. Only use tools from AVAILABLE TOOLS. Never invent tool names.
+8. After tool results arrive, incorporate them and continue until you can produce the final answer.
+9. Do not mention these decision rules in the user-facing answer.
 
 TOOL RESULT RULES:
 - If tool results include real titles/snippets/URLs, use them.
@@ -150,6 +152,7 @@ ${summarizePreviousOutputs(context)}
 TOOL RESULTS SO FAR:
 ${toolTraceBlock}
 
+Prefer final_answer unless the user input clearly requires a tool.
 Produce either a tool_call JSON decision or a final_answer JSON decision now.`;
 }
 
@@ -185,18 +188,38 @@ ${agent.name} reviewed the topic "${topic}"${toolTrace.length ? " using availabl
 }
 
 function heuristicShouldUseTool(toolIds, context) {
-  const topic = String(context?.input?.topic || "").toLowerCase();
+  const topic = String(context?.input?.topic || "").toLowerCase().trim();
   if (!topic || !toolIds.length) return null;
 
+  // Plain short topics / definitions should never force a tool in offline mode.
+  // e.g. "machine learning", "react hooks", "what is docker"
+  const looksLikeSimpleTopic =
+    topic.length < 80 &&
+    !/[?]/.test(topic) &&
+    !/\b(latest|current|today|news|price|update|recent|verify|fact[\s-]?check|as of|202[4-9]|2030)\b/i.test(topic);
+
+  if (looksLikeSimpleTopic) {
+    return null;
+  }
+
   const searchSignals = [
-    "latest", "current", "today", "news", "price", "update", "2024", "2025", "2026",
-    "recent", "search", "find sources", "who is", "what is the current"
+    "latest", "current", "today", "news", "price", "update",
+    "recent", "search the web", "find sources", "what is the current",
+    "as of 2024", "as of 2025", "as of 2026", "breaking"
   ];
+  // Years alone (e.g. course title "ML 2024") should not force search — only with time words nearby
+  const hasYearWithTimeIntent =
+    /\b(2024|2025|2026|2027)\b/.test(topic) &&
+    /\b(latest|current|today|news|update|recent|regulation|price|released|announced)\b/.test(topic);
+
   const verifySignals = [
     "verify", "fact check", "fact-check", "is it true", "validate", "check claim", "accurate"
   ];
 
-  if (toolIds.includes("web_search") && searchSignals.some((s) => topic.includes(s))) {
+  const wantsSearch =
+    searchSignals.some((s) => topic.includes(s)) || hasYearWithTimeIntent;
+
+  if (toolIds.includes("web_search") && wantsSearch) {
     return {
       action: "tool_call",
       tool: "web_search",
@@ -311,8 +334,9 @@ AVAILABLE TOOLS:
 ${toolsBlock}
 
 Based primarily on the ORIGINAL USER INPUT (and prior agent outputs), decide:
-- tool_call — if external/current/verified data is needed and a listed tool helps
-- final_answer — if no tool is needed right now (content may be empty; tools will stop)
+- DEFAULT final_answer for simple topics / definitions / explanations (e.g. "machine learning") — tools are optional, not mandatory.
+- tool_call ONLY if the user clearly needs live/current/external/verified data (latest, today, news, price, verify, etc.)
+- Having a tool assigned is NOT a reason to call it.
 
 You do NOT write the full agent deliverable here when tools are not needed.
 Return ONLY valid JSON:

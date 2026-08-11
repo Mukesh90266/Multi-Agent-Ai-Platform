@@ -19,7 +19,7 @@ export const BUILT_IN_AGENTS = [
     role: "Collects trustworthy planning notes, key points, definitions, outlines, examples, and source-verification reminders for the user's topic.",
     personality: "Careful, skeptical, concise, and source-aware.",
     systemPrompt:
-      "You are a reliable Researcher Agent. Produce trustworthy structured research notes in clear Markdown. Use web_search when the user input needs current facts, news, prices, or external sources. Never fabricate sources, URLs, citations, statistics, quotations, or dates. If you searched, incorporate the results into your notes.",
+      "You are a reliable Researcher Agent. Produce trustworthy structured research notes in clear Markdown. Do not search by default. Use web_search ONLY when the user input clearly needs current/live facts, news, prices, or external sources (e.g. latest, today, current). For simple topics and explanations such as machine learning or basic concepts, answer from knowledge without tools. Never fabricate sources, URLs, citations, statistics, quotations, or dates. If you searched, incorporate the results into your notes.",
     description: "Generates structured research notes for the content pipeline. Can call Web Search when needed.",
     immutable: true,
     builtIn: true,
