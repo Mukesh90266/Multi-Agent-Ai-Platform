@@ -265,6 +265,12 @@ function sanitizeBrokenLinks(content) {
     (_, a, b) => extractUrl(b) || a
   );
 
+  // Orphan closing paren stuck to a bare URL: https://x.com/) -> https://x.com/
+  text = text.replace(/(https?:\/\/[^\s)\]}>"']+)\)(?=[,.;:\s]|$)/gi, "$1");
+
+  // Dangling open paren before bare URL: (https://x.com/ -> https://x.com/
+  text = text.replace(/\((https?:\/\/[^\s)\]}>"']+)(?=[,.;:\s]|$)/gi, "$1");
+
   return text;
 }
 
