@@ -1,34 +1,140 @@
 /**
- * Web Search tool implementation.
- * Uses a lightweight public search endpoint when network is available,
- * otherwise returns a deterministic demo result so pipelines still work.
+ * Web Search tool — tries multiple live providers before any fallback.
+ * Demo results are only used when every live provider fails.
  */
 
-function buildDemoSearchResult(query, context = {}) {
+function decodeHtmlEntities(text) {
+  return String(text || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/\\u003c/gi, "<")
+    .replace(/\\u003e/gi, ">")
+    .replace(/\\u0026/gi, "&");
+}
+
+function stripTags(html) {
+  return decodeHtmlEntities(String(html || "").replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function uniqueResults(results, max = 6) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const item of results) {
+    const key = (item.url || item.title || "").toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push({
+      title: item.title || "Untitled",
+      url: item.url || "",
+      snippet: item.snippet || ""
+    });
+    if (unique.length >= max) break;
+  }
+
+  return unique;
+}
+
+function buildFallbackSearchResult(query, context = {}, reason = "") {
   const topic = context?.input?.topic || query;
   return {
     query,
-    mode: "demo",
-    provider: "demo",
-    resultCount: 3,
-    results: [
-      {
-        title: `${topic} — overview and key concepts`,
-        url: "https://example.com/demo/overview",
-        snippet: `Demo search result summarizing core ideas related to "${query}". Configure a live search provider for real web results.`
-      },
-      {
-        title: `${topic} — practical guide`,
-        url: "https://example.com/demo/guide",
-        snippet: `A practical walkthrough covering common use cases, limitations, and best practices for "${query}".`
-      },
-      {
-        title: `${topic} — recent context (demo)`,
-        url: "https://example.com/demo/recent",
-        snippet: `Placeholder for time-sensitive information about "${query}". Verify dates and statistics with primary sources before publishing.`
-      }
-    ],
-    summary: `Demo web search completed for "${query}". ${3} sample results returned because no live search provider responded.`
+    mode: "fallback",
+    provider: "none",
+    resultCount: 0,
+    results: [],
+    liveUnavailable: true,
+    reason: reason || "No live search provider returned results.",
+    guidance:
+      "Live web results were unavailable. Use your trained knowledge to answer carefully. Clearly separate known facts from uncertainty. Do NOT say you are in Demo Mode. Do NOT invent URLs or pretend a live search succeeded.",
+    summary: `No live web results for "${topic}". ${reason || "Providers returned empty."} Answer from model knowledge and mark uncertainty.`
+  };
+}
+
+async function trySerper(query, maxResults = 6) {
+  const apiKey = process.env.SERPER_API_KEY || process.env.SERPER_KEY;
+  if (!apiKey) return null;
+
+  const response = await fetch("https://google.serper.dev/search", {
+    method: "POST",
+    signal: AbortSignal.timeout(10000),
+    headers: {
+      "X-API-KEY": apiKey,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ q: query, num: maxResults })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Serper HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  const organic = Array.isArray(data.organic) ? data.organic : [];
+  const results = organic.map((item) => ({
+    title: item.title || query,
+    url: item.link || "",
+    snippet: item.snippet || ""
+  }));
+
+  const unique = uniqueResults(results, maxResults);
+  if (!unique.length) return null;
+
+  return {
+    query,
+    mode: "live",
+    provider: "serper",
+    resultCount: unique.length,
+    results: unique,
+    summary: `Found ${unique.length} Serper result(s) for "${query}".`
+  };
+}
+
+async function tryBrave(query, maxResults = 6) {
+  const apiKey = process.env.BRAVE_API_KEY || process.env.BRAVE_SEARCH_API_KEY;
+  if (!apiKey) return null;
+
+  const url =
+    `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}` +
+    `&count=${maxResults}`;
+
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(10000),
+    headers: {
+      Accept: "application/json",
+      "X-Subscription-Token": apiKey
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Brave HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  const web = data.web?.results || [];
+  const results = web.map((item) => ({
+    title: item.title || query,
+    url: item.url || "",
+    snippet: item.description || ""
+  }));
+
+  const unique = uniqueResults(results, maxResults);
+  if (!unique.length) return null;
+
+  return {
+    query,
+    mode: "live",
+    provider: "brave",
+    resultCount: unique.length,
+    results: unique,
+    summary: `Found ${unique.length} Brave result(s) for "${query}".`
   };
 }
 
@@ -37,11 +143,14 @@ async function tryDuckDuckGoInstantAnswer(query) {
 
   const response = await fetch(url, {
     signal: AbortSignal.timeout(8000),
-    headers: { Accept: "application/json" }
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "MultiAgentAiPlatform/1.0"
+    }
   });
 
   if (!response.ok) {
-    throw new Error(`Search HTTP ${response.status}`);
+    throw new Error(`DDG instant HTTP ${response.status}`);
   }
 
   const data = await response.json();
@@ -52,6 +161,14 @@ async function tryDuckDuckGoInstantAnswer(query) {
       title: data.Heading || query,
       url: data.AbstractURL || "",
       snippet: data.AbstractText
+    });
+  }
+
+  if (data.Answer) {
+    results.push({
+      title: "Direct answer",
+      url: data.AbstractURL || "",
+      snippet: stripTags(data.Answer)
     });
   }
 
@@ -76,23 +193,156 @@ async function tryDuckDuckGoInstantAnswer(query) {
     if (results.length >= 6) break;
   }
 
-  if (!results.length) {
-    return null;
-  }
+  const unique = uniqueResults(results);
+  if (!unique.length) return null;
 
   return {
     query,
     mode: "live",
-    provider: "duckduckgo",
-    resultCount: results.length,
-    results: results.slice(0, 6),
-    summary: `Found ${Math.min(results.length, 6)} result(s) for "${query}".`
+    provider: "duckduckgo_instant",
+    resultCount: unique.length,
+    results: unique,
+    summary: `Found ${unique.length} DuckDuckGo instant result(s) for "${query}".`
+  };
+}
+
+async function tryDuckDuckGoHtml(query) {
+  const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(10000),
+    headers: {
+      Accept: "text/html",
+      "User-Agent":
+        "Mozilla/5.0 (compatible; MultiAgentAiPlatform/1.0; +https://localhost)"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`DDG HTML HTTP ${response.status}`);
+  }
+
+  const html = await response.text();
+  const results = [];
+
+  // Classic DDG HTML result links
+  const linkRegex =
+    /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  const snippetRegex = /class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\//gi;
+
+  const links = [];
+  let linkMatch = linkRegex.exec(html);
+  while (linkMatch && links.length < 8) {
+    links.push({
+      url: decodeHtmlEntities(linkMatch[1]),
+      title: stripTags(linkMatch[2])
+    });
+    linkMatch = linkRegex.exec(html);
+  }
+
+  const snippets = [];
+  let snippetMatch = snippetRegex.exec(html);
+  while (snippetMatch && snippets.length < 8) {
+    snippets.push(stripTags(snippetMatch[1]));
+    snippetMatch = snippetRegex.exec(html);
+  }
+
+  for (let i = 0; i < links.length; i += 1) {
+    const href = links[i].url;
+    results.push({
+      title: links[i].title,
+      url: href.startsWith("//") ? `https:${href}` : href,
+      snippet: snippets[i] || ""
+    });
+  }
+
+  const unique = uniqueResults(results);
+  if (!unique.length) return null;
+
+  return {
+    query,
+    mode: "live",
+    provider: "duckduckgo_html",
+    resultCount: unique.length,
+    results: unique,
+    summary: `Found ${unique.length} DuckDuckGo HTML result(s) for "${query}".`
+  };
+}
+
+async function tryWikipedia(query) {
+  const searchUrl =
+    `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}` +
+    `&limit=5&namespace=0&format=json&origin=*`;
+
+  const searchResponse = await fetch(searchUrl, {
+    signal: AbortSignal.timeout(8000),
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "MultiAgentAiPlatform/1.0"
+    }
+  });
+
+  if (!searchResponse.ok) {
+    throw new Error(`Wikipedia search HTTP ${searchResponse.status}`);
+  }
+
+  const searchData = await searchResponse.json();
+  const titles = searchData[1] || [];
+  const descriptions = searchData[2] || [];
+  const links = searchData[3] || [];
+
+  if (!titles.length) return null;
+
+  const results = [];
+
+  for (let i = 0; i < Math.min(titles.length, 4); i += 1) {
+    const title = titles[i];
+    let snippet = descriptions[i] || "";
+    const pageUrl = links[i] || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+
+    // Enrich first hit with summary extract
+    if (i === 0) {
+      try {
+        const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+        const summaryResponse = await fetch(summaryUrl, {
+          signal: AbortSignal.timeout(6000),
+          headers: {
+            Accept: "application/json",
+            "User-Agent": "MultiAgentAiPlatform/1.0"
+          }
+        });
+        if (summaryResponse.ok) {
+          const summary = await summaryResponse.json();
+          if (summary.extract) snippet = summary.extract;
+        }
+      } catch {
+        // keep short description
+      }
+    }
+
+    results.push({
+      title,
+      url: pageUrl,
+      snippet
+    });
+  }
+
+  const unique = uniqueResults(results);
+  if (!unique.length) return null;
+
+  return {
+    query,
+    mode: "live",
+    provider: "wikipedia",
+    resultCount: unique.length,
+    results: unique,
+    summary: `Found ${unique.length} Wikipedia result(s) for "${query}".`
   };
 }
 
 /**
  * @param {{ query?: string, maxResults?: number }} args
- * @param {object} context - pipeline agent context (optional)
+ * @param {object} context
  */
 export async function executeWebSearch(args = {}, context = {}) {
   const query = String(args.query || args.q || context?.input?.topic || "").trim();
@@ -109,22 +359,38 @@ export async function executeWebSearch(args = {}, context = {}) {
     };
   }
 
-  try {
-    const live = await tryDuckDuckGoInstantAnswer(query);
-    if (live) {
-      if (args.maxResults && Number.isInteger(Number(args.maxResults))) {
-        const max = Math.min(Math.max(Number(args.maxResults), 1), 10);
-        live.results = live.results.slice(0, max);
+  const maxResults = args.maxResults && Number.isInteger(Number(args.maxResults))
+    ? Math.min(Math.max(Number(args.maxResults), 1), 10)
+    : 6;
+
+  const providers = [
+    { name: "serper", run: () => trySerper(query, maxResults) },
+    { name: "brave", run: () => tryBrave(query, maxResults) },
+    { name: "duckduckgo_instant", run: () => tryDuckDuckGoInstantAnswer(query) },
+    { name: "duckduckgo_html", run: () => tryDuckDuckGoHtml(query) },
+    { name: "wikipedia", run: () => tryWikipedia(query) }
+  ];
+
+  const errors = [];
+
+  for (const provider of providers) {
+    try {
+      const live = await provider.run();
+      if (live?.results?.length) {
+        live.results = live.results.slice(0, maxResults);
         live.resultCount = live.results.length;
-        live.summary = `Found ${live.resultCount} result(s) for "${query}".`;
+        live.summary = `Found ${live.resultCount} result(s) for "${query}" via ${live.provider}.`;
+        console.log(`[web_search] live hit via ${live.provider} (${live.resultCount} results)`);
+        return live;
       }
-      return live;
+      errors.push(`${provider.name}: empty`);
+    } catch (error) {
+      errors.push(`${provider.name}: ${error.message || "failed"}`);
     }
-  } catch {
-    // fall through to demo
   }
 
-  return buildDemoSearchResult(query, context);
+  console.warn(`[web_search] all providers failed for "${query}": ${errors.join(" | ")}`);
+  return buildFallbackSearchResult(query, context, errors.join("; "));
 }
 
 export const webSearchToolDefinition = {

@@ -98,12 +98,16 @@ function buildCustomUserPrompt(agent, context) {
   return `You are executing one step in a dynamic multi-agent pipeline.\n\nCURRENT AGENT:\n${agent.name}\n\nORIGINAL USER INPUT:\n${stringifyForPrompt(context.input)}\n\nPIPELINE ORDER:\n${pipelineSteps}\n\nOUTPUTS FROM PREVIOUS AGENTS:\n${summarizePreviousOutputs(context)}\n\nTOOL RESULTS FOR THIS AGENT:\n${toolBlock ? stringifyForPrompt(toolBlock) : "No tools were used for this step."}\n\nUse the original input, prior outputs, and tool results only when they are useful for your configured task. Do not assume Researcher, Writer, or Editor exist in this pipeline. Return the response requested by your saved system prompt. If no format is specified, return clear plain text or Markdown.`;
 }
 
-function demoCustomOutput(agent, context) {
+function offlineCustomOutput(agent, context) {
   const tools = agent.tools || [];
   const toolCalls = context.toolResults || [];
+  const toolSummary = toolCalls.length
+    ? toolCalls.map((call) => `- ${call.tool}: ${call.result?.summary || "done"}`).join("\n")
+    : "- None";
+
   return {
-    content: `## ${agent.name} (Demo Mode)\n\nThis custom agent is configured as: ${agent.role}\n\nPersonality: ${agent.personality}\n\nBecause no LLM provider is reachable, this is a deterministic demo response. With GROQ_API_KEY configured, this agent will execute using its saved system prompt:\n\n> ${agent.systemPrompt}\n\nOriginal input: ${context.input.topic || "No topic provided"}\n\nPrevious outputs available: ${context.outputs.length}\n\nAssigned tools: ${tools.length ? tools.join(", ") : "None"}\n\nTool calls this run: ${toolCalls.length}`,
-    mode: "demo",
+    content: `## ${agent.name}\n\nRole: ${agent.role}\n\nThe model API did not return content for this step. Offline summary based on the user input and tool results:\n\n### User input\n${context.input.topic || "No topic provided"}\n\n### Assigned tools\n${tools.length ? tools.join(", ") : "None"}\n\n### Tool activity\n${toolSummary}\n\nRe-run once GROQ_API_KEY/network is healthy for a full model response.`,
+    mode: "offline",
     toolCalls
   };
 }
@@ -198,7 +202,7 @@ async function executeCustomAgent(agent, context) {
 
   const output = raw && raw.trim().length
     ? { content: raw.trim(), mode: "llm" }
-    : demoCustomOutput(agent, context);
+    : offlineCustomOutput(agent, context);
 
   return {
     output,

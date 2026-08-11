@@ -96,6 +96,12 @@ DECISION RULES (based primarily on the user input, plus your role and prior outp
 6. After tool results arrive, incorporate them and continue until you can produce the final answer.
 7. Do not mention these decision rules in the final answer unless useful to the user.
 
+TOOL RESULT RULES:
+- If tool results include real titles/snippets/URLs, use them.
+- If tool results say live search was unavailable / fallback / empty, do NOT say "Demo Mode".
+- In that case answer from your knowledge, be explicit about uncertainty/cutoff, and never invent live URLs.
+- Never write phrases like "demo and not a live search" or "Demo Mode" in the user-facing answer.
+
 RESPONSE FORMAT — return ONLY valid JSON with one of these shapes:
 
 Tool call:
@@ -141,31 +147,35 @@ ${toolTraceBlock}
 Produce either a tool_call JSON decision or a final_answer JSON decision now.`;
 }
 
-function buildDemoFinalContent(agent, context, toolTrace) {
+function buildOfflineFinalContent(agent, context, toolTrace) {
   const topic = context?.input?.topic || "the given topic";
-  const toolSummary = toolTrace.length
-    ? toolTrace
-        .map((entry) => `- Called \`${entry.tool}\` → ${entry.result?.summary || "result received"}`)
-        .join("\n")
-    : "- No tools were required for this run.";
+  const toolLines = toolTrace.length
+    ? toolTrace.map((entry) => {
+        const result = entry.result || {};
+        if (Array.isArray(result.results) && result.results.length) {
+          const top = result.results
+            .slice(0, 3)
+            .map((item) => `  - ${item.title}: ${item.snippet || item.url || ""}`)
+            .join("\n");
+          return `- ${entry.tool}: ${result.summary || "ok"}\n${top}`;
+        }
+        return `- ${entry.tool}: ${result.summary || result.error || "completed"}`;
+      }).join("\n")
+    : "- No tools were called.";
 
-  return `## ${agent.name} (Demo Mode)
+  return `## ${agent.name}
 
-Role: ${agent.role || "Custom agent"}
-
-This agent ran with dynamic tool-calling enabled. Because no LLM provider is reachable, a deterministic demo response was produced from the user input and any tool results.
-
-### User input
+### Topic
 ${topic}
 
-### Tools assigned
-${(agent.tools || []).length ? agent.tools.join(", ") : "None"}
+### Notes
+The language model API did not return a response for this step, so a local offline summary was generated from the user input and any tool results.
 
 ### Tool activity
-${toolSummary}
+${toolLines}
 
-### Output
-Based on the user input${toolTrace.length ? " and tool results above" : ""}, ${agent.name} completed its step and passed control to the next pipeline agent.`;
+### Draft output
+${agent.name} reviewed the topic "${topic}"${toolTrace.length ? " using available tool results" : ""}. Re-run with a working GROQ_API_KEY / network connection for a full model-written answer.`;
 }
 
 function heuristicShouldUseTool(toolIds, context) {
@@ -201,11 +211,19 @@ function heuristicShouldUseTool(toolIds, context) {
   return null;
 }
 
+function sanitizeUserFacingContent(content) {
+  return String(content || "")
+    .replace(/\bDemo Mode\b/gi, "offline fallback")
+    .replace(/as the provided search results are from a demo and not a live search[^.]*\./gi, "")
+    .replace(/\bdemo search\b/gi, "limited search")
+    .trim();
+}
+
 function parseFinalContent(decision, agent, context, toolTrace) {
   if (decision?.content && String(decision.content).trim()) {
-    return String(decision.content).trim();
+    return sanitizeUserFacingContent(decision.content);
   }
-  return buildDemoFinalContent(agent, context, toolTrace);
+  return buildOfflineFinalContent(agent, context, toolTrace);
 }
 
 function buildGatherOnlySystemMessage(agent, toolIds) {
@@ -331,7 +349,7 @@ export async function runAgentWithTools(agent, context, options = {}) {
       temperature: 0.3
     });
 
-    // Demo / offline path: one optional heuristic tool call, then final.
+    // Offline path only when LLM is unreachable: optional heuristic tool call, then local summary.
     if (!decision) {
       forcedDemo = true;
       if (toolTrace.length === 0) {
@@ -341,13 +359,13 @@ export async function runAgentWithTools(agent, context, options = {}) {
         } else {
           decision = {
             action: "final_answer",
-            content: buildDemoFinalContent(agent, context, toolTrace)
+            content: buildOfflineFinalContent(agent, context, toolTrace)
           };
         }
       } else {
         decision = {
           action: "final_answer",
-          content: buildDemoFinalContent(agent, context, toolTrace)
+          content: buildOfflineFinalContent(agent, context, toolTrace)
         };
       }
     }
@@ -357,7 +375,7 @@ export async function runAgentWithTools(agent, context, options = {}) {
       return {
         output: {
           content,
-          mode: forcedDemo ? "demo" : "llm",
+          mode: forcedDemo ? "offline" : "llm",
           toolsUsed: toolCalls.map((call) => call.tool),
           toolCalls
         },
@@ -414,12 +432,12 @@ export async function runAgentWithTools(agent, context, options = {}) {
 
   const content = finalDecision?.action === "final_answer"
     ? parseFinalContent(finalDecision, agent, context, toolTrace)
-    : buildDemoFinalContent(agent, context, toolTrace);
+    : buildOfflineFinalContent(agent, context, toolTrace);
 
   return {
     output: {
       content,
-      mode: finalDecision ? "llm" : "demo",
+      mode: finalDecision ? "llm" : "offline",
       toolsUsed: toolCalls.map((call) => call.tool),
       toolCalls
     },

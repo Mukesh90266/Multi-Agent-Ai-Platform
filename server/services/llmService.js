@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { config } from "../config/config.js";
 
 let connectionWarningShown = false;
+let lastLlmError = null;
 
 function getClient() {
   if (!config.groqKey) return null;
@@ -12,8 +13,17 @@ function getClient() {
   });
 }
 
+export function getLastLlmError() {
+  return lastLlmError;
+}
+
+export function isLlmConfigured() {
+  return Boolean(config.groqKey);
+}
+
 function isNetworkError(error) {
   const errMsg = error?.message || "";
+  const name = error?.name || "";
   return (
     errMsg.includes("ENOTFOUND") ||
     errMsg.includes("ECONNREFUSED") ||
@@ -21,24 +31,61 @@ function isNetworkError(error) {
     errMsg.includes("ETIMEDOUT") ||
     errMsg.includes("fetch failed") ||
     errMsg.includes("Connection error") ||
+    errMsg.includes("network") ||
+    name === "APIConnectionError" ||
     error?.code === "ECONNREFUSED" ||
-    error?.code === "ENOTFOUND"
+    error?.code === "ENOTFOUND" ||
+    error?.code === "ETIMEDOUT"
   );
 }
 
-function logNetworkFallback(error) {
-  if (connectionWarningShown) return;
+function isRecoverableApiError(error) {
+  const status = error?.status || error?.response?.status;
+  const errMsg = (error?.message || "").toLowerCase();
 
-  const errMsg = error?.message || "unknown error";
+  // Treat rate limits / overloaded / temporary 5xx as recoverable → fallback
+  if (status === 429 || status === 503 || status === 502 || status === 500) {
+    return true;
+  }
+  if (
+    errMsg.includes("rate limit") ||
+    errMsg.includes("overloaded") ||
+    errMsg.includes("try again") ||
+    errMsg.includes("timeout")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function logLlmFallback(error, reason) {
+  lastLlmError = {
+    reason,
+    message: error?.message || String(error || reason),
+    status: error?.status || error?.response?.status || null,
+    at: new Date().toISOString()
+  };
+
+  const errMsg = lastLlmError.message;
   console.log("");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("⚠️  Groq API unreachable — running in DEMO MODE");
-  console.log("   Error: " + errMsg.split("\n")[0]);
-  console.log("   Demo mode uses built-in sample data for agents/tools.");
-  console.log("   To fix: Check internet connection / VPN / DNS settings");
+  console.log("⚠️  Groq LLM call failed — temporary fallback");
+  console.log("   Reason: " + reason);
+  console.log("   Error: " + String(errMsg).split("\n")[0]);
+  if (lastLlmError.status) {
+    console.log("   Status: " + lastLlmError.status);
+  }
+  console.log("   Check: GROQ_API_KEY, model name, rate limits, network");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("");
-  connectionWarningShown = true;
+}
+
+function logNetworkFallback(error) {
+  if (!connectionWarningShown) {
+    connectionWarningShown = true;
+  }
+  logLlmFallback(error, "network");
 }
 
 function extractJsonObject(text) {
@@ -76,9 +123,6 @@ function extractJsonObject(text) {
 
 /**
  * Normalize model output into a tool decision object.
- * @returns {{ action: 'tool_call', tool: string, args: object, reason?: string }
- *          |{ action: 'final_answer', content: string }
- *          |null}
  */
 export function normalizeToolDecision(raw) {
   if (!raw) return null;
@@ -87,7 +131,6 @@ export function normalizeToolDecision(raw) {
   if (typeof raw === "string") {
     data = extractJsonObject(raw);
     if (!data) {
-      // Plain text fallback → treat as final answer content
       const text = raw.trim();
       if (!text) return null;
       return { action: "final_answer", content: text };
@@ -140,9 +183,18 @@ export function normalizeToolDecision(raw) {
     };
   }
 
-  // Some models return content without action
   if (typeof data.content === "string" && data.content.trim()) {
     return { action: "final_answer", content: data.content.trim() };
+  }
+
+  // Model sometimes returns tool fields without action
+  if (data.tool || data.toolId) {
+    return normalizeToolDecision({
+      action: "tool_call",
+      tool: data.tool || data.toolId,
+      args: data.args || data.arguments || {},
+      reason: data.reason
+    });
   }
 
   return null;
@@ -158,6 +210,12 @@ export async function askLLM(
 ) {
   const client = getClient();
   if (!client) {
+    lastLlmError = {
+      reason: "missing_key",
+      message: "GROQ_API_KEY is not configured",
+      status: null,
+      at: new Date().toISOString()
+    };
     return null;
   }
 
@@ -184,20 +242,61 @@ export async function askLLM(
     }
 
     const response = await client.chat.completions.create(requestData);
-    return response.choices[0].message.content;
+    const content = response.choices?.[0]?.message?.content ?? null;
+
+    if (content != null) {
+      lastLlmError = null;
+    }
+
+    return content;
   } catch (error) {
+    // Some Groq models reject json_object — retry once without it
+    const errMsg = (error?.message || "").toLowerCase();
+    if (
+      jsonMode &&
+      (errMsg.includes("json") || errMsg.includes("response_format") || error?.status === 400)
+    ) {
+      try {
+        console.warn("[llm] json_mode rejected — retrying without response_format");
+        const retry = await client.chat.completions.create({
+          model: config.model,
+          temperature,
+          messages: [
+            {
+              role: "system",
+              content: `${systemMessage}\n\nReturn valid JSON only. No markdown fences.`
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ]
+        });
+        lastLlmError = null;
+        return retry.choices?.[0]?.message?.content ?? null;
+      } catch (retryError) {
+        error = retryError;
+      }
+    }
+
     if (isNetworkError(error)) {
       logNetworkFallback(error);
       return null;
     }
 
-    throw error;
+    if (isRecoverableApiError(error)) {
+      logLlmFallback(error, "recoverable_api_error");
+      return null;
+    }
+
+    // Auth / bad request — log clearly, still fallback so UI doesn't hard-crash
+    logLlmFallback(error, "api_error");
+    return null;
   }
 }
 
 /**
  * Ask the LLM for a structured tool-calling decision.
- * Returns a normalized decision object, or null for demo/offline fallback.
  */
 export async function askLLMForToolDecision(
   prompt,
@@ -208,8 +307,8 @@ export async function askLLMForToolDecision(
   } = {}
 ) {
   const toolsHint = tools.length
-    ? `\nAllowed tool ids: ${tools.map((tool) => tool.id).join(", ")}.`
-    : "\nNo tools are allowed; you must return final_answer.";
+    ? `\nAllowed tool ids: ${tools.map((tool) => tool.id).join(", ")}.\nReturn ONLY a JSON object.`
+    : "\nNo tools are allowed; you must return final_answer as JSON.";
 
   const raw = await askLLM(`${prompt}${toolsHint}`, {
     temperature,
@@ -220,5 +319,8 @@ export async function askLLMForToolDecision(
   if (!raw) return null;
 
   const decision = normalizeToolDecision(raw);
+  if (!decision) {
+    console.warn("[llm] tool decision parse failed. Raw snippet:", String(raw).slice(0, 200));
+  }
   return decision;
 }

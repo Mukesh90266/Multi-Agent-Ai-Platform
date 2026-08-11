@@ -10,5 +10,5 @@ Audience: ${audience}
 Tone: ${tone}
 ${toolBlock}
 Return ONLY valid JSON, no markdown, with exactly: {"topic":"string","summary":"string","keyPoints":["string"],"definitions":[{"term":"string","meaning":"string"}],"suggestedOutline":["string"],"examples":["string"],"sources":[{"title":"string","url":"string","note":"string"}],"factsToVerify":["string"]}.
-Provide 5-7 key points, 3-5 outline entries, and 2-4 definitions. Never invent citations, statistics, studies, quotes, or URLs. Prefer tool results when present. If current facts are still needed, list them in factsToVerify instead.`;
+Provide 5-7 key points, 3-5 outline entries, and 2-4 definitions. Never invent citations, statistics, studies, quotes, or URLs. Prefer live tool results when present. If tool results are empty/fallback, use careful general knowledge and put uncertain items in factsToVerify. Never mention Demo Mode in any field.`;
 };
