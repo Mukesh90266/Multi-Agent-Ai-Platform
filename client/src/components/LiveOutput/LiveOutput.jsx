@@ -114,7 +114,7 @@ function ToolCallsPanel({ toolCalls }) {
         >
           <div className="tool-call-title-row">
             <span className="tool-call-name">{call.toolName || call.tool}</span>
-            <span className="tool-call-badge">{call.ok === false ? "failed" : "ok"}>
+            <span className={`tool-call-badge ${call.ok === false ? "failed" : "ok"}`}>
               {call.ok === false ? "Failed" : "OK"}
             </span>
           </div>
