@@ -5,9 +5,13 @@ export const writerPrompt = ({
   tone,
   wordCount,
   research,
-  editorFeedback
+  editorFeedback,
+  toolResults
 }) => {
   const isRevision = !!editorFeedback;
+  const toolBlock = Array.isArray(toolResults) && toolResults.length
+    ? `\nTOOL RESULTS:\n${JSON.stringify(toolResults, null, 2)}\n`
+    : "";
 
   const basePrompt = `
 You are an EXPERT CONTENT WRITER. Your goal: Get approved in the FIRST revision.
@@ -23,6 +27,7 @@ QUALITY STANDARD: Write content that a SENIOR EDITOR would approve without major
 
 RESEARCH:
 ${JSON.stringify(research, null, 2)}
+${toolBlock}
 `;
 
   let revisionPrompt = "";

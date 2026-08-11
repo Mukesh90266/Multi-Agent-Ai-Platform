@@ -6,11 +6,24 @@ import LiveOutput from "../components/LiveOutput/LiveOutput";
 import AgentBuilder from "../components/Agents/AgentBuilder";
 import AgentLibrary from "../components/Agents/AgentLibrary";
 import PipelineBuilder from "../components/Agents/PipelineBuilder";
-import { createAgent, deleteAgent, getAgents, getPipelineStatus, runPipeline } from "../services/api.js";
+import { createAgent, deleteAgent, getAgents, getPipelineStatus, getTools, runPipeline } from "../services/api.js";
 
 const DEFAULT_AGENT_IDS = ["researcher", "writer", "editor"];
 const CUSTOM_AGENTS_STORAGE_KEY = "multi-agent-platform.customAgents";
 const DELETED_CUSTOM_AGENTS_STORAGE_KEY = "multi-agent-platform.deletedCustomAgentIds";
+
+const DEFAULT_AVAILABLE_TOOLS = [
+  {
+    id: "web_search",
+    name: "Web Search",
+    description: "Search the web for current information related to the user input."
+  },
+  {
+    id: "verification_api",
+    name: "Verification API",
+    description: "Verify factual claims from the user input or previous outputs."
+  }
+];
 
 const CLIENT_BUILT_IN_AGENTS = [
   {
@@ -21,7 +34,8 @@ const CLIENT_BUILT_IN_AGENTS = [
     personality: "Careful, skeptical, concise, and source-aware.",
     phase: "research",
     immutable: true,
-    builtIn: true
+    builtIn: true,
+    tools: ["web_search"]
   },
   {
     id: "writer",
@@ -31,7 +45,8 @@ const CLIENT_BUILT_IN_AGENTS = [
     personality: "Practical, engaging, and audience-focused.",
     phase: "write",
     immutable: true,
-    builtIn: true
+    builtIn: true,
+    tools: []
   },
   {
     id: "editor",
@@ -41,7 +56,8 @@ const CLIENT_BUILT_IN_AGENTS = [
     personality: "Strict, helpful, professional, and specific.",
     phase: "review",
     immutable: true,
-    builtIn: true
+    builtIn: true,
+    tools: ["verification_api"]
   }
 ];
 
@@ -115,15 +131,22 @@ function mergeAgents(...agentLists) {
   const merged = new Map();
 
   for (const agent of CLIENT_BUILT_IN_AGENTS) {
-    merged.set(agent.id, agent);
+    merged.set(agent.id, { ...agent, tools: Array.isArray(agent.tools) ? agent.tools : [] });
   }
 
   for (const list of agentLists) {
     for (const agent of list || []) {
       if (!agent?.id) continue;
+      const existing = merged.get(agent.id) || {};
       merged.set(agent.id, {
+        ...existing,
         ...agent,
-        type: agent.type || (String(agent.id).startsWith("custom-") ? "custom" : "built-in")
+        type: agent.type || (String(agent.id).startsWith("custom-") ? "custom" : "built-in"),
+        tools: Array.isArray(agent.tools)
+          ? agent.tools
+          : Array.isArray(existing.tools)
+            ? existing.tools
+            : []
       });
     }
   }
@@ -145,6 +168,10 @@ function createLocalCustomAgent(payload) {
     ? crypto.randomUUID().slice(0, 8)
     : Math.random().toString(16).slice(2, 10);
 
+  const tools = Array.isArray(payload.tools)
+    ? payload.tools.map((toolId) => String(toolId || "").trim()).filter(Boolean)
+    : [];
+
   return {
     id: `custom-${slugify(payload.name)}-${randomId}`,
     type: "custom",
@@ -156,6 +183,7 @@ function createLocalCustomAgent(payload) {
     immutable: false,
     builtIn: false,
     phase: "custom",
+    tools,
     createdAt: now,
     updatedAt: now
   };
@@ -192,7 +220,8 @@ function createLocalPipelineSteps(selectedSteps, agentsById) {
       role: agent?.role || "",
       personality: agent?.personality || "",
       phase: agent?.phase || "agent",
-      builtIn: agent?.type === "built-in"
+      builtIn: agent?.type === "built-in",
+      tools: Array.isArray(agent?.tools) ? agent.tools : []
     };
   });
 }
@@ -209,6 +238,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(null);
   const [agents, setAgents] = useState(() => mergeAgents(loadPersistedCustomAgents()));
+  const [availableTools, setAvailableTools] = useState(DEFAULT_AVAILABLE_TOOLS);
   const [libraryError, setLibraryError] = useState(null);
   const [pipelineError, setPipelineError] = useState(null);
   const [selectedSteps, setSelectedSteps] = useState(() => makeStepsFromIds(DEFAULT_AGENT_IDS));
@@ -237,7 +267,16 @@ export default function Home() {
 
     try {
       setLibraryError(null);
-      const data = await getAgents();
+      const [data, toolsData] = await Promise.all([
+        getAgents(),
+        getTools().catch(() => null)
+      ]);
+
+      if (toolsData?.success && Array.isArray(toolsData.tools) && toolsData.tools.length) {
+        setAvailableTools(toolsData.tools);
+      } else if (Array.isArray(data.tools) && data.tools.length) {
+        setAvailableTools(data.tools);
+      }
 
       if (data.success) {
         for (const deletedId of deletedIds) {
@@ -562,7 +601,11 @@ export default function Home() {
         </div>
 
         <div className="section section-divider">
-          <AgentBuilder onCreateAgent={handleCreateAgent} disabled={loading} />
+          <AgentBuilder
+            onCreateAgent={handleCreateAgent}
+            disabled={loading}
+            availableTools={availableTools}
+          />
         </div>
 
         <div className="section section-divider">

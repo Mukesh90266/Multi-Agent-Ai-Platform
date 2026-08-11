@@ -53,9 +53,16 @@ function getIcon(agent) {
   return BotIcon;
 }
 
+function formatToolLabel(toolId) {
+  if (toolId === "web_search") return "Web Search";
+  if (toolId === "verification_api") return "Verification";
+  return toolId;
+}
+
 function AgentCard({ agent, onAddAgent, onDeleteAgent, disabled }) {
   const Icon = getIcon(agent);
   const canDelete = agent.type === "custom" && !agent.immutable;
+  const tools = Array.isArray(agent.tools) ? agent.tools : [];
 
   return (
     <div className={`library-agent-card ${agent.type}`}>
@@ -70,6 +77,13 @@ function AgentCard({ agent, onAddAgent, onDeleteAgent, disabled }) {
         <p className="library-agent-role">{agent.role}</p>
         {agent.personality && (
           <div className="library-agent-personality">{agent.personality}</div>
+        )}
+        {tools.length > 0 && (
+          <div className="library-agent-tools">
+            {tools.map((toolId) => (
+              <span key={toolId} className="tool-chip">{formatToolLabel(toolId)}</span>
+            ))}
+          </div>
         )}
       </div>
       <div className="library-agent-actions">

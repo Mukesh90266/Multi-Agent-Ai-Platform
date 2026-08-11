@@ -6,8 +6,14 @@ export const editorPrompt = ({
   wordCount,
   research,
   draft,
-  iteration = 1
-}) => `
+  iteration = 1,
+  toolResults
+}) => {
+  const toolBlock = Array.isArray(toolResults) && toolResults.length
+    ? `\nVERIFICATION / TOOL RESULTS (use these when scoring factual accuracy):\n${JSON.stringify(toolResults, null, 2)}\n`
+    : "";
+
+  return `
 You are a SENIOR EDITOR. Your job is to ensure CONTENT QUALITY, not just find problems.
 
 DISTRIBUTION YOU MUST FOLLOW:
@@ -109,7 +115,7 @@ TYPE: ${contentType}
 AUDIENCE: ${audience}
 TONE: ${tone}
 WORDS: ${wordCount || 800}
-
+${toolBlock}
 RESEARCH:
 ${JSON.stringify(research, null, 2)}
 
@@ -143,3 +149,4 @@ Return JSON:
 
 APPROVAL: 80+ with no high-severity issues.
 `;
+};

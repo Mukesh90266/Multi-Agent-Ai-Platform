@@ -1,0 +1,545 @@
+/**
+ * Position-independent tool-calling loop for ANY agent.
+ *
+ * Flow:
+ *   Agent → LLM (user input + context + allowed tools)
+ *        → tool needed? → Tool Registry → result → LLM continues
+ *        → final agent output
+ *
+ * Does NOT depend on pipeline index or built-in agent identity.
+ */
+
+import { askLLMForToolDecision } from "../services/llmService.js";
+import {
+  executeTool,
+  formatToolsForPrompt,
+  getToolDefinitionsForLlm,
+  normalizeToolIds
+} from "../tools/toolRegistry.js";
+
+const DEFAULT_MAX_TOOL_ROUNDS = 3;
+
+function stringifyForPrompt(value) {
+  if (value == null) return "None.";
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function outputToText(output) {
+  if (output == null) return "";
+  if (typeof output === "string") return output;
+  if (typeof output.content === "string") return output.content;
+  if (typeof output.optimizedContent === "string") return output.optimizedContent;
+  if (typeof output.summary === "string") return output.summary;
+  return stringifyForPrompt(output);
+}
+
+function summarizePreviousOutputs(context) {
+  if (!context?.outputs?.length) {
+    return "No previous agent outputs yet.";
+  }
+
+  return context.outputs
+    .map((entry, index) => {
+      const text = outputToText(entry.output);
+      const truncated = text.length > 4000 ? `${text.slice(0, 4000)}\n...[truncated]` : text;
+      return `#${index + 1} ${entry.agentName} (${entry.agentId})\n${truncated}`;
+    })
+    .join("\n\n---\n\n");
+}
+
+function buildPipelineOrder(context) {
+  if (!context?.pipeline?.steps?.length) return "Not available.";
+
+  return context.pipeline.steps
+    .map((step, index) => {
+      const marker = step.stepId === context.currentStep?.stepId ? " ← current" : "";
+      return `${index + 1}. ${step.name} (${step.agentId})${marker}`;
+    })
+    .join("\n");
+}
+
+export function resolveAgentTools(agent) {
+  return normalizeToolIds(agent?.tools || []);
+}
+
+function buildSystemMessage(agent, toolIds) {
+  const toolsBlock = formatToolsForPrompt(toolIds);
+
+  return `You are ${agent.name}.
+
+Role:
+${agent.role || "Helpful pipeline agent."}
+
+Personality:
+${agent.personality || "Clear and practical."}
+
+Saved system prompt (highest priority behavior):
+${agent.systemPrompt || "Follow your role and produce useful output."}
+
+You are one step inside a dynamic multi-agent pipeline.
+Tool calling is a capability of THIS agent only — it does not depend on whether you are first, middle, or last in the pipeline.
+
+AVAILABLE TOOLS:
+${toolsBlock}
+
+DECISION RULES (based primarily on the user input, plus your role and prior outputs):
+1. Read the ORIGINAL USER INPUT carefully. Having tools does NOT mean you must use them.
+2. DEFAULT to "final_answer" when the input is a simple topic, definition, explanation, tutorial, overview, or general knowledge question (examples: "machine learning", "what is React", "explain async/await", "photosynthesis").
+3. Use "tool_call" ONLY when the user input clearly needs external/current/live/verified data that you cannot reliably know — e.g. latest news, today's price, current events, "as of 2026", live stats, or explicit verify/fact-check requests.
+4. Do NOT call web_search just because a tool is available or the topic is technical.
+5. If previous agent outputs already contain enough material, prefer final_answer over another tool call.
+6. You may call tools multiple times only when each call is justified by the user input.
+7. Only use tools from AVAILABLE TOOLS. Never invent tool names.
+8. After tool results arrive, incorporate them and continue until you can produce the final answer.
+9. Do not mention these decision rules in the user-facing answer.
+
+TOOL RESULT RULES:
+- If tool results include real titles/snippets/URLs, use them.
+- If tool results say live search was unavailable / fallback / empty, do NOT say "Demo Mode".
+- In that case answer from your knowledge, be explicit about uncertainty/cutoff, and never invent live URLs.
+- Never write phrases like "demo and not a live search" or "Demo Mode" in the user-facing answer.
+
+LINK / FORMATTING RULES:
+- Use clean Markdown links only: [Label](https://example.com)
+- Never nest links like [[url](url)](url) or duplicate the same URL multiple times in one link.
+- Prefer plain URLs on their own line if unsure about Markdown.
+- Do not wrap the same URL inside itself repeatedly.
+
+RESPONSE FORMAT — return ONLY valid JSON with one of these shapes:
+
+Tool call:
+{"action":"tool_call","tool":"TOOL_ID","args":{...},"reason":"short why this helps the user input"}
+
+Final answer:
+{"action":"final_answer","content":"your complete output as markdown or plain text"}
+
+No markdown fences. No extra keys outside this schema.`;
+}
+
+function buildUserPrompt(agent, context, toolTrace = []) {
+  const input = context?.input || {};
+  const toolTraceBlock = toolTrace.length
+    ? toolTrace
+        .map((entry, index) => {
+          return `Tool round ${index + 1}:
+  tool: ${entry.tool}
+  args: ${stringifyForPrompt(entry.args)}
+  reason: ${entry.reason || "n/a"}
+  result: ${stringifyForPrompt(entry.result)}`;
+        })
+        .join("\n\n")
+    : "No tools have been called yet.";
+
+  return `Execute your agent task for the current pipeline step.
+
+CURRENT AGENT: ${agent.name} (${agent.id || "unknown"})
+AGENT TYPE: ${agent.type || "custom"}
+
+ORIGINAL USER INPUT (primary basis for whether a tool is needed):
+${stringifyForPrompt(input)}
+
+PIPELINE ORDER:
+${buildPipelineOrder(context)}
+
+OUTPUTS FROM PREVIOUS AGENTS:
+${summarizePreviousOutputs(context)}
+
+TOOL RESULTS SO FAR:
+${toolTraceBlock}
+
+Prefer final_answer unless the user input clearly requires a tool.
+Produce either a tool_call JSON decision or a final_answer JSON decision now.`;
+}
+
+function buildOfflineFinalContent(agent, context, toolTrace) {
+  const topic = context?.input?.topic || "the given topic";
+  const toolLines = toolTrace.length
+    ? toolTrace.map((entry) => {
+        const result = entry.result || {};
+        if (Array.isArray(result.results) && result.results.length) {
+          const top = result.results
+            .slice(0, 3)
+            .map((item) => `  - ${item.title}: ${item.snippet || item.url || ""}`)
+            .join("\n");
+          return `- ${entry.tool}: ${result.summary || "ok"}\n${top}`;
+        }
+        return `- ${entry.tool}: ${result.summary || result.error || "completed"}`;
+      }).join("\n")
+    : "- No tools were called.";
+
+  return `## ${agent.name}
+
+### Topic
+${topic}
+
+### Notes
+The language model API did not return a response for this step, so a local offline summary was generated from the user input and any tool results.
+
+### Tool activity
+${toolLines}
+
+### Draft output
+${agent.name} reviewed the topic "${topic}"${toolTrace.length ? " using available tool results" : ""}. Re-run with a working GROQ_API_KEY / network connection for a full model-written answer.`;
+}
+
+function heuristicShouldUseTool(toolIds, context) {
+  const topic = String(context?.input?.topic || "").toLowerCase().trim();
+  if (!topic || !toolIds.length) return null;
+
+  // Plain short topics / definitions should never force a tool in offline mode.
+  // e.g. "machine learning", "react hooks", "what is docker"
+  const looksLikeSimpleTopic =
+    topic.length < 80 &&
+    !/[?]/.test(topic) &&
+    !/\b(latest|current|today|news|price|update|recent|verify|fact[\s-]?check|as of|202[4-9]|2030)\b/i.test(topic);
+
+  if (looksLikeSimpleTopic) {
+    return null;
+  }
+
+  const searchSignals = [
+    "latest", "current", "today", "news", "price", "update",
+    "recent", "search the web", "find sources", "what is the current",
+    "as of 2024", "as of 2025", "as of 2026", "breaking"
+  ];
+  // Years alone (e.g. course title "ML 2024") should not force search — only with time words nearby
+  const hasYearWithTimeIntent =
+    /\b(2024|2025|2026|2027)\b/.test(topic) &&
+    /\b(latest|current|today|news|update|recent|regulation|price|released|announced)\b/.test(topic);
+
+  const verifySignals = [
+    "verify", "fact check", "fact-check", "is it true", "validate", "check claim", "accurate"
+  ];
+
+  const wantsSearch =
+    searchSignals.some((s) => topic.includes(s)) || hasYearWithTimeIntent;
+
+  if (toolIds.includes("web_search") && wantsSearch) {
+    return {
+      action: "tool_call",
+      tool: "web_search",
+      args: { query: context.input.topic },
+      reason: "User input appears to need current or external information."
+    };
+  }
+
+  if (toolIds.includes("verification_api") && verifySignals.some((s) => topic.includes(s))) {
+    return {
+      action: "tool_call",
+      tool: "verification_api",
+      args: { claim: context.input.topic },
+      reason: "User input appears to request claim verification."
+    };
+  }
+
+  return null;
+}
+
+function extractUrl(text) {
+  const match = String(text || "").match(/https?:\/\/[^\s)\]}>"']+/i);
+  return match ? match[0].replace(/[.,;:]+$/g, "") : "";
+}
+
+/**
+ * Fix common LLM link glitches:
+ * - [[https://x](https://x)](https://x)
+ * - [https://x](https://x)
+ * - nested / duplicated markdown links
+ */
+function sanitizeBrokenLinks(content) {
+  let text = String(content || "");
+
+  // Nested: [[label](url)](url) or [[url](url)](url)
+  text = text.replace(
+    /\[\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)\]\((https?:\/\/[^)\s]+)\)/gi,
+    (_, label, url1, url2) => {
+      const url = extractUrl(url2) || extractUrl(url1) || url1;
+      const cleanLabel = String(label || "").trim();
+      if (!cleanLabel || cleanLabel.startsWith("http")) {
+        return url;
+      }
+      return `[${cleanLabel}](${url})`;
+    }
+  );
+
+  // Repeated nesting leftovers: [ [url](url) ](url)
+  text = text.replace(
+    /\[\s*\[(https?:\/\/[^)\s]+)\]\((https?:\/\/[^)\s]+)\)\s*\]\((https?:\/\/[^)\s]+)\)/gi,
+    (_, a, b, c) => extractUrl(c) || extractUrl(b) || a
+  );
+
+  // Standard markdown where label is the same URL: [https://x](https://x) -> bare URL
+  text = text.replace(
+    /\[(https?:\/\/[^\]\s]+)\]\((https?:\/\/[^)\s]+)\)/gi,
+    (_, labelUrl, href) => extractUrl(href) || extractUrl(labelUrl) || href
+  );
+
+  // Collapse accidental "url](url)" fragments after cleanup
+  text = text.replace(/(https?:\/\/[^\s)\]}>"']+)\]\(\1\)/gi, "$1");
+
+  // Remove double-wrapped bare urls: (https://x](https://x))
+  text = text.replace(
+    /\((https?:\/\/[^)\s]+)\]\((https?:\/\/[^)\s]+)\)\)/gi,
+    (_, a, b) => extractUrl(b) || a
+  );
+
+  // Orphan closing paren stuck to a bare URL: https://x.com/) -> https://x.com/
+  text = text.replace(/(https?:\/\/[^\s)\]}>"']+)\)(?=[,.;:\s]|$)/gi, "$1");
+
+  // Dangling open paren before bare URL: (https://x.com/ -> https://x.com/
+  text = text.replace(/\((https?:\/\/[^\s)\]}>"']+)(?=[,.;:\s]|$)/gi, "$1");
+
+  return text;
+}
+
+function sanitizeUserFacingContent(content) {
+  let text = String(content || "");
+
+  text = text
+    .replace(/\bDemo Mode\b/gi, "offline fallback")
+    .replace(/as the provided search results are from a demo and not a live search[^.]*\./gi, "")
+    .replace(/\bdemo search\b/gi, "limited search");
+
+  // Run a few times for deeply nested link junk
+  for (let i = 0; i < 3; i += 1) {
+    const next = sanitizeBrokenLinks(text);
+    if (next === text) break;
+    text = next;
+  }
+
+  return text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function parseFinalContent(decision, agent, context, toolTrace) {
+  if (decision?.content && String(decision.content).trim()) {
+    return sanitizeUserFacingContent(decision.content);
+  }
+  return buildOfflineFinalContent(agent, context, toolTrace);
+}
+
+function buildGatherOnlySystemMessage(agent, toolIds) {
+  const toolsBlock = formatToolsForPrompt(toolIds);
+
+  return `You are ${agent.name} deciding whether external tools are required before producing your main agent output.
+
+Role:
+${agent.role || "Helpful pipeline agent."}
+
+AVAILABLE TOOLS:
+${toolsBlock}
+
+Based primarily on the ORIGINAL USER INPUT (and prior agent outputs), decide:
+- DEFAULT final_answer for simple topics / definitions / explanations (e.g. "machine learning") — tools are optional, not mandatory.
+- tool_call ONLY if the user clearly needs live/current/external/verified data (latest, today, news, price, verify, etc.)
+- Having a tool assigned is NOT a reason to call it.
+
+You do NOT write the full agent deliverable here when tools are not needed.
+Return ONLY valid JSON:
+{"action":"tool_call","tool":"TOOL_ID","args":{...},"reason":"..."}
+or
+{"action":"final_answer","content":""}`;
+}
+
+/**
+ * Gather tool results for an agent without producing the final specialized output.
+ * Used so built-in agents can keep structured formats while still calling tools.
+ */
+export async function gatherAgentToolResults(agent, context, options = {}) {
+  const toolIds = resolveAgentTools(agent);
+  if (!toolIds.length) {
+    return { toolCalls: [], toolTrace: [] };
+  }
+
+  const maxRounds = options.maxToolRounds || DEFAULT_MAX_TOOL_ROUNDS;
+  const toolDefinitions = getToolDefinitionsForLlm(toolIds);
+  const toolTrace = [];
+  const toolCalls = [];
+  const systemMessage = buildGatherOnlySystemMessage(agent, toolIds);
+
+  for (let round = 0; round < maxRounds; round += 1) {
+    const userPrompt = buildUserPrompt(agent, context, toolTrace);
+
+    let decision = await askLLMForToolDecision(userPrompt, {
+      systemMessage,
+      tools: toolDefinitions,
+      temperature: 0.2
+    });
+
+    if (!decision) {
+      if (toolTrace.length === 0) {
+        const heuristic = heuristicShouldUseTool(toolIds, context);
+        if (heuristic) {
+          decision = heuristic;
+        } else {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    if (decision.action === "final_answer") {
+      break;
+    }
+
+    const requestedTool = String(decision.tool || "").trim();
+    if (!toolIds.includes(requestedTool)) {
+      toolTrace.push({
+        tool: requestedTool || "(missing)",
+        args: decision.args || {},
+        reason: decision.reason || "",
+        result: {
+          error: `Tool "${requestedTool}" is not assigned to this agent. Allowed: ${toolIds.join(", ")}`
+        }
+      });
+      continue;
+    }
+
+    const execution = await executeTool(requestedTool, decision.args || {}, context);
+    const resultPayload = execution.ok
+      ? execution.result
+      : { error: execution.error || "Tool failed" };
+
+    const callRecord = {
+      tool: requestedTool,
+      toolName: execution.toolName || requestedTool,
+      args: decision.args || {},
+      reason: decision.reason || "",
+      ok: Boolean(execution.ok),
+      result: resultPayload,
+      timestamp: new Date().toISOString()
+    };
+
+    toolCalls.push(callRecord);
+    toolTrace.push(callRecord);
+  }
+
+  return { toolCalls, toolTrace };
+}
+
+/**
+ * Run the tool-calling loop for an agent that has one or more tools assigned.
+ *
+ * @returns {{ output: object, phase: string, summary: string, toolCalls: array }}
+ */
+export async function runAgentWithTools(agent, context, options = {}) {
+  const toolIds = resolveAgentTools(agent);
+  const maxRounds = options.maxToolRounds || DEFAULT_MAX_TOOL_ROUNDS;
+  const toolDefinitions = getToolDefinitionsForLlm(toolIds);
+  const toolTrace = [];
+  const toolCalls = [];
+
+  const systemMessage = buildSystemMessage(agent, toolIds);
+  let forcedDemo = false;
+
+  for (let round = 0; round < maxRounds; round += 1) {
+    const userPrompt = buildUserPrompt(agent, context, toolTrace);
+
+    let decision = await askLLMForToolDecision(userPrompt, {
+      systemMessage,
+      tools: toolDefinitions,
+      temperature: 0.3
+    });
+
+    // Offline path only when LLM is unreachable: optional heuristic tool call, then local summary.
+    if (!decision) {
+      forcedDemo = true;
+      if (toolTrace.length === 0) {
+        const heuristic = heuristicShouldUseTool(toolIds, context);
+        if (heuristic) {
+          decision = heuristic;
+        } else {
+          decision = {
+            action: "final_answer",
+            content: buildOfflineFinalContent(agent, context, toolTrace)
+          };
+        }
+      } else {
+        decision = {
+          action: "final_answer",
+          content: buildOfflineFinalContent(agent, context, toolTrace)
+        };
+      }
+    }
+
+    if (decision.action === "final_answer") {
+      const content = parseFinalContent(decision, agent, context, toolTrace);
+      return {
+        output: {
+          content,
+          mode: forcedDemo ? "offline" : "llm",
+          toolsUsed: toolCalls.map((call) => call.tool),
+          toolCalls
+        },
+        phase: agent.phase || "custom",
+        summary: toolCalls.length
+          ? `${agent.name} finished with ${toolCalls.length} tool call(s)`
+          : `${agent.name} finished without tools`,
+        toolCalls
+      };
+    }
+
+    // tool_call
+    const requestedTool = String(decision.tool || "").trim();
+    if (!toolIds.includes(requestedTool)) {
+      toolTrace.push({
+        tool: requestedTool || "(missing)",
+        args: decision.args || {},
+        reason: decision.reason || "",
+        result: {
+          error: `Tool "${requestedTool}" is not assigned to this agent. Allowed: ${toolIds.join(", ")}`
+        }
+      });
+      continue;
+    }
+
+    const execution = await executeTool(requestedTool, decision.args || {}, context);
+    const resultPayload = execution.ok
+      ? execution.result
+      : { error: execution.error || "Tool failed" };
+
+    const callRecord = {
+      tool: requestedTool,
+      toolName: execution.toolName || requestedTool,
+      args: decision.args || {},
+      reason: decision.reason || "",
+      ok: Boolean(execution.ok),
+      result: resultPayload,
+      timestamp: new Date().toISOString()
+    };
+
+    toolCalls.push(callRecord);
+    toolTrace.push(callRecord);
+  }
+
+  // Max rounds hit — force a final answer using whatever tool data we have.
+  const finalDecision = await askLLMForToolDecision(
+    `${buildUserPrompt(agent, context, toolTrace)}\n\nYou have reached the maximum tool rounds. You MUST return action "final_answer" now using the tool results above.`,
+    {
+      systemMessage,
+      tools: toolDefinitions,
+      temperature: 0.3
+    }
+  );
+
+  const content = finalDecision?.action === "final_answer"
+    ? parseFinalContent(finalDecision, agent, context, toolTrace)
+    : buildOfflineFinalContent(agent, context, toolTrace);
+
+  return {
+    output: {
+      content,
+      mode: finalDecision ? "llm" : "offline",
+      toolsUsed: toolCalls.map((call) => call.tool),
+      toolCalls
+    },
+    phase: agent.phase || "custom",
+    summary: `${agent.name} finished after max tool rounds (${toolCalls.length} call(s))`,
+    toolCalls
+  };
+}
