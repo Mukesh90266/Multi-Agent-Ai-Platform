@@ -3231,15 +3231,17 @@ body {
   align-items: start;
 }
 
-.run-grid > .live-output-card {
+.run-grid .live-output-card {
   margin: 0;
 }
 
-.run-grid-secondary {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.7fr);
+/* Right column: Live Output, Pipeline Status, Pipeline Info stacked so the
+   status cards never get pushed down when the graph grows with more agents. */
+.run-side {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  align-items: start;
+  min-width: 0;
 }
 
 .graph-panel {
@@ -3483,8 +3485,7 @@ body {
 
 /* ── Responsive ── */
 @media (max-width: 1180px) {
-  .run-grid,
-  .run-grid-secondary {
+  .run-grid {
     grid-template-columns: 1fr;
   }
 }

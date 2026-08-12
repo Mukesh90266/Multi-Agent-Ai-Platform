@@ -826,27 +826,26 @@ export default function Home({ section = "run" }) {
           />
         </section>
 
-        <LiveOutput
-          result={result}
-          loading={loading}
-          pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
-          agentStatus={agentStatus}
-        />
-      </div>
-
-      <div className="run-grid-secondary">
-        <section className="page-card">
-          <PipelineStatus
+        <div className="run-side">
+          <LiveOutput
             result={result}
             loading={loading}
-            currentAgent={currentAgent}
-            agentStatus={agentStatus}
             pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
+            agentStatus={agentStatus}
           />
-        </section>
-        <section className="page-card">
-          <PipelineInfo result={result} loading={loading} />
-        </section>
+          <section className="page-card">
+            <PipelineStatus
+              result={result}
+              loading={loading}
+              currentAgent={currentAgent}
+              agentStatus={agentStatus}
+              pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
+            />
+          </section>
+          <section className="page-card">
+            <PipelineInfo result={result} loading={loading} />
+          </section>
+        </div>
       </div>
     </div>
   );
