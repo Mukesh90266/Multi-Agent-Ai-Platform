@@ -6,6 +6,8 @@ import LiveOutput from "../components/LiveOutput/LiveOutput";
 import AgentBuilder from "../components/Agents/AgentBuilder";
 import AgentLibrary from "../components/Agents/AgentLibrary";
 import PipelineBuilder from "../components/Agents/PipelineBuilder";
+import PipelineGraph, { RunMetaStrip } from "../components/PipelineGraph/PipelineGraph";
+import History from "./History";
 import { createAgent, deleteAgent, getAgents, getPipelineStatus, getTools, runPipeline } from "../services/api.js";
 
 const DEFAULT_AGENT_IDS = ["researcher", "writer", "editor"];
@@ -233,7 +235,7 @@ function createWaitingStatus(steps) {
   }, {});
 }
 
-export default function Home() {
+export default function Home({ section = "run" }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(null);
@@ -562,22 +564,70 @@ export default function Home() {
     return () => clearPolling();
   }, [clearPolling]);
 
-  return (
-    <div className="main-layout">
-      <aside className="sidebar">
-        <TopicInput
-          onSubmit={runPipelineHandler}
-          disabled={loading || selectedSteps.length === 0}
-          selectedCount={selectedSteps.length}
-          isDefaultPipeline={isDefaultPipeline}
-        />
-        {pipelineError && (
-          <div className="section run-error-section">
-            <div className="builder-message error">{pipelineError}</div>
-          </div>
-        )}
+  // ─────────────────────────────────────────────
+  // Section layouts (UI-only restructure).
+  // All props/handlers identical to the previous build.
+  // ─────────────────────────────────────────────
 
-        <div className="section section-divider">
+  if (section === "history") {
+    return <History />;
+  }
+
+  if (section === "agents") {
+    return (
+      <div className="page page-agents">
+        <header className="page-header-row">
+          <div>
+            <h1 className="page-title">Agent Library</h1>
+            <p className="page-subtitle">Manage built-in and custom agents. Add them to your pipeline from here.</p>
+          </div>
+        </header>
+        {libraryError && <div className="builder-message error page-banner">{libraryError}</div>}
+        <div className="page-card">
+          <AgentLibrary
+            agents={agents}
+            onAddAgent={handleAddAgent}
+            onDeleteAgent={handleDeleteAgent}
+            disabled={loading}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (section === "builder") {
+    return (
+      <div className="page page-builder">
+        <header className="page-header-row">
+          <div>
+            <h1 className="page-title">Agent Builder</h1>
+            <p className="page-subtitle">Create a custom agent with role, personality, system prompt and tools.</p>
+          </div>
+        </header>
+        <div className="page-card page-card-narrow">
+          <AgentBuilder
+            onCreateAgent={handleCreateAgent}
+            disabled={loading}
+            availableTools={availableTools}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (section === "pipeline") {
+    return (
+      <div className="page page-pipeline">
+        <header className="page-header-row">
+          <div>
+            <h1 className="page-title">Pipeline Builder</h1>
+            <p className="page-subtitle">
+              Arrange agents into a pipeline. Dependencies are analyzed automatically at run time —
+              independent agents may execute in parallel.
+            </p>
+          </div>
+        </header>
+        <div className="page-card">
           <PipelineBuilder
             selectedSteps={selectedSteps}
             agentsById={agentsById}
@@ -589,26 +639,56 @@ export default function Home() {
             isDefaultPipeline={isDefaultPipeline}
           />
         </div>
+      </div>
+    );
+  }
 
-        <div className="section section-divider">
-          {libraryError && <div className="builder-message error">{libraryError}</div>}
-          <AgentLibrary
-            agents={agents}
-            onAddAgent={handleAddAgent}
-            onDeleteAgent={handleDeleteAgent}
-            disabled={loading}
+  // ── Default: "run" dashboard ──
+  const graphSteps = result?.pipeline?.steps || localPipelineSteps;
+
+  return (
+    <div className="page page-run">
+      <div className="page-card run-input-card">
+        <TopicInput
+          onSubmit={runPipelineHandler}
+          disabled={loading || selectedSteps.length === 0}
+          selectedCount={selectedSteps.length}
+          isDefaultPipeline={isDefaultPipeline}
+        />
+      </div>
+
+      {pipelineError && (
+        <div className="builder-message error page-banner">{pipelineError}</div>
+      )}
+
+      <div className="run-grid">
+        <section className="page-card graph-panel">
+          <div className="graph-panel-head">
+            <div>
+              <h2 className="page-card-title">Pipeline Execution</h2>
+              <p className="page-card-sub">Live dependency graph — independent agents run in parallel levels.</p>
+            </div>
+            <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={graphSteps} />
+          </div>
+          <PipelineGraph
+            steps={graphSteps}
+            agentStatus={agentStatus}
+            result={result}
+            loading={loading}
+            currentAgent={currentAgent}
           />
-        </div>
+        </section>
 
-        <div className="section section-divider">
-          <AgentBuilder
-            onCreateAgent={handleCreateAgent}
-            disabled={loading}
-            availableTools={availableTools}
-          />
-        </div>
+        <LiveOutput
+          result={result}
+          loading={loading}
+          pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
+          agentStatus={agentStatus}
+        />
+      </div>
 
-        <div className="section section-divider">
+      <div className="run-grid-secondary">
+        <section className="page-card">
           <PipelineStatus
             result={result}
             loading={loading}
@@ -616,20 +696,11 @@ export default function Home() {
             agentStatus={agentStatus}
             pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
           />
-        </div>
-
-        <div className="section section-divider">
+        </section>
+        <section className="page-card">
           <PipelineInfo result={result} loading={loading} />
-        </div>
-      </aside>
-      <main className="right-panel">
-        <LiveOutput
-          result={result}
-          loading={loading}
-          pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
-          agentStatus={agentStatus}
-        />
-      </main>
+        </section>
+      </div>
     </div>
   );
 }
