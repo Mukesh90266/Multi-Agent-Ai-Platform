@@ -801,38 +801,13 @@ export default function Home({ section = "run" }) {
       )}
 
       <div className="run-grid">
-        <section className="page-card graph-panel">
-          <div className="graph-panel-head">
-            <div>
-              <h2 className="page-card-title">Pipeline Execution</h2>
-              <p className="page-card-sub">
-                Drag agents in, connect dependencies, then run — live status and timings appear here.
-              </p>
-            </div>
-            <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={graphSteps} />
-          </div>
-          <PipelineGraphEditor
-            nodes={graphNodes}
-            edges={validGraphEdges}
-            paletteAgents={agents}
-            statuses={agentStatus}
-            result={result}
-            loading={loading}
-            currentAgent={currentAgent}
-            onAddNode={handleAddAgent}
-            onRemoveNode={handleGraphRemoveNode}
-            onConnect={handleGraphConnect}
-            onDisconnect={handleGraphDisconnect}
-          />
-        </section>
-
+        <LiveOutput
+          result={result}
+          loading={loading}
+          pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
+          agentStatus={agentStatus}
+        />
         <div className="run-side">
-          <LiveOutput
-            result={result}
-            loading={loading}
-            pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
-            agentStatus={agentStatus}
-          />
           <section className="page-card">
             <PipelineStatus
               result={result}
@@ -847,6 +822,33 @@ export default function Home({ section = "run" }) {
           </section>
         </div>
       </div>
+
+      {/* Graph sits last, full width — it can grow as agents are added
+          without pushing anything else down. */}
+      <section className="page-card graph-panel">
+        <div className="graph-panel-head">
+          <div>
+            <h2 className="page-card-title">Pipeline Execution</h2>
+            <p className="page-card-sub">
+              Drag agents in, connect dependencies, then run — live status and timings appear here.
+            </p>
+          </div>
+          <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={graphSteps} />
+        </div>
+        <PipelineGraphEditor
+          nodes={graphNodes}
+          edges={validGraphEdges}
+          paletteAgents={agents}
+          statuses={agentStatus}
+          result={result}
+          loading={loading}
+          currentAgent={currentAgent}
+          onAddNode={handleAddAgent}
+          onRemoveNode={handleGraphRemoveNode}
+          onConnect={handleGraphConnect}
+          onDisconnect={handleGraphDisconnect}
+        />
+      </section>
     </div>
   );
 }
