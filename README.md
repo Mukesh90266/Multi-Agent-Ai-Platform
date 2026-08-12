@@ -107,14 +107,6 @@ Level 2:  Synthesizer                                (waits for both)
 - **Cycles** → automatic sequential fallback with a warning.
 - The status response now includes `schedule` (`levels`, `edges`, `reasons`, `warnings`) and `parallel` for transparency.
 
-### Tests
-
-```bash
-cd server && node scripts/test-parallel-schedule.mjs
-```
-
-Covers sequential backward compat, dynamic Editor dependency without Writer, fan-in/fan-out, ambiguous → sequential, unsatisfied deps, forward refs, cycle guard, timing/state integrity, and contract-based parallelism (15 tests, demo mode).
-
 ## Default pipeline
 
 The pre-built default pipeline is still:
