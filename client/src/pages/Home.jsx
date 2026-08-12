@@ -737,11 +737,35 @@ export default function Home({ section = "run" }) {
           <div>
             <h1 className="page-title">Pipeline Builder</h1>
             <p className="page-subtitle">
-              Arrange agents into a pipeline. Dependencies are analyzed automatically at run time —
-              independent agents may execute in parallel.
+              Arrange agents into a pipeline and connect them here — the exact same graph, agents and
+              connections appear in Pipeline Execution on the Run Pipeline page (and edits sync both ways).
             </p>
           </div>
         </header>
+        <div className="page-card">
+          <div className="graph-panel-head">
+            <div>
+              <h2 className="page-card-title">Pipeline Graph</h2>
+              <p className="page-card-sub">
+                Drag agents in, drag from a node's port onto another node to connect — synced with the Run Pipeline page.
+              </p>
+            </div>
+            <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={result?.pipeline?.steps || localPipelineSteps} />
+          </div>
+          <PipelineGraphEditor
+            nodes={graphNodes}
+            edges={validGraphEdges}
+            paletteAgents={agents}
+            statuses={agentStatus}
+            result={result}
+            loading={loading}
+            currentAgent={currentAgent}
+            onAddNode={handleAddAgent}
+            onRemoveNode={handleGraphRemoveNode}
+            onConnect={handleGraphConnect}
+            onDisconnect={handleGraphDisconnect}
+          />
+        </div>
         <div className="page-card">
           <PipelineBuilder
             selectedSteps={selectedSteps}

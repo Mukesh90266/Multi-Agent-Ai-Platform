@@ -3679,21 +3679,68 @@ body {
 
 .pge-port {
   position: absolute;
-  right: -7px;
   top: 50%;
   transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: crosshair;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  z-index: 3;
+}
+
+.pge-port.out {
+  right: -9px;
+  border: 2.5px solid #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.pge-port.in {
+  left: -9px;
+  border: 2.5px dashed #c7d2fe;
+  cursor: pointer;
+}
+
+.pge-port.out:hover {
+  background: #8b5cf6;
+  transform: translateY(-50%) scale(1.2);
+  box-shadow: 0 0 0 5px rgba(139, 92, 246, 0.2);
+}
+
+.pge-canvas.connecting .pge-port.in {
+  border-color: #818cf8;
+  border-style: solid;
+}
+
+.pge-canvas.connecting .pge-port.in:hover {
+  background: #6366f1;
+  transform: translateY(-50%) scale(1.2);
+}
+
+.pge-node.pge-target {
+  border-color: #a5b4fc;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  cursor: crosshair;
+}
+
+.pge-node.pge-target:hover {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.22);
+}
+
+.pge-canvas.connecting { cursor: crosshair; }
+.pge-canvas.connecting .pge-node { cursor: crosshair; }
+.pge-canvas.connecting .pge-node.connecting { cursor: default; }
+
+.pge-dot-demo {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #ffffff;
   border: 2px solid #8b5cf6;
-  cursor: crosshair;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.pge-port:hover {
-  background: #8b5cf6;
-  transform: translateY(-50%) scale(1.15);
+  vertical-align: -1px;
 }
 
 .pge-remove {
@@ -3743,10 +3790,22 @@ body {
 }
 
 .pge-temp-line {
+  fill: none;
   stroke: #6366f1;
   stroke-width: 2;
+  stroke-linecap: round;
   stroke-dasharray: 5 5;
   animation: pg-dash 0.8s linear infinite;
+  pointer-events: none;
+}
+
+.pge-hint kbd {
+  background: #ffffff;
+  border: 1px solid #c7d2fe;
+  border-radius: 4px;
+  padding: 0 5px;
+  font-size: 10.5px;
+  font-family: inherit;
 }
 
 .pge-empty {
