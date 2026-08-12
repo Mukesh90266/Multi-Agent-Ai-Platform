@@ -6,7 +6,8 @@ import LiveOutput from "../components/LiveOutput/LiveOutput";
 import AgentBuilder from "../components/Agents/AgentBuilder";
 import AgentLibrary from "../components/Agents/AgentLibrary";
 import PipelineBuilder from "../components/Agents/PipelineBuilder";
-import PipelineGraph, { RunMetaStrip } from "../components/PipelineGraph/PipelineGraph";
+import { RunMetaStrip } from "../components/PipelineGraph/PipelineGraph";
+import PipelineGraphEditor from "../components/PipelineGraph/PipelineGraphEditor";
 import History from "./History";
 import { createAgent, deleteAgent, getAgents, getPipelineStatus, getTools, runPipeline } from "../services/api.js";
 
@@ -228,6 +229,54 @@ function createLocalPipelineSteps(selectedSteps, agentsById) {
   });
 }
 
+function orderStepsByEdges(steps, edges) {
+  if (!edges.length) return steps;
+
+  const ids = steps.map((step) => step.clientId);
+  const idSet = new Set(ids);
+  const indegree = new Map(ids.map((id) => [id, 0]));
+  const adjacency = new Map(ids.map((id) => [id, []]));
+
+  for (const edge of edges) {
+    if (!idSet.has(edge.from) || !idSet.has(edge.to)) continue;
+    adjacency.get(edge.from).push(edge.to);
+    indegree.set(edge.to, indegree.get(edge.to) + 1);
+  }
+
+  const queue = ids.filter((id) => indegree.get(id) === 0);
+  const ordered = [];
+  const seen = new Set();
+
+  while (queue.length) {
+    const id = queue.shift();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    ordered.push(steps.find((step) => step.clientId === id));
+    for (const next of adjacency.get(id)) {
+      indegree.set(next, indegree.get(next) - 1);
+      if (indegree.get(next) === 0) queue.push(next);
+    }
+  }
+
+  // Cycle protection: keep the manual order (server would warn/fallback too).
+  return ordered.length === steps.length ? ordered : steps;
+}
+
+function buildDependenciesPayload(steps, edges) {
+  const agentByClientId = new Map(steps.map((step) => [step.clientId, step.agentId]));
+  const dependencies = {};
+
+  for (const edge of edges) {
+    const toAgent = agentByClientId.get(edge.to);
+    const fromAgent = agentByClientId.get(edge.from);
+    if (!toAgent || !fromAgent) continue;
+    if (!dependencies[toAgent]) dependencies[toAgent] = [];
+    if (!dependencies[toAgent].includes(fromAgent)) dependencies[toAgent].push(fromAgent);
+  }
+
+  return dependencies;
+}
+
 function createWaitingStatus(steps) {
   return steps.reduce((status, step) => {
     status[step.stepId] = "waiting";
@@ -244,6 +293,7 @@ export default function Home({ section = "run" }) {
   const [libraryError, setLibraryError] = useState(null);
   const [pipelineError, setPipelineError] = useState(null);
   const [selectedSteps, setSelectedSteps] = useState(() => makeStepsFromIds(DEFAULT_AGENT_IDS));
+  const [graphEdges, setGraphEdges] = useState([]); // [{ id, from: clientId, to: clientId }]
   const [activeTemplateId, setActiveTemplateId] = useState("default-rwe");
   const [agentStatus, setAgentStatus] = useState({});
 
@@ -251,9 +301,44 @@ export default function Home({ section = "run" }) {
   const runIdRef = useRef(null);
 
   const agentsById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
+  const validGraphEdges = useMemo(() => {
+    const ids = new Set(selectedSteps.map((step) => step.clientId));
+    return graphEdges.filter((edge) => ids.has(edge.from) && ids.has(edge.to));
+  }, [graphEdges, selectedSteps]);
+
+  // Steps in dependency order (topological). With no edges this is exactly
+  // the user's manual order — zero behavior change until the graph is used.
+  const effectiveSteps = useMemo(
+    () => orderStepsByEdges(selectedSteps, validGraphEdges),
+    [selectedSteps, validGraphEdges]
+  );
+
   const localPipelineSteps = useMemo(
-    () => createLocalPipelineSteps(selectedSteps, agentsById),
-    [selectedSteps, agentsById]
+    () => createLocalPipelineSteps(effectiveSteps, agentsById),
+    [effectiveSteps, agentsById]
+  );
+
+  const effectiveAgentIds = useMemo(
+    () => effectiveSteps.map((step) => step.agentId),
+    [effectiveSteps]
+  );
+
+  const graphNodes = useMemo(
+    () =>
+      effectiveSteps.map((step, index) => {
+        const agent = agentsById.get(step.agentId) || {};
+        const local = localPipelineSteps[index] || {};
+        return {
+          clientId: step.clientId,
+          stepId: local.stepId,
+          agentId: step.agentId,
+          name: agent.name || step.agentId,
+          phase: agent.phase || "agent",
+          type: agent.type || "custom",
+          tools: Array.isArray(agent.tools) ? agent.tools : []
+        };
+      }),
+    [effectiveSteps, agentsById, localPipelineSteps]
   );
   const selectedAgentIds = useMemo(
     () => selectedSteps.map((step) => step.agentId),
@@ -456,7 +541,32 @@ export default function Home({ section = "run" }) {
   const handleResetDefault = () => {
     resetDisplayedRun();
     setSelectedSteps(makeStepsFromIds(DEFAULT_AGENT_IDS));
+    setGraphEdges([]);
     setActiveTemplateId("default-rwe");
+  };
+
+  const handleGraphConnect = (fromClientId, toClientId) => {
+    if (fromClientId === toClientId) return;
+    resetDisplayedRun();
+    setGraphEdges((prev) =>
+      prev.some((edge) => edge.from === fromClientId && edge.to === toClientId)
+        ? prev
+        : [...prev, { id: `${fromClientId}->${toClientId}`, from: fromClientId, to: toClientId }]
+    );
+    setActiveTemplateId(null);
+  };
+
+  const handleGraphDisconnect = (fromClientId, toClientId) => {
+    resetDisplayedRun();
+    setGraphEdges((prev) => prev.filter((edge) => !(edge.from === fromClientId && edge.to === toClientId)));
+    setActiveTemplateId(null);
+  };
+
+  const handleGraphRemoveNode = (clientId) => {
+    resetDisplayedRun();
+    setSelectedSteps((prev) => prev.filter((step) => step.clientId !== clientId));
+    setGraphEdges((prev) => prev.filter((edge) => edge.from !== clientId && edge.to !== clientId));
+    setActiveTemplateId(null);
   };
 
   const getSelectedCustomAgents = () => Array.from(new Map(selectedSteps
@@ -505,10 +615,15 @@ export default function Home({ section = "run" }) {
         await ensureSelectedCustomAgentsSynced();
       }
 
+      const graphDependencies = buildDependenciesPayload(effectiveSteps, validGraphEdges);
+
       const pipelinePayload = isDefaultPipeline
         ? { templateId: "default-rwe" }
         : {
-            agentIds: selectedAgentIds,
+            agentIds: effectiveAgentIds,
+            ...(Object.keys(graphDependencies).length
+              ? { dependencies: graphDependencies }
+              : {}),
             agentConfigs: selectedCustomAgents
           };
 
@@ -666,16 +781,24 @@ export default function Home({ section = "run" }) {
           <div className="graph-panel-head">
             <div>
               <h2 className="page-card-title">Pipeline Execution</h2>
-              <p className="page-card-sub">Live dependency graph — independent agents run in parallel levels.</p>
+              <p className="page-card-sub">
+                Drag agents in, connect dependencies, then run — live status and timings appear here.
+              </p>
             </div>
             <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={graphSteps} />
           </div>
-          <PipelineGraph
-            steps={graphSteps}
-            agentStatus={agentStatus}
+          <PipelineGraphEditor
+            nodes={graphNodes}
+            edges={validGraphEdges}
+            paletteAgents={agents}
+            statuses={agentStatus}
             result={result}
             loading={loading}
             currentAgent={currentAgent}
+            onAddNode={handleAddAgent}
+            onRemoveNode={handleGraphRemoveNode}
+            onConnect={handleGraphConnect}
+            onDisconnect={handleGraphDisconnect}
           />
         </section>
 
