@@ -3244,6 +3244,12 @@ body {
   min-width: 0;
 }
 
+/* Live Output renders full-width below the run grid on the Run page; tame
+   the old side-panel viewport height for that slot. */
+.page-run > .live-output-card {
+  min-height: 380px;
+}
+
 .graph-panel {
   display: flex;
   flex-direction: column;
