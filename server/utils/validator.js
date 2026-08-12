@@ -43,6 +43,34 @@ function validatePipelineRequest(body = {}) {
     pipeline.agentIds = agentIds;
   }
 
+  // Optional explicit dependency config (Signal A):
+  // { "<agentId|stepId>": ["<agentId|stepId>", ...] } — [] means independent.
+  const rawDependencies =
+    pipelineBody.dependencies && typeof pipelineBody.dependencies === "object"
+      ? pipelineBody.dependencies
+      : null;
+
+  if (rawDependencies) {
+    const dependencies = {};
+    const entries = Object.entries(rawDependencies).slice(0, 12);
+
+    for (const [key, value] of entries) {
+      const cleanKey = String(key || "").trim();
+      if (!cleanKey || cleanKey.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(cleanKey)) continue;
+      if (value !== undefined && !Array.isArray(value)) continue;
+      dependencies[cleanKey] = Array.isArray(value)
+        ? value
+            .map((ref) => String(ref || "").trim())
+            .filter((ref) => ref && ref.length <= 120 && /^[a-zA-Z0-9_-]+$/.test(ref))
+            .slice(0, 12)
+        : undefined;
+    }
+
+    if (Object.keys(dependencies).length) {
+      pipeline.dependencies = dependencies;
+    }
+  }
+
   if (rawAgentConfigs.length) {
     pipeline.agentConfigs = rawAgentConfigs
       .filter((agent) => agent && typeof agent === "object")
@@ -57,6 +85,12 @@ function validatePipelineRequest(body = {}) {
         tools: Array.isArray(agent.tools)
           ? agent.tools.map((toolId) => String(toolId || "").trim()).filter(Boolean)
           : [],
+        ...(Array.isArray(agent.requires)
+          ? { requires: agent.requires.map((r) => String(r || "").trim().toLowerCase()).filter(Boolean).slice(0, 8) }
+          : {}),
+        ...(typeof agent.produces === "string" && agent.produces.trim()
+          ? { produces: agent.produces.trim().toLowerCase().slice(0, 40) }
+          : {}),
         createdAt: agent.createdAt ? String(agent.createdAt).trim() : undefined
       }))
       .filter((agent) => agent.id && agent.type === "custom");

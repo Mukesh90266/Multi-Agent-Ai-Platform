@@ -91,6 +91,9 @@ function publicAgent(agent, { includePrompt = true } = {}) {
     tools: normalizeToolIds(agent.tools)
   };
 
+  if (Array.isArray(agent.requires)) publicShape.requires = agent.requires;
+  if (agent.produces) publicShape.produces = agent.produces;
+
   if (includePrompt) {
     publicShape.systemPrompt = agent.systemPrompt;
   }
@@ -173,7 +176,7 @@ function normalizeCustomAgent(payload = {}, existingAgent = null) {
 
   const now = new Date().toISOString();
 
-  return {
+  const agent = {
     id,
     type: "custom",
     name,
@@ -188,6 +191,20 @@ function normalizeCustomAgent(payload = {}, existingAgent = null) {
     createdAt: existingAgent?.createdAt || cleanText(payload.createdAt) || now,
     updatedAt: now
   };
+
+  // Optional artifact contract (scheduling signal): what this agent
+  // consumes / produces. Absent ⇒ needs unknown ⇒ conservative sequential.
+  if (Array.isArray(payload.requires)) {
+    agent.requires = payload.requires
+      .map((entry) => String(entry || "").trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, 8);
+  }
+  if (typeof payload.produces === "string" && payload.produces.trim()) {
+    agent.produces = payload.produces.trim().toLowerCase().slice(0, 40);
+  }
+
+  return agent;
 }
 
 export async function getCustomAgents() {
@@ -263,11 +280,19 @@ export async function deleteCustomAgent(agentId) {
   return { deleted, agentId: id };
 }
 
-function summarizePipelineStep(agent, index, duplicateCount) {
+function normalizeDependsOn(value) {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .map((ref) => String(ref || "").trim())
+    .filter((ref) => ref && ref.length <= 120 && /^[a-zA-Z0-9_-]+$/.test(ref))
+    .slice(0, 12);
+}
+
+function summarizePipelineStep(agent, index, duplicateCount, dependsOnMap = {}) {
   const stepNumber = index + 1;
   const stepId = duplicateCount > 1 ? `${agent.id}__${stepNumber}` : agent.id;
 
-  return {
+  const step = {
     stepId,
     index,
     agentId: agent.id,
@@ -280,6 +305,16 @@ function summarizePipelineStep(agent, index, duplicateCount) {
     builtIn: agent.type === "built-in",
     tools: normalizeToolIds(agent.tools)
   };
+
+  if (Array.isArray(agent.requires)) step.requires = agent.requires;
+  if (agent.produces) step.produces = agent.produces;
+
+  // Explicit dependency config (Signal A). An explicitly EMPTY array is
+  // meaningful: the step declares independence → runs at the earliest level.
+  const declaredDependsOn = normalizeDependsOn(dependsOnMap[stepId] ?? dependsOnMap[agent.id]);
+  if (declaredDependsOn !== undefined) step.dependsOn = declaredDependsOn;
+
+  return step;
 }
 
 function findTemplate(templateId) {
@@ -316,10 +351,15 @@ export async function buildRunnablePipeline(pipelineRequest = {}) {
     return counts;
   }, new Map());
 
+  const dependenciesMap =
+    pipelineRequest.dependencies && typeof pipelineRequest.dependencies === "object"
+      ? pipelineRequest.dependencies
+      : {};
+
   const steps = requestedAgentIds.map((agentId, index) => {
     const agent = agentMap.get(agentId);
     return {
-      ...summarizePipelineStep(agent, index, duplicateCounts.get(agentId)),
+      ...summarizePipelineStep(agent, index, duplicateCounts.get(agentId), dependenciesMap),
       agent
     };
   });

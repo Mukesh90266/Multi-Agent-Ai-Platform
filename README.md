@@ -46,6 +46,75 @@ Built-in tools:
 
 Assign tools when creating a custom agent, or rely on built-in defaults. Tool use does **not** depend on agent order in the pipeline.
 
+## Dynamic dependency-aware parallel execution
+
+Pipelines still run **sequentially by default**. Parallel execution is an optimization that activates only when independence is established confidently:
+
+> Pipeline order = possible execution order. Dependencies = whether an agent must wait. Ambiguity always means sequential.
+
+Dependencies are resolved **fresh for every run**, for the agents actually present in that pipeline — never from agent names, types, or position alone. The same agent can be dependent in one pipeline and parallel in another.
+
+### Decision hierarchy
+
+1. **Explicit `dependencies`** on the pipeline payload — respected exactly.
+2. **Artifact contracts** — an agent's declared `requires` / `produces` (what data it consumes/creates), matched against producers in the current pipeline.
+3. **Built-in executor behavior** — derived from the real code paths (`researcher` produces `research`; `writer` consumes `research`, produces `draft`; `editor` consumes the nearest prior content artifact as its review target).
+4. **System-prompt signals + planner LLM** (when `GROQ_API_KEY` is set) — may only *cut* baseline edges when confident.
+5. **Anything unknown or ambiguous → keep the edge → sequential** (exactly today's behavior).
+
+### Explicit dependencies (payload)
+
+```json
+{
+  "topic": "EV market in India",
+  "wordCount": 800,
+  "pipeline": {
+    "agentIds": ["custom-market-analyst", "custom-competitor-analyst", "custom-synthesizer"],
+    "dependencies": {
+      "custom-market-analyst": [],
+      "custom-competitor-analyst": [],
+      "custom-synthesizer": ["custom-market-analyst", "custom-competitor-analyst"]
+    }
+  }
+}
+```
+
+Runs as:
+
+```text
+Level 1:  Market Analyst  ||  Competitor Analyst      (dependsOn: [])
+Level 2:  Synthesizer                                (waits for both)
+```
+
+- `[]` = independent (works from original input + global context only).
+- A dependency referencing an agent that **is not in the pipeline** → run continues with a `dependencyWarnings` entry — the step never waits forever (no deadlock).
+- A dependency on a **later** step → warning; the declared pipeline order is preserved.
+
+### Artifact contracts (optional, per custom agent)
+
+```json
+{ "name": "Market Analyst", "requires": [], "produces": "analysis", ... }
+```
+
+`requires: []` declares "needs only the original input" → eligible for parallel fan-out without any per-run config. `requires: ["research"]` waits for whichever step in *this* pipeline produces `research` — not for a hardcoded agent id.
+
+### Runtime guarantees
+
+- **Levels**: steps are grouped into dependency levels (Kahn topological sort); each level runs with `Promise.allSettled`, results are applied serially afterwards → no shared-state races.
+- **Isolation**: every parallel branch gets its own context view (own `currentStep`, own `toolResults` slot) — tool calls stay attributed to the correct agent.
+- **State/live dashboard**: all steps of a level show `running` simultaneously; outputs arrive keyed by `stepId` with additive timing (`startedAt`, `completedAt`, `durationMs`).
+- **Errors**: a failed parallel agent is marked `error`, successful siblings' outputs are preserved, and the run follows the existing error behavior (dependents never execute with missing data).
+- **Cycles** → automatic sequential fallback with a warning.
+- The status response now includes `schedule` (`levels`, `edges`, `reasons`, `warnings`) and `parallel` for transparency.
+
+### Tests
+
+```bash
+cd server && node scripts/test-parallel-schedule.mjs
+```
+
+Covers sequential backward compat, dynamic Editor dependency without Writer, fan-in/fan-out, ambiguous → sequential, unsatisfied deps, forward refs, cycle guard, timing/state integrity, and contract-based parallelism (15 tests, demo mode).
+
 ## Default pipeline
 
 The pre-built default pipeline is still:
