@@ -3235,19 +3235,13 @@ body {
   margin: 0;
 }
 
-/* Right column: Live Output, Pipeline Status, Pipeline Info stacked so the
-   status cards never get pushed down when the graph grows with more agents. */
+/* Right column: Pipeline Status and Pipeline Info stacked beside the Live
+   Output card, so they never get pushed down when the graph grows. */
 .run-side {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-}
-
-/* Live Output renders full-width below the run grid on the Run page; tame
-   the old side-panel viewport height for that slot. */
-.page-run > .live-output-card {
-  min-height: 380px;
 }
 
 .graph-panel {

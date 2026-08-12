@@ -800,32 +800,40 @@ export default function Home({ section = "run" }) {
         <div className="builder-message error page-banner">{pipelineError}</div>
       )}
 
-      <div className="run-grid">
-        <section className="page-card graph-panel">
-          <div className="graph-panel-head">
-            <div>
-              <h2 className="page-card-title">Pipeline Execution</h2>
-              <p className="page-card-sub">
-                Drag agents in, connect dependencies, then run — live status and timings appear here.
-              </p>
-            </div>
-            <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={graphSteps} />
+      {/* Graph full width on top. */}
+      <section className="page-card graph-panel">
+        <div className="graph-panel-head">
+          <div>
+            <h2 className="page-card-title">Pipeline Execution</h2>
+            <p className="page-card-sub">
+              Drag agents in, connect dependencies, then run — live status and timings appear here.
+            </p>
           </div>
-          <PipelineGraphEditor
-            nodes={graphNodes}
-            edges={validGraphEdges}
-            paletteAgents={agents}
-            statuses={agentStatus}
-            result={result}
-            loading={loading}
-            currentAgent={currentAgent}
-            onAddNode={handleAddAgent}
-            onRemoveNode={handleGraphRemoveNode}
-            onConnect={handleGraphConnect}
-            onDisconnect={handleGraphDisconnect}
-          />
-        </section>
+          <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={graphSteps} />
+        </div>
+        <PipelineGraphEditor
+          nodes={graphNodes}
+          edges={validGraphEdges}
+          paletteAgents={agents}
+          statuses={agentStatus}
+          result={result}
+          loading={loading}
+          currentAgent={currentAgent}
+          onAddNode={handleAddAgent}
+          onRemoveNode={handleGraphRemoveNode}
+          onConnect={handleGraphConnect}
+          onDisconnect={handleGraphDisconnect}
+        />
+      </section>
 
+      {/* Below the graph: Live Output with Pipeline Status + Info beside it. */}
+      <div className="run-grid">
+        <LiveOutput
+          result={result}
+          loading={loading}
+          pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
+          agentStatus={agentStatus}
+        />
         <div className="run-side">
           <section className="page-card">
             <PipelineStatus
@@ -841,14 +849,6 @@ export default function Home({ section = "run" }) {
           </section>
         </div>
       </div>
-
-      {/* Live Output sits below at full width. */}
-      <LiveOutput
-        result={result}
-        loading={loading}
-        pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
-        agentStatus={agentStatus}
-      />
     </div>
   );
 }
