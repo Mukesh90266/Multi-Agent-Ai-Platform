@@ -154,6 +154,40 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+## LLM Cost Tracking & Analytics
+
+Every LLM call made during a pipeline run is tracked automatically (token usage,
+per-agent cost, whole-run cost) — without changing any agent behavior.
+
+**How it works**
+
+```
+askLLM() ──► provider response.usage ──► per-step usage scope (AsyncLocalStorage)
+        ──► costService (pricing + aggregation) ──► run state / MongoDB ──► analytics API
+```
+
+- `server/services/usageScope.js` — each agent step runs in its own async scope,
+  so parallel agents never mix usage records (no shared mutable state).
+- `server/services/costService.js` — the ONLY place pricing lives
+  (`MODEL_PRICING`: USD per 1M tokens). Override without code changes via
+  `LLM_PRICING_OVERRIDES='{"model":{"inputPer1M":1,"outputPer1M":2}}'`.
+- Unknown model → tokens are kept, cost is `null` (`pricingKnown: false`) — the
+  pipeline never crashes because of pricing.
+- Only real provider usage is recorded (no estimation). Demo mode runs (no
+  `GROQ_API_KEY`) produce `cost.available: false`.
+- Failed LLM calls record nothing; partial usage from earlier calls still survives.
+
+**Where the data shows up**
+
+- `GET /api/pipeline/status/:runId` → `cost` field (live during the run) and
+  per-agent `llmUsage` inside each `agentOutputs` entry.
+- MongoDB: `PipelineRun.cost` (additive — old runs simply have no cost field).
+- `GET /api/history/cost-analytics` → `{ summary, agentBreakdown, recentRuns }`:
+  total cost/tokens, agent-wise cost + share %, most expensive agent, and the
+  average cost per run. The average counts only completed/approved runs with
+  known pricing (divide-by-zero safe). Falls back to in-memory session data
+  when MongoDB is not connected.
+
 ## API Endpoints
 
 ### Agents

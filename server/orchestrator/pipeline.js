@@ -10,6 +10,8 @@ import {
 } from "../services/agentStore.js";
 import { stateManager } from "../state/stateManager.js";
 import { logger } from "../utils/logger.js";
+import { runWithUsageScope } from "../services/usageScope.js";
+import { buildCostSnapshot, registerRunCost } from "../services/costService.js";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const serverDirectory = path.resolve(directory, "..");
@@ -57,6 +59,7 @@ function buildState(context, overrides = {}) {
     optimization: context.optimization,
     finalOutput: context.finalOutput,
     revisionHistory: context.revisionHistory,
+    cost: buildCostSnapshot(context.costLedger),
     ...overrides
   };
 }
@@ -161,7 +164,8 @@ function applyExecutionToContext(context, step, execution) {
     toolCalls,
     ...(execution.startedAt ? { startedAt: execution.startedAt } : {}),
     ...(execution.completedAt ? { completedAt: execution.completedAt } : {}),
-    ...(execution.durationMs != null ? { durationMs: execution.durationMs } : {})
+    ...(execution.durationMs != null ? { durationMs: execution.durationMs } : {}),
+    ...(execution.llmUsage ? { llmUsage: execution.llmUsage } : {})
   };
 
   context.outputs.push(agentOutput);
@@ -237,7 +241,22 @@ async function executeStep(context, step, detail = "") {
   try {
     const startedAt = new Date().toISOString();
     const startedMs = Date.now();
-    const execution = await executeAgent(step.agent, context);
+    // Isolated usage scope — every LLM call inside this step (tools included)
+    // is attributed to THIS step's agent, never shared across steps.
+    const { result: execution, records: usageRecords } = await runWithUsageScope(
+      {
+        runId: context.runId,
+        stepId: step.stepId,
+        agentId: step.agentId,
+        agentName: step.name,
+        iteration: context.loopIteration || 1
+      },
+      () => executeAgent(step.agent, context)
+    );
+    if (usageRecords.length) {
+      context.costLedger.push(...usageRecords);
+      execution.llmUsage = buildCostSnapshot(usageRecords);
+    }
     execution.startedAt = startedAt;
     execution.completedAt = new Date().toISOString();
     execution.durationMs = Date.now() - startedMs;
@@ -249,6 +268,10 @@ async function executeStep(context, step, detail = "") {
 
     return execution;
   } catch (error) {
+    if (Array.isArray(error.usageRecords) && error.usageRecords.length) {
+      // Partial usage from earlier successful LLM calls in this step survives.
+      context.costLedger.push(...error.usageRecords);
+    }
     context.agentStatus[step.stepId] = "error";
     context.status = "error";
     context.error = error.message;
@@ -290,7 +313,19 @@ async function executeBranch(context, step, detail) {
   const startedAt = new Date().toISOString();
   const startedMs = Date.now();
 
-  const execution = await executeAgent(step.agent, branchContext);
+  // Each parallel branch gets its own AsyncLocalStorage scope, so concurrent
+  // agents' usage records can never overwrite each other (spec §5).
+  const { result: execution, records: usageRecords } = await runWithUsageScope(
+    {
+      runId: context.runId,
+      stepId: step.stepId,
+      agentId: step.agentId,
+      agentName: step.name,
+      iteration: context.loopIteration || 1
+    },
+    () => executeAgent(step.agent, branchContext)
+  );
+  execution.usageRecords = usageRecords;
   execution.startedAt = startedAt;
   execution.completedAt = new Date().toISOString();
   execution.durationMs = Date.now() - startedMs;
@@ -333,12 +368,19 @@ async function executeLevel(context, levelSteps, detail) {
 
     if (result.status === "fulfilled") {
       const execution = result.value;
+      if (Array.isArray(execution.usageRecords) && execution.usageRecords.length) {
+        context.costLedger.push(...execution.usageRecords);
+        execution.llmUsage = buildCostSnapshot(execution.usageRecords);
+      }
       context.agentStatus[step.stepId] = "completed";
       applyExecutionToContext(context, step, execution);
       executions.set(step.stepId, execution);
       logger.agent(step.agentId, "completed", execution.summary || step.name);
     } else {
       const error = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
+      if (Array.isArray(error.usageRecords) && error.usageRecords.length) {
+        context.costLedger.push(...error.usageRecords);
+      }
       context.agentStatus[step.stepId] = "error";
       failures.push({ step, error });
       logger.error(`Parallel agent "${step.name}" failed: ${error.message}`);
@@ -503,6 +545,7 @@ export async function runPipeline(input, runId = randomUUID(), options = {}) {
     outputs: [],
     iterations: [],
     revisionHistory: [],
+    costLedger: [],
     research: null,
     draft: null,
     editorReview: null,
@@ -576,6 +619,7 @@ export async function runPipeline(input, runId = randomUUID(), options = {}) {
       ),
       revisionHistory: context.revisionHistory,
       agentStatus: { ...context.agentStatus },
+      cost: buildCostSnapshot(context.costLedger),
       pipeline: serializePipelineForClient(pipeline),
       parallel: Boolean(context.schedule?.parallel),
       schedule: context.schedule,
@@ -601,6 +645,13 @@ export async function runPipeline(input, runId = randomUUID(), options = {}) {
     }
 
     stateManager.set(runId, result);
+    registerRunCost({
+      runId,
+      topic: input?.topic || null,
+      status: result.status,
+      createdAt: new Date().toISOString(),
+      cost: result.cost
+    });
     await saveRunArtifacts(result);
 
     return result;
@@ -614,6 +665,13 @@ export async function runPipeline(input, runId = randomUUID(), options = {}) {
     });
 
     stateManager.set(runId, errorResult);
+    registerRunCost({
+      runId,
+      topic: input?.topic || null,
+      status: "error",
+      createdAt: new Date().toISOString(),
+      cost: buildCostSnapshot(context.costLedger) // partial usage still visible
+    });
     throw error;
   }
 }
