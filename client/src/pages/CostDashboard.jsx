@@ -70,7 +70,7 @@ export default function CostDashboard() {
           <span>Loading cost analytics…</span>
         </div>
       ) : (
-        <CostAnalyticsSection analytics={analytics} showRecent />
+        <CostAnalyticsSection analytics={analytics} mode="full" />
       )}
     </div>
   );

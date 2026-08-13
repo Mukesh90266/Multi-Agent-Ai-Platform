@@ -306,6 +306,15 @@ export function buildAnalyticsSummary(runs = []) {
         : null
     },
     agentBreakdown,
+    // Per-run detail — every pipeline run keeps its OWN cost + agent rows,
+    // never mixed with other runs. Newest first, capped at 20.
+    runs: withUsage.slice(0, 20).map((run) => ({
+      runId: run.runId,
+      topic: run.topic,
+      status: run.status,
+      createdAt: run.createdAt || null,
+      cost: run.cost
+    })),
     recentRuns: withUsage.slice(0, 10).map((run) => ({
       runId: run.runId,
       topic: run.topic,

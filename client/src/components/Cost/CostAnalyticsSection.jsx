@@ -1,14 +1,61 @@
 import { formatUsd, formatTokens } from "../../utils/costFormat";
 
+function AgentCostTable({ agents }) {
+  return (
+    <table className="cost-table cost-table-wide">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>LLM Calls</th>
+          <th>Tokens</th>
+          <th>Cost</th>
+          <th>Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {agents.map((agent) => (
+          <tr key={agent.agentId}>
+            <td>
+              <div className="cost-agent-name">{agent.agentName}</div>
+              {agent.model && <div className="cost-agent-model">{agent.model}</div>}
+            </td>
+            <td>{agent.calls}</td>
+            <td>{formatTokens(agent.totalTokens)}</td>
+            <td>
+              {formatUsd(agent.totalCost)}
+              {!agent.pricingKnown && <span className="cost-star">*</span>}
+            </td>
+            <td>
+              {agent.sharePct != null ? (
+                <div className="cost-share">
+                  <div className="cost-share-track">
+                    <div className="cost-share-fill" style={{ width: `${agent.sharePct}%` }} />
+                  </div>
+                  <span>{agent.sharePct}%</span>
+                </div>
+              ) : (
+                "—"
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 /**
  * Shared LLM cost analytics block.
- * Used on the Cost Dashboard page (full, incl. recent runs) and embedded
- * compactly on the History page. Data comes from GET /api/history/cost-analytics.
+ *  mode="summary" → overall strip only (History page embed)
+ *  mode="full"    → overall strip + one SEPARATE card per pipeline run
+ *                   (each run shows only its own agents — never mixed)
+ * Data: GET /api/history/cost-analytics
  */
-export default function CostAnalyticsSection({ analytics, showRecent = false }) {
+export default function CostAnalyticsSection({ analytics, mode = "summary" }) {
   if (!analytics) return null;
 
   const summary = analytics.summary || {};
+  const runs = analytics.runs || [];
 
   return (
     <section className="cost-analytics">
@@ -27,6 +74,7 @@ export default function CostAnalyticsSection({ analytics, showRecent = false }) 
         </p>
       ) : (
         <>
+          {/* Overall strip — totals across runs (read-only summary) */}
           <div className="cost-stat-cards">
             <div className="cost-stat-card">
               <span className="cost-stat-value">{formatUsd(summary.totalCost)}</span>
@@ -55,81 +103,45 @@ export default function CostAnalyticsSection({ analytics, showRecent = false }) 
             </div>
           </div>
 
-          {analytics.agentBreakdown?.length > 0 && (
-            <table className="cost-table cost-table-wide">
-              <thead>
-                <tr>
-                  <th>Agent</th>
-                  <th>LLM Calls</th>
-                  <th>Tokens</th>
-                  <th>Cost</th>
-                  <th>Share</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.agentBreakdown.map((agent) => (
-                  <tr key={agent.agentId}>
-                    <td className="cost-agent-name">{agent.agentName}</td>
-                    <td>{agent.calls}</td>
-                    <td>{formatTokens(agent.totalTokens)}</td>
-                    <td>{formatUsd(agent.totalCost)}</td>
-                    <td>
-                      {agent.sharePct != null ? (
-                        <div className="cost-share">
-                          <div className="cost-share-track">
-                            <div className="cost-share-fill" style={{ width: `${agent.sharePct}%` }} />
-                          </div>
-                          <span>{agent.sharePct}%</span>
-                        </div>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          {/* Per-run breakdown — each run (search) stays separate */}
+          {mode === "full" &&
+            runs.map((run) => {
+              const cost = run.cost || {};
+              return (
+                <div key={run.runId} className="cost-run-card">
+                  <div className="cost-run-head">
+                    <div className="cost-run-title-wrap">
+                      <span className="cost-run-topic">{run.topic || "Untitled run"}</span>
+                      <span className="cost-run-date">
+                        {run.createdAt ? new Date(run.createdAt).toLocaleString() : ""}
+                      </span>
+                    </div>
+                    <div className="cost-run-meta">
+                      <span className={`cost-status ${run.status}`}>{run.status || "—"}</span>
+                      <span className="cost-run-chip">
+                        {formatUsd(cost.totalCost)} · {formatTokens(cost.totalTokens)} tokens ·{" "}
+                        {cost.calls || 0} call{cost.calls === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  </div>
 
-          {showRecent && analytics.recentRuns?.length > 0 && (
-            <div className="cost-recent">
-              <h3 className="cost-recent-title">Recent runs with usage</h3>
-              <table className="cost-table cost-table-wide">
-                <thead>
-                  <tr>
-                    <th>Run</th>
-                    <th>Status</th>
-                    <th>Tokens</th>
-                    <th>Cost</th>
-                    <th>Top agent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analytics.recentRuns.map((run) => (
-                    <tr key={run.runId}>
-                      <td>
-                        <div className="cost-agent-name">{run.topic || "Untitled run"}</div>
-                        <div className="cost-agent-model">
-                          {run.createdAt ? new Date(run.createdAt).toLocaleString() : ""}
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`cost-status ${run.status}`}>{run.status || "—"}</span>
-                      </td>
-                      <td>{formatTokens(run.totalTokens)}</td>
-                      <td>{formatUsd(run.totalCost)}</td>
-                      <td>{run.topAgent || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  {cost.agents?.length > 0 && <AgentCostTable agents={cost.agents} />}
+
+                  {cost.mostExpensiveAgent && (
+                    <div className="cost-run-foot">
+                      Most expensive in this run:{" "}
+                      <strong>{cost.mostExpensiveAgent.agentName}</strong> (
+                      {formatUsd(cost.mostExpensiveAgent.totalCost)})
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
           {(summary.runsWithoutCost > 0 || summary.runsWithUnknownPricing > 0) && (
             <p className="cost-note">
               {summary.runsWithoutCost > 0 &&
-                `${summary.runsWithoutCost} run(s) have no cost data (recorded before tracking was added). `}
+                `${summary.runsWithoutCost} run(s) have no cost data (demo runs or recorded before tracking). `}
               {summary.runsWithUnknownPricing > 0 &&
                 `${summary.runsWithUnknownPricing} run(s) used models without configured pricing — tokens counted, cost unknown.`}
             </p>
