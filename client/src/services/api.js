@@ -35,3 +35,4 @@ export const createAgent = (payload) => api.post("/agents", payload).then((r) =>
 export const deleteAgent = (agentId) => api.delete(`/agents/${agentId}`).then((r) => r.data);
 export const getTools = () => api.get("/tools").then((r) => r.data);
 export const getHistory = () => api.get("/history").then((r) => r.data);
+export const getCostAnalytics = () => api.get("/history/cost-analytics").then((r) => r.data);

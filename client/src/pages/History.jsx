@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getHistory } from "../services/api";
+import { getHistory, getCostAnalytics } from "../services/api";
+import { formatUsd, formatTokens } from "../utils/costFormat";
 
 const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -49,6 +50,7 @@ export default function History() {
   const [message, setMessage] = useState("");
   const [mongoConnected, setMongoConnected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState(null);
 
   const fetchHistory = () => {
     setLoading(true);
@@ -64,6 +66,12 @@ export default function History() {
         setMongoConnected(false);
         setLoading(false);
       });
+
+    // Cost analytics works even without MongoDB (in-memory session fallback),
+    // so fetch it independently.
+    getCostAnalytics()
+      .then((data) => setAnalytics(data))
+      .catch(() => setAnalytics(null));
   };
 
   useEffect(() => {
@@ -102,6 +110,101 @@ export default function History() {
             Set <code>MONGODB_URI</code> in <code>server/.env</code> or start MongoDB locally to enable history persistence.
           </div>
         </div>
+      )}
+
+      {/* ── LLM Cost Analytics ─────────────────────────────── */}
+      {analytics && (
+        <section className="cost-analytics">
+          <div className="cost-analytics-head">
+            <h2 className="cost-analytics-title">💰 Cost Analytics</h2>
+            <span className="cost-analytics-src">
+              {analytics.mongoConnected ? "from MongoDB history" : "this session only (in-memory)"}
+            </span>
+          </div>
+
+          {analytics.summary?.runsWithUsage === 0 ? (
+            <p className="cost-empty">
+              No LLM usage recorded yet. Demo-mode runs never call the LLM — set
+              <code> GROQ_API_KEY </code>on the server and run a pipeline to see
+              real token &amp; cost analytics.
+            </p>
+          ) : (
+            <>
+              <div className="cost-stat-cards">
+                <div className="cost-stat-card">
+                  <span className="cost-stat-value">{formatUsd(analytics.summary.totalCost)}</span>
+                  <span className="cost-stat-label">Total LLM cost</span>
+                </div>
+                <div className="cost-stat-card">
+                  <span className="cost-stat-value">{formatTokens(analytics.summary.totalTokens)}</span>
+                  <span className="cost-stat-label">Total tokens</span>
+                </div>
+                <div className="cost-stat-card">
+                  <span className="cost-stat-value">{formatUsd(analytics.summary.avgCostPerRun)}</span>
+                  <span className="cost-stat-label">
+                    Avg / run ({analytics.summary.runsCountedForAverage} completed)
+                  </span>
+                </div>
+                <div className="cost-stat-card">
+                  <span className="cost-stat-value">
+                    {analytics.summary.mostExpensiveAgent?.agentName || "—"}
+                  </span>
+                  <span className="cost-stat-label">
+                    Most expensive agent
+                    {analytics.summary.mostExpensiveAgent
+                      ? ` (${formatUsd(analytics.summary.mostExpensiveAgent.totalCost)})`
+                      : ""}
+                  </span>
+                </div>
+              </div>
+
+              {analytics.agentBreakdown?.length > 0 && (
+                <table className="cost-table cost-table-wide">
+                  <thead>
+                    <tr>
+                      <th>Agent</th>
+                      <th>LLM Calls</th>
+                      <th>Tokens</th>
+                      <th>Cost</th>
+                      <th>Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analytics.agentBreakdown.map((agent) => (
+                      <tr key={agent.agentId}>
+                        <td className="cost-agent-name">{agent.agentName}</td>
+                        <td>{agent.calls}</td>
+                        <td>{formatTokens(agent.totalTokens)}</td>
+                        <td>{formatUsd(agent.totalCost)}</td>
+                        <td>
+                          {agent.sharePct != null ? (
+                            <div className="cost-share">
+                              <div className="cost-share-track">
+                                <div className="cost-share-fill" style={{ width: `${agent.sharePct}%` }} />
+                              </div>
+                              <span>{agent.sharePct}%</span>
+                            </div>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {(analytics.summary.runsWithoutCost > 0 || analytics.summary.runsWithUnknownPricing > 0) && (
+                <p className="cost-note">
+                  {analytics.summary.runsWithoutCost > 0 &&
+                    `${analytics.summary.runsWithoutCost} older run(s) have no cost data (recorded before tracking was added). `}
+                  {analytics.summary.runsWithUnknownPricing > 0 &&
+                    `${analytics.summary.runsWithUnknownPricing} run(s) used models without configured pricing — tokens counted, cost unknown.`}
+                </p>
+              )}
+            </>
+          )}
+        </section>
       )}
 
       {loading ? (
@@ -176,6 +279,14 @@ export default function History() {
                   <div className="history-stat">
                     <span className="history-stat-value">{run.optimization.readabilityScore}</span>
                     <span className="history-stat-label">Readability</span>
+                  </div>
+                )}
+                {run.cost?.available && (
+                  <div className="history-stat">
+                    <span className="history-stat-value cost">{formatUsd(run.cost.totalCost)}</span>
+                    <span className="history-stat-label">
+                      LLM Cost · {formatTokens(run.cost.totalTokens)} tokens
+                    </span>
                   </div>
                 )}
               </div>

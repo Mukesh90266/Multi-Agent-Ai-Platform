@@ -8,6 +8,7 @@ import AgentLibrary from "../components/Agents/AgentLibrary";
 import PipelineBuilder from "../components/Agents/PipelineBuilder";
 import { RunMetaStrip } from "../components/PipelineGraph/PipelineGraph";
 import PipelineGraphEditor from "../components/PipelineGraph/PipelineGraphEditor";
+import CostPanel from "../components/Cost/CostPanel";
 import History from "./History";
 import { createAgent, deleteAgent, getAgents, getPipelineStatus, getTools, runPipeline } from "../services/api.js";
 
@@ -846,6 +847,9 @@ export default function Home({ section = "run" }) {
           </section>
           <section className="page-card">
             <PipelineInfo result={result} loading={loading} />
+          </section>
+          <section className="page-card">
+            <CostPanel result={result} loading={loading} />
           </section>
         </div>
       </div>
