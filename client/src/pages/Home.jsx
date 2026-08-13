@@ -6,6 +6,11 @@ import LiveOutput from "../components/LiveOutput/LiveOutput";
 import AgentBuilder from "../components/Agents/AgentBuilder";
 import AgentLibrary from "../components/Agents/AgentLibrary";
 import PipelineBuilder from "../components/Agents/PipelineBuilder";
+import { RunMetaStrip } from "../components/PipelineGraph/PipelineGraph";
+import PipelineGraphEditor from "../components/PipelineGraph/PipelineGraphEditor";
+import CostPanel from "../components/Cost/CostPanel";
+import CostDashboard from "./CostDashboard";
+import History from "./History";
 import { createAgent, deleteAgent, getAgents, getPipelineStatus, getTools, runPipeline } from "../services/api.js";
 
 const DEFAULT_AGENT_IDS = ["researcher", "writer", "editor"];
@@ -226,6 +231,54 @@ function createLocalPipelineSteps(selectedSteps, agentsById) {
   });
 }
 
+function orderStepsByEdges(steps, edges) {
+  if (!edges.length) return steps;
+
+  const ids = steps.map((step) => step.clientId);
+  const idSet = new Set(ids);
+  const indegree = new Map(ids.map((id) => [id, 0]));
+  const adjacency = new Map(ids.map((id) => [id, []]));
+
+  for (const edge of edges) {
+    if (!idSet.has(edge.from) || !idSet.has(edge.to)) continue;
+    adjacency.get(edge.from).push(edge.to);
+    indegree.set(edge.to, indegree.get(edge.to) + 1);
+  }
+
+  const queue = ids.filter((id) => indegree.get(id) === 0);
+  const ordered = [];
+  const seen = new Set();
+
+  while (queue.length) {
+    const id = queue.shift();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    ordered.push(steps.find((step) => step.clientId === id));
+    for (const next of adjacency.get(id)) {
+      indegree.set(next, indegree.get(next) - 1);
+      if (indegree.get(next) === 0) queue.push(next);
+    }
+  }
+
+  // Cycle protection: keep the manual order (server would warn/fallback too).
+  return ordered.length === steps.length ? ordered : steps;
+}
+
+function buildDependenciesPayload(steps, edges) {
+  const agentByClientId = new Map(steps.map((step) => [step.clientId, step.agentId]));
+  const dependencies = {};
+
+  for (const edge of edges) {
+    const toAgent = agentByClientId.get(edge.to);
+    const fromAgent = agentByClientId.get(edge.from);
+    if (!toAgent || !fromAgent) continue;
+    if (!dependencies[toAgent]) dependencies[toAgent] = [];
+    if (!dependencies[toAgent].includes(fromAgent)) dependencies[toAgent].push(fromAgent);
+  }
+
+  return dependencies;
+}
+
 function createWaitingStatus(steps) {
   return steps.reduce((status, step) => {
     status[step.stepId] = "waiting";
@@ -233,7 +286,7 @@ function createWaitingStatus(steps) {
   }, {});
 }
 
-export default function Home() {
+export default function Home({ section = "run" }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(null);
@@ -242,6 +295,7 @@ export default function Home() {
   const [libraryError, setLibraryError] = useState(null);
   const [pipelineError, setPipelineError] = useState(null);
   const [selectedSteps, setSelectedSteps] = useState(() => makeStepsFromIds(DEFAULT_AGENT_IDS));
+  const [graphEdges, setGraphEdges] = useState([]); // [{ id, from: clientId, to: clientId }]
   const [activeTemplateId, setActiveTemplateId] = useState("default-rwe");
   const [agentStatus, setAgentStatus] = useState({});
 
@@ -249,9 +303,44 @@ export default function Home() {
   const runIdRef = useRef(null);
 
   const agentsById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
+  const validGraphEdges = useMemo(() => {
+    const ids = new Set(selectedSteps.map((step) => step.clientId));
+    return graphEdges.filter((edge) => ids.has(edge.from) && ids.has(edge.to));
+  }, [graphEdges, selectedSteps]);
+
+  // Steps in dependency order (topological). With no edges this is exactly
+  // the user's manual order — zero behavior change until the graph is used.
+  const effectiveSteps = useMemo(
+    () => orderStepsByEdges(selectedSteps, validGraphEdges),
+    [selectedSteps, validGraphEdges]
+  );
+
   const localPipelineSteps = useMemo(
-    () => createLocalPipelineSteps(selectedSteps, agentsById),
-    [selectedSteps, agentsById]
+    () => createLocalPipelineSteps(effectiveSteps, agentsById),
+    [effectiveSteps, agentsById]
+  );
+
+  const effectiveAgentIds = useMemo(
+    () => effectiveSteps.map((step) => step.agentId),
+    [effectiveSteps]
+  );
+
+  const graphNodes = useMemo(
+    () =>
+      effectiveSteps.map((step, index) => {
+        const agent = agentsById.get(step.agentId) || {};
+        const local = localPipelineSteps[index] || {};
+        return {
+          clientId: step.clientId,
+          stepId: local.stepId,
+          agentId: step.agentId,
+          name: agent.name || step.agentId,
+          phase: agent.phase || "agent",
+          type: agent.type || "custom",
+          tools: Array.isArray(agent.tools) ? agent.tools : []
+        };
+      }),
+    [effectiveSteps, agentsById, localPipelineSteps]
   );
   const selectedAgentIds = useMemo(
     () => selectedSteps.map((step) => step.agentId),
@@ -454,7 +543,32 @@ export default function Home() {
   const handleResetDefault = () => {
     resetDisplayedRun();
     setSelectedSteps(makeStepsFromIds(DEFAULT_AGENT_IDS));
+    setGraphEdges([]);
     setActiveTemplateId("default-rwe");
+  };
+
+  const handleGraphConnect = (fromClientId, toClientId) => {
+    if (fromClientId === toClientId) return;
+    resetDisplayedRun();
+    setGraphEdges((prev) =>
+      prev.some((edge) => edge.from === fromClientId && edge.to === toClientId)
+        ? prev
+        : [...prev, { id: `${fromClientId}->${toClientId}`, from: fromClientId, to: toClientId }]
+    );
+    setActiveTemplateId(null);
+  };
+
+  const handleGraphDisconnect = (fromClientId, toClientId) => {
+    resetDisplayedRun();
+    setGraphEdges((prev) => prev.filter((edge) => !(edge.from === fromClientId && edge.to === toClientId)));
+    setActiveTemplateId(null);
+  };
+
+  const handleGraphRemoveNode = (clientId) => {
+    resetDisplayedRun();
+    setSelectedSteps((prev) => prev.filter((step) => step.clientId !== clientId));
+    setGraphEdges((prev) => prev.filter((edge) => edge.from !== clientId && edge.to !== clientId));
+    setActiveTemplateId(null);
   };
 
   const getSelectedCustomAgents = () => Array.from(new Map(selectedSteps
@@ -503,10 +617,15 @@ export default function Home() {
         await ensureSelectedCustomAgentsSynced();
       }
 
+      const graphDependencies = buildDependenciesPayload(effectiveSteps, validGraphEdges);
+
       const pipelinePayload = isDefaultPipeline
         ? { templateId: "default-rwe" }
         : {
-            agentIds: selectedAgentIds,
+            agentIds: effectiveAgentIds,
+            ...(Object.keys(graphDependencies).length
+              ? { dependencies: graphDependencies }
+              : {}),
             agentConfigs: selectedCustomAgents
           };
 
@@ -562,22 +681,98 @@ export default function Home() {
     return () => clearPolling();
   }, [clearPolling]);
 
-  return (
-    <div className="main-layout">
-      <aside className="sidebar">
-        <TopicInput
-          onSubmit={runPipelineHandler}
-          disabled={loading || selectedSteps.length === 0}
-          selectedCount={selectedSteps.length}
-          isDefaultPipeline={isDefaultPipeline}
-        />
-        {pipelineError && (
-          <div className="section run-error-section">
-            <div className="builder-message error">{pipelineError}</div>
-          </div>
-        )}
+  // ─────────────────────────────────────────────
+  // Section layouts (UI-only restructure).
+  // All props/handlers identical to the previous build.
+  // ─────────────────────────────────────────────
 
-        <div className="section section-divider">
+  if (section === "history") {
+    return <History />;
+  }
+
+  if (section === "cost") {
+    return <CostDashboard />;
+  }
+
+  if (section === "agents") {
+    return (
+      <div className="page page-agents">
+        <header className="page-header-row">
+          <div>
+            <h1 className="page-title">Agent Library</h1>
+            <p className="page-subtitle">Manage built-in and custom agents. Add them to your pipeline from here.</p>
+          </div>
+        </header>
+        {libraryError && <div className="builder-message error page-banner">{libraryError}</div>}
+        <div className="page-card">
+          <AgentLibrary
+            agents={agents}
+            onAddAgent={handleAddAgent}
+            onDeleteAgent={handleDeleteAgent}
+            disabled={loading}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (section === "builder") {
+    return (
+      <div className="page page-builder">
+        <header className="page-header-row">
+          <div>
+            <h1 className="page-title">Agent Builder</h1>
+            <p className="page-subtitle">Create a custom agent with role, personality, system prompt and tools.</p>
+          </div>
+        </header>
+        <div className="page-card page-card-narrow">
+          <AgentBuilder
+            onCreateAgent={handleCreateAgent}
+            disabled={loading}
+            availableTools={availableTools}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (section === "pipeline") {
+    return (
+      <div className="page page-pipeline">
+        <header className="page-header-row">
+          <div>
+            <h1 className="page-title">Pipeline Builder</h1>
+            <p className="page-subtitle">
+              Arrange agents into a pipeline and connect them here — the exact same graph, agents and
+              connections appear in Pipeline Execution on the Run Pipeline page (and edits sync both ways).
+            </p>
+          </div>
+        </header>
+        <div className="page-card">
+          <div className="graph-panel-head">
+            <div>
+              <h2 className="page-card-title">Pipeline Graph</h2>
+              <p className="page-card-sub">
+                Drag agents in, drag from a node's port onto another node to connect — synced with the Run Pipeline page.
+              </p>
+            </div>
+            <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={result?.pipeline?.steps || localPipelineSteps} />
+          </div>
+          <PipelineGraphEditor
+            nodes={graphNodes}
+            edges={validGraphEdges}
+            paletteAgents={agents}
+            statuses={agentStatus}
+            result={result}
+            loading={loading}
+            currentAgent={currentAgent}
+            onAddNode={handleAddAgent}
+            onRemoveNode={handleGraphRemoveNode}
+            onConnect={handleGraphConnect}
+            onDisconnect={handleGraphDisconnect}
+          />
+        </div>
+        <div className="page-card">
           <PipelineBuilder
             selectedSteps={selectedSteps}
             agentsById={agentsById}
@@ -589,47 +784,80 @@ export default function Home() {
             isDefaultPipeline={isDefaultPipeline}
           />
         </div>
+      </div>
+    );
+  }
 
-        <div className="section section-divider">
-          {libraryError && <div className="builder-message error">{libraryError}</div>}
-          <AgentLibrary
-            agents={agents}
-            onAddAgent={handleAddAgent}
-            onDeleteAgent={handleDeleteAgent}
-            disabled={loading}
-          />
-        </div>
+  // ── Default: "run" dashboard ──
+  const graphSteps = result?.pipeline?.steps || localPipelineSteps;
 
-        <div className="section section-divider">
-          <AgentBuilder
-            onCreateAgent={handleCreateAgent}
-            disabled={loading}
-            availableTools={availableTools}
-          />
-        </div>
+  return (
+    <div className="page page-run">
+      <div className="page-card run-input-card">
+        <TopicInput
+          onSubmit={runPipelineHandler}
+          disabled={loading || selectedSteps.length === 0}
+          selectedCount={selectedSteps.length}
+          isDefaultPipeline={isDefaultPipeline}
+        />
+      </div>
 
-        <div className="section section-divider">
-          <PipelineStatus
-            result={result}
-            loading={loading}
-            currentAgent={currentAgent}
-            agentStatus={agentStatus}
-            pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
-          />
-        </div>
+      {pipelineError && (
+        <div className="builder-message error page-banner">{pipelineError}</div>
+      )}
 
-        <div className="section section-divider">
-          <PipelineInfo result={result} loading={loading} />
+      {/* Graph full width on top. */}
+      <section className="page-card graph-panel">
+        <div className="graph-panel-head">
+          <div>
+            <h2 className="page-card-title">Pipeline Execution</h2>
+            <p className="page-card-sub">
+              Drag agents in, connect dependencies, then run — live status and timings appear here.
+            </p>
+          </div>
+          <RunMetaStrip result={result} loading={loading} agentStatus={agentStatus} steps={graphSteps} />
         </div>
-      </aside>
-      <main className="right-panel">
+        <PipelineGraphEditor
+          nodes={graphNodes}
+          edges={validGraphEdges}
+          paletteAgents={agents}
+          statuses={agentStatus}
+          result={result}
+          loading={loading}
+          currentAgent={currentAgent}
+          onAddNode={handleAddAgent}
+          onRemoveNode={handleGraphRemoveNode}
+          onConnect={handleGraphConnect}
+          onDisconnect={handleGraphDisconnect}
+        />
+      </section>
+
+      {/* Below the graph: Live Output with Pipeline Status + Info beside it. */}
+      <div className="run-grid">
         <LiveOutput
           result={result}
           loading={loading}
           pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
           agentStatus={agentStatus}
         />
-      </main>
+        <div className="run-side">
+          <section className="page-card">
+            <PipelineStatus
+              result={result}
+              loading={loading}
+              currentAgent={currentAgent}
+              agentStatus={agentStatus}
+              pipelineSteps={result?.pipeline?.steps || localPipelineSteps}
+            />
+          </section>
+          <section className="page-card">
+            <PipelineInfo result={result} loading={loading} />
+          </section>
+          <section className="page-card">
+            <CostPanel result={result} loading={loading} />
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

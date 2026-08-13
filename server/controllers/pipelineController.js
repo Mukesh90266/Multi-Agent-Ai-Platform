@@ -77,7 +77,8 @@ export async function runPipelineController(req, res) {
               editorReview: result.editorReview,
               optimization: result.optimization,
               iterations: result.iterations,
-              revisionHistory: result.revisionHistory
+              revisionHistory: result.revisionHistory,
+              cost: result.cost
             });
           } catch (dbError) {
             console.error("Failed to save pipeline run to MongoDB:", dbError.message);

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { getHistory } from "../services/api";
+import { getHistory, getCostAnalytics } from "../services/api";
+import CostAnalyticsSection from "../components/Cost/CostAnalyticsSection";
+import { formatUsd, formatTokens } from "../utils/costFormat";
 
 const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -49,6 +51,7 @@ export default function History() {
   const [message, setMessage] = useState("");
   const [mongoConnected, setMongoConnected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState(null);
 
   const fetchHistory = () => {
     setLoading(true);
@@ -64,6 +67,12 @@ export default function History() {
         setMongoConnected(false);
         setLoading(false);
       });
+
+    // Cost analytics works even without MongoDB (in-memory session fallback),
+    // so fetch it independently.
+    getCostAnalytics()
+      .then((data) => setAnalytics(data))
+      .catch(() => setAnalytics(null));
   };
 
   useEffect(() => {
@@ -103,6 +112,9 @@ export default function History() {
           </div>
         </div>
       )}
+
+      {/* ── LLM Cost Analytics (shared block; full view on Cost Analytics page) ── */}
+      <CostAnalyticsSection analytics={analytics} />
 
       {loading ? (
         <div className="history-loading">
@@ -176,6 +188,14 @@ export default function History() {
                   <div className="history-stat">
                     <span className="history-stat-value">{run.optimization.readabilityScore}</span>
                     <span className="history-stat-label">Readability</span>
+                  </div>
+                )}
+                {run.cost?.available && (
+                  <div className="history-stat">
+                    <span className="history-stat-value cost">{formatUsd(run.cost.totalCost)}</span>
+                    <span className="history-stat-label">
+                      LLM Cost · {formatTokens(run.cost.totalTokens)} tokens
+                    </span>
                   </div>
                 )}
               </div>

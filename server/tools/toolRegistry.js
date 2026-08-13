@@ -5,6 +5,7 @@
 
 import { webSearchToolDefinition } from "./webSearch.js";
 import { verificationToolDefinition } from "./verificationApi.js";
+import { recordUsage } from "../services/usageScope.js";
 
 const TOOL_MAP = new Map([
   [webSearchToolDefinition.id, webSearchToolDefinition],
@@ -81,7 +82,26 @@ export async function executeTool(toolId, args = {}, context = {}) {
   }
 
   try {
+    const startedMs = Date.now();
     const result = await tool.execute(args || {}, context);
+
+    // Record the tool/API call for cost tracking (e.g. web_search via Serper).
+    // Only successful executions are recorded; a failed API call must not be
+    // billed. Runs inside the agent's per-step usage scope, so attribution is
+    // exact even for parallel agents.
+    try {
+      recordUsage({
+        kind: "tool",
+        toolId: tool.id,
+        provider: result?.provider || "default",
+        units: 1,
+        resultCount: result?.resultCount ?? null,
+        durationMs: Date.now() - startedMs
+      });
+    } catch {
+      // cost tracking is observational — never break tool execution
+    }
+
     return {
       ok: true,
       toolId: tool.id,

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { config } from "../config/config.js";
+import { recordUsage } from "./usageScope.js";
 
 let connectionWarningShown = false;
 let lastLlmError = null;
@@ -200,6 +201,34 @@ export function normalizeToolDecision(raw) {
   return null;
 }
 
+/**
+ * Extract usage metadata from a provider response and push it into the
+ * active per-step usage scope (see usageScope.js). Never throws — usage
+ * capture must not break the LLM path, and outside a scope it is a no-op.
+ * Failed requests never reach this, so no invalid usage is recorded.
+ */
+function captureUsage(response, startedMs) {
+  try {
+    const usage = response?.usage || null;
+    const model = response?.model || config.model;
+    if (!usage) {
+      // Provider omitted usage metadata — record the call, flag tokens unknown.
+      recordUsage({ kind: "llm", model, usageKnown: false, durationMs: Date.now() - startedMs });
+      return;
+    }
+    recordUsage({
+      kind: "llm",
+      model,
+      inputTokens: usage.prompt_tokens ?? null,
+      outputTokens: usage.completion_tokens ?? null,
+      totalTokens: usage.total_tokens ?? null,
+      durationMs: Date.now() - startedMs
+    });
+  } catch {
+    // intentionally swallowed — observability only
+  }
+}
+
 export async function askLLM(
   prompt,
   {
@@ -241,7 +270,9 @@ export async function askLLM(
       };
     }
 
+    const startedMs = Date.now();
     const response = await client.chat.completions.create(requestData);
+    captureUsage(response, startedMs);
     const content = response.choices?.[0]?.message?.content ?? null;
 
     if (content != null) {
@@ -258,6 +289,7 @@ export async function askLLM(
     ) {
       try {
         console.warn("[llm] json_mode rejected — retrying without response_format");
+        const retryStartedMs = Date.now();
         const retry = await client.chat.completions.create({
           model: config.model,
           temperature,
@@ -272,6 +304,7 @@ export async function askLLM(
             }
           ]
         });
+        captureUsage(retry, retryStartedMs);
         lastLlmError = null;
         return retry.choices?.[0]?.message?.content ?? null;
       } catch (retryError) {

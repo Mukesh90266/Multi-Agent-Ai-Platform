@@ -3,12 +3,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { executeAgent, getOutputText } from "./agentExecutor.js";
+import { computeSchedule, planSliceLevels } from "./dependencyGraph.js";
 import {
   buildRunnablePipeline,
   serializePipelineForClient
 } from "../services/agentStore.js";
 import { stateManager } from "../state/stateManager.js";
 import { logger } from "../utils/logger.js";
+import { runWithUsageScope } from "../services/usageScope.js";
+import { buildCostSnapshot, registerRunCost } from "../services/costService.js";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const serverDirectory = path.resolve(directory, "..");
@@ -46,6 +49,8 @@ function buildState(context, overrides = {}) {
     agentStatus: { ...context.agentStatus },
     pipeline: serializePipelineForClient(context.pipeline),
     currentStep: context.currentStep ? publicStep(context.currentStep) : null,
+    currentSteps: Array.isArray(context.currentSteps) ? context.currentSteps : [],
+    schedule: context.schedule || null,
     iterations: context.iterations,
     agentOutputs: context.outputs,
     research: context.research,
@@ -54,6 +59,7 @@ function buildState(context, overrides = {}) {
     optimization: context.optimization,
     finalOutput: context.finalOutput,
     revisionHistory: context.revisionHistory,
+    cost: buildCostSnapshot(context.costLedger),
     ...overrides
   };
 }
@@ -155,7 +161,11 @@ function applyExecutionToContext(context, step, execution) {
     text: getOutputText(output),
     summary: execution.summary || `${step.name} completed`,
     tools: Array.isArray(step.tools) ? step.tools : [],
-    toolCalls
+    toolCalls,
+    ...(execution.startedAt ? { startedAt: execution.startedAt } : {}),
+    ...(execution.completedAt ? { completedAt: execution.completedAt } : {}),
+    ...(execution.durationMs != null ? { durationMs: execution.durationMs } : {}),
+    ...(execution.llmUsage ? { llmUsage: execution.llmUsage } : {})
   };
 
   context.outputs.push(agentOutput);
@@ -229,7 +239,27 @@ async function executeStep(context, step, detail = "") {
   });
 
   try {
-    const execution = await executeAgent(step.agent, context);
+    const startedAt = new Date().toISOString();
+    const startedMs = Date.now();
+    // Isolated usage scope — every LLM call inside this step (tools included)
+    // is attributed to THIS step's agent, never shared across steps.
+    const { result: execution, records: usageRecords } = await runWithUsageScope(
+      {
+        runId: context.runId,
+        stepId: step.stepId,
+        agentId: step.agentId,
+        agentName: step.name,
+        iteration: context.loopIteration || 1
+      },
+      () => executeAgent(step.agent, context)
+    );
+    if (usageRecords.length) {
+      context.costLedger.push(...usageRecords);
+      execution.llmUsage = buildCostSnapshot(usageRecords);
+    }
+    execution.startedAt = startedAt;
+    execution.completedAt = new Date().toISOString();
+    execution.durationMs = Date.now() - startedMs;
     context.agentStatus[step.stepId] = "completed";
     applyExecutionToContext(context, step, execution);
 
@@ -238,6 +268,10 @@ async function executeStep(context, step, detail = "") {
 
     return execution;
   } catch (error) {
+    if (Array.isArray(error.usageRecords) && error.usageRecords.length) {
+      // Partial usage from earlier successful LLM calls in this step survives.
+      context.costLedger.push(...error.usageRecords);
+    }
     context.agentStatus[step.stepId] = "error";
     context.status = "error";
     context.error = error.message;
@@ -262,12 +296,124 @@ function findLoopIndexes(pipeline) {
   return { writerIndex, editorIndex };
 }
 
+/**
+ * Execute one branch of a parallel level with an isolated context view.
+ *
+ * Isolation rules (concurrency safety):
+ *  - branch gets a shallow copy: its own `currentStep` (prompt "← current"
+ *    marker) and its own `toolResults` slot (agentExecutor writes/deletes
+ *    that key around built-in executors — sharing it would race).
+ *  - branch only READS shared outputs (frozen during the level — results
+ *    are applied serially after Promise.allSettled, in step-index order).
+ */
+async function executeBranch(context, step, detail) {
+  const branchContext = { ...context, currentStep: step, toolResults: undefined };
+
+  logger.agent(step.agentId, "started", detail || step.name);
+  const startedAt = new Date().toISOString();
+  const startedMs = Date.now();
+
+  // Each parallel branch gets its own AsyncLocalStorage scope, so concurrent
+  // agents' usage records can never overwrite each other (spec §5).
+  const { result: execution, records: usageRecords } = await runWithUsageScope(
+    {
+      runId: context.runId,
+      stepId: step.stepId,
+      agentId: step.agentId,
+      agentName: step.name,
+      iteration: context.loopIteration || 1
+    },
+    () => executeAgent(step.agent, branchContext)
+  );
+  execution.usageRecords = usageRecords;
+  execution.startedAt = startedAt;
+  execution.completedAt = new Date().toISOString();
+  execution.durationMs = Date.now() - startedMs;
+
+  return execution;
+}
+
+/**
+ * Execute one dependency level. Every step in the level is marked
+ * "running" up front (dashboard shows them simultaneously), then all
+ * run concurrently. Results are applied serially afterwards, so shared
+ * state (outputs, iterations, research/draft/review slots) always has
+ * a single writer — no interleaving between parallel agents.
+ */
+async function executeLevel(context, levelSteps, detail) {
+  if (levelSteps.length === 1) {
+    const step = levelSteps[0];
+    const execution = await executeStep(context, step, detail(step));
+    return new Map([[step.stepId, execution]]);
+  }
+
+  logger.phase(`PARALLEL LEVEL — ${levelSteps.map((s) => s.name).join("  ||  ")}`);
+
+  for (const step of levelSteps) {
+    context.agentStatus[step.stepId] = "running";
+  }
+  context.status = "running";
+  context.currentSteps = levelSteps.map((step) => publicStep(step));
+  updateState(context, { status: "running", currentSteps: context.currentSteps });
+
+  const settled = await Promise.allSettled(
+    levelSteps.map((step) => executeBranch(context, step, detail(step)))
+  );
+
+  const executions = new Map();
+  const failures = [];
+
+  settled.forEach((result, i) => {
+    const step = levelSteps[i];
+
+    if (result.status === "fulfilled") {
+      const execution = result.value;
+      if (Array.isArray(execution.usageRecords) && execution.usageRecords.length) {
+        context.costLedger.push(...execution.usageRecords);
+        execution.llmUsage = buildCostSnapshot(execution.usageRecords);
+      }
+      context.agentStatus[step.stepId] = "completed";
+      applyExecutionToContext(context, step, execution);
+      executions.set(step.stepId, execution);
+      logger.agent(step.agentId, "completed", execution.summary || step.name);
+    } else {
+      const error = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
+      if (Array.isArray(error.usageRecords) && error.usageRecords.length) {
+        context.costLedger.push(...error.usageRecords);
+      }
+      context.agentStatus[step.stepId] = "error";
+      failures.push({ step, error });
+      logger.error(`Parallel agent "${step.name}" failed: ${error.message}`);
+    }
+  });
+
+  context.currentSteps = [];
+  updateState(context);
+
+  // Existing error behavior: a failed agent aborts the run (status "error"),
+  // dependents never execute with missing data. Successful siblings' outputs
+  // are preserved above; the failed step stays marked "error", never success.
+  if (failures.length) {
+    const first = failures[0];
+    context.status = "error";
+    context.error = `${first.step.name}: ${first.error.message}`;
+    updateState(context, { status: "error", error: context.error });
+    throw new Error(context.error);
+  }
+
+  return executions;
+}
+
 async function runLinearPipeline(context) {
   logger.phase(`DYNAMIC PIPELINE - ${context.pipeline.name}`);
 
-  for (const step of context.pipeline.steps) {
+  const stepById = new Map(context.pipeline.steps.map((step) => [step.stepId, step]));
+  const levels = context.schedule?.levels || context.pipeline.steps.map((step) => [step.stepId]);
+
+  for (const level of levels) {
     context.loopIteration = 1;
-    await executeStep(context, step, `Step ${step.index + 1}/${context.pipeline.steps.length}`);
+    const levelSteps = level.map((stepId) => stepById.get(stepId)).filter(Boolean);
+    await executeLevel(context, levelSteps, (step) => `Step ${step.index + 1}/${context.pipeline.steps.length}`);
   }
 
   context.completedLoopIterations = context.editorReview ? 1 : 0;
@@ -287,9 +433,22 @@ async function runReviewLoopPipeline(context, loopIndexes) {
 
   logger.phase(`DYNAMIC PIPELINE - ${context.pipeline.name}`);
 
-  for (const step of preLoopSteps) {
+  // Levels are computed once per slice and reused every iteration —
+  // the dependency structure is static within a run, so this adds no
+  // duplicate LLM/planner calls and cannot introduce infinite loops.
+  const plan = async (steps) => {
+    const byId = new Map(steps.map((step) => [step.stepId, step]));
+    const levels = await planSliceLevels(steps);
+    return levels.map((level) => level.map((stepId) => byId.get(stepId)).filter(Boolean));
+  };
+
+  const preLoopLevels = await plan(preLoopSteps);
+  const loopLevels = await plan(loopSteps);
+  const postLoopLevels = await plan(postLoopSteps);
+
+  for (const level of preLoopLevels) {
     context.loopIteration = 0;
-    await executeStep(context, step, `Pre-loop step ${step.index + 1}/${context.pipeline.steps.length}`);
+    await executeLevel(context, level, (step) => `Pre-loop step ${step.index + 1}/${context.pipeline.steps.length}`);
   }
 
   let loopIteration = 1;
@@ -299,14 +458,19 @@ async function runReviewLoopPipeline(context, loopIndexes) {
     context.loopIteration = loopIteration;
     logger.phase(`DYNAMIC REVIEW LOOP ${loopIteration}/${maxIterations}`);
 
-    for (const step of loopSteps) {
-      const mode = step.agentId === "writer"
-        ? (loopIteration === 1 ? "Initial Draft" : "Revision")
-        : `Loop step ${step.index + 1}/${context.pipeline.steps.length}`;
+    for (const level of loopLevels) {
+      const executions = await executeLevel(context, level, (step) =>
+        step.agentId === "writer"
+          ? (loopIteration === 1 ? "Initial Draft" : "Revision")
+          : `Loop step ${step.index + 1}/${context.pipeline.steps.length}`
+      );
 
-      const execution = await executeStep(context, step, mode);
+      for (const step of level) {
+        if (step.agentId !== context.pipeline.loop.editorAgentId) continue;
 
-      if (step.agentId === context.pipeline.loop.editorAgentId) {
+        const execution = executions.get(step.stepId);
+        if (!execution) continue;
+
         const qualityScore = execution.qualityScore ?? execution.output?.qualityScore ?? 0;
         decision = qualityScore >= approvalThreshold ? "approved" : "needs_revision";
 
@@ -326,9 +490,9 @@ async function runReviewLoopPipeline(context, loopIndexes) {
   context.completedLoopIterations = loopIteration - 1;
 
   if (decision === "approved") {
-    for (const step of postLoopSteps) {
+    for (const level of postLoopLevels) {
       context.loopIteration = context.completedLoopIterations;
-      await executeStep(context, step, `Post-approval step ${step.index + 1}/${context.pipeline.steps.length}`);
+      await executeLevel(context, level, (step) => `Post-approval step ${step.index + 1}/${context.pipeline.steps.length}`);
     }
   } else {
     for (const step of postLoopSteps) {
@@ -381,14 +545,47 @@ export async function runPipeline(input, runId = randomUUID(), options = {}) {
     outputs: [],
     iterations: [],
     revisionHistory: [],
+    costLedger: [],
     research: null,
     draft: null,
     editorReview: null,
     optimization: null,
     finalOutput: null,
     editorDecision: null,
+    currentSteps: [],
+    schedule: null,
     error: null
   };
+
+  // Dependency analysis — decides sequential vs parallel for THIS pipeline.
+  // Ambiguity always resolves to keeping edges (= today's sequential flow).
+  try {
+    const analyzed = await computeSchedule(pipeline.steps);
+    context.schedule = {
+      levels: analyzed.levels,
+      edges: analyzed.edges,
+      reasons: analyzed.reasons,
+      warnings: analyzed.warnings,
+      parallel: analyzed.parallel
+    };
+
+    if (analyzed.parallel) {
+      logger.info(`Parallel execution plan: ${analyzed.levels.map((l) => `[${l.join(" | ")}]`).join(" → ")}`);
+    }
+    for (const warning of analyzed.warnings) {
+      logger.warning(`Dependency warning: ${warning.warning}`);
+    }
+  } catch (scheduleError) {
+    // Scheduling must never break a run — fall back to sequential.
+    logger.warning(`Dependency analysis failed (${scheduleError.message}) → sequential fallback.`);
+    context.schedule = {
+      levels: pipeline.steps.map((step) => [step.stepId]),
+      edges: {},
+      reasons: {},
+      warnings: [{ warning: `Dependency analysis failed: ${scheduleError.message}. Sequential execution used.` }],
+      parallel: false
+    };
+  }
 
   updateState(context, { status: "starting" });
 
@@ -422,7 +619,11 @@ export async function runPipeline(input, runId = randomUUID(), options = {}) {
       ),
       revisionHistory: context.revisionHistory,
       agentStatus: { ...context.agentStatus },
+      cost: buildCostSnapshot(context.costLedger),
       pipeline: serializePipelineForClient(pipeline),
+      parallel: Boolean(context.schedule?.parallel),
+      schedule: context.schedule,
+      dependencyWarnings: context.schedule?.warnings || [],
       agentOutputs: context.outputs,
       research: context.research,
       draft: context.draft,
@@ -444,6 +645,13 @@ export async function runPipeline(input, runId = randomUUID(), options = {}) {
     }
 
     stateManager.set(runId, result);
+    registerRunCost({
+      runId,
+      topic: input?.topic || null,
+      status: result.status,
+      createdAt: new Date().toISOString(),
+      cost: result.cost
+    });
     await saveRunArtifacts(result);
 
     return result;
@@ -457,6 +665,13 @@ export async function runPipeline(input, runId = randomUUID(), options = {}) {
     });
 
     stateManager.set(runId, errorResult);
+    registerRunCost({
+      runId,
+      topic: input?.topic || null,
+      status: "error",
+      createdAt: new Date().toISOString(),
+      cost: buildCostSnapshot(context.costLedger) // partial usage still visible
+    });
     throw error;
   }
 }

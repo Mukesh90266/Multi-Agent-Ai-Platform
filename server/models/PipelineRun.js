@@ -47,6 +47,10 @@ const PipelineRunSchema = new mongoose.Schema(
 
     revisionHistory: [mongoose.Schema.Types.Mixed],
 
+    // LLM cost snapshot for this run (spec §7) — optional; old runs simply
+    // don't have it and every consumer treats that as "no cost data".
+    cost: mongoose.Schema.Types.Mixed,
+
     error: String
   },
   {
