@@ -3915,6 +3915,14 @@ body {
 
 .cost-star { color: #d97706; }
 
+.cost-tool-cell {
+  font-size: 11.5px;
+  color: #0f766e;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: help;
+}
+
 .cost-table {
   width: 100%;
   border-collapse: collapse;

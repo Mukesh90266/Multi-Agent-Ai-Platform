@@ -59,6 +59,50 @@ export function calculateCost(model, inputTokens, outputTokens) {
   return { pricingKnown: true, inputCost, outputCost, totalCost: inputCost + outputCost };
 }
 
+// ── Tool / external API pricing (USD per call) ────────────────────────
+// Paid providers behind tools (e.g. web_search → Serper/Brave) also spend
+// money per call. Update ONLY here or via TOOL_PRICING_OVERRIDES env.
+export const TOOL_PRICING = {
+  web_search: {
+    default: 0,
+    serper: 0.001, // ~$1 per 1,000 queries
+    brave: 0.005, // paid tier ~$5 per 1,000 queries (free tier? set 0 via env)
+    duckduckgo_instant: 0,
+    duckduckgo_html: 0,
+    wikipedia: 0,
+    none: 0
+  },
+  verification_api: { default: 0 } // local checks — free
+};
+
+function resolveToolPricingTable() {
+  if (!process.env.TOOL_PRICING_OVERRIDES) return TOOL_PRICING;
+  try {
+    const overrides = JSON.parse(process.env.TOOL_PRICING_OVERRIDES);
+    const merged = {};
+    for (const key of new Set([...Object.keys(TOOL_PRICING), ...Object.keys(overrides || {})])) {
+      merged[key] = { ...(TOOL_PRICING[key] || {}), ...((overrides || {})[key] || {}) };
+    }
+    return merged;
+  } catch {
+    console.warn("[cost] TOOL_PRICING_OVERRIDES is not valid JSON — ignored.");
+    return TOOL_PRICING;
+  }
+}
+
+/**
+ * cost = units × perCallRate for the provider actually used.
+ * Unknown tool → pricingKnown:false, cost:null (never crash). A provider
+ * missing from the table falls back to the tool's default rate.
+ */
+export function calculateToolCost(toolId, provider, units = 1) {
+  const table = resolveToolPricingTable();
+  const toolPricing = table[toolId];
+  if (!toolPricing) return { pricingKnown: false, cost: null };
+  const rate = toolPricing[provider ?? "default"] ?? toolPricing.default ?? 0;
+  return { pricingKnown: true, cost: (units || 0) * rate };
+}
+
 /**
  * Aggregate raw usage records → per-agent rows + pipeline totals.
  *
@@ -75,12 +119,15 @@ export function buildCostSnapshot(records = []) {
     available: false,
     pricingKnown: false,
     calls: 0,
+    toolCalls: 0,
     totalInputTokens: 0,
     totalOutputTokens: 0,
     totalTokens: 0,
     totalInputCost: 0,
     totalOutputCost: 0,
     totalCost: 0,
+    totalToolCost: 0,
+    grandTotal: 0,
     totalDurationMs: 0,
     agents: [],
     mostExpensiveAgent: null
@@ -105,13 +152,35 @@ export function buildCostSnapshot(records = []) {
         inputCost: 0,
         outputCost: 0,
         totalCost: 0,
-        pricingKnown: true
+        pricingKnown: true,
+        toolCalls: 0,
+        toolProviders: new Set(),
+        toolCost: 0,
+        toolPricingKnown: true
       });
     }
 
     const entry = byAgent.get(key);
-    entry.calls += 1;
     if (record?.agentName) entry.agentName = record.agentName;
+    entry.durationMs += record?.durationMs || 0;
+
+    // ── Tool/API call record (e.g. web_search via Serper) ──
+    if (record?.kind === "tool") {
+      const units = Math.max(1, record?.units || 1);
+      entry.toolCalls += units;
+      if (record?.toolId) {
+        entry.toolProviders.add(
+          record?.provider ? `${record.toolId}(${record.provider})` : record.toolId
+        );
+      }
+      const toolCost = calculateToolCost(record?.toolId, record?.provider, units);
+      if (!toolCost.pricingKnown) entry.toolPricingKnown = false;
+      else entry.toolCost += toolCost.cost || 0;
+      continue; // tool records carry no LLM tokens — spec §6
+    }
+
+    // ── LLM call record ──
+    entry.calls += 1;
     if (record?.model) entry.models.add(record.model);
     if (record?.usageKnown === false) entry.unknownUsageCalls += 1;
 
@@ -120,7 +189,6 @@ export function buildCostSnapshot(records = []) {
     entry.inputTokens += inputTokens;
     entry.outputTokens += outputTokens;
     entry.totalTokens += inputTokens + outputTokens;
-    entry.durationMs += record?.durationMs || 0;
 
     const cost = calculateCost(record?.model, inputTokens, outputTokens);
     if (!cost.pricingKnown) {
@@ -137,8 +205,11 @@ export function buildCostSnapshot(records = []) {
   let totalInputCost = 0;
   let totalOutputCost = 0;
   let totalCost = 0;
+  let totalToolCalls = 0;
+  let totalToolCost = 0;
   let totalDurationMs = 0;
   let pricingKnown = true;
+  let toolPricingKnown = true;
 
   const agents = [...byAgent.values()].map((entry) => {
     totalInputTokens += entry.inputTokens;
@@ -146,9 +217,13 @@ export function buildCostSnapshot(records = []) {
     totalInputCost += entry.inputCost;
     totalOutputCost += entry.outputCost;
     totalCost += entry.totalCost;
+    totalToolCalls += entry.toolCalls;
+    totalToolCost += entry.toolCost;
     totalDurationMs += entry.durationMs;
     if (!entry.pricingKnown) pricingKnown = false;
+    if (!entry.toolPricingKnown) toolPricingKnown = false;
 
+    const grandKnown = entry.pricingKnown && entry.toolPricingKnown;
     return {
       agentId: entry.agentId,
       agentName: entry.agentName,
@@ -162,7 +237,12 @@ export function buildCostSnapshot(records = []) {
       pricingKnown: entry.pricingKnown,
       inputCost: entry.pricingKnown ? round8(entry.inputCost) : null,
       outputCost: entry.pricingKnown ? round8(entry.outputCost) : null,
-      totalCost: entry.pricingKnown ? round8(entry.totalCost) : null
+      totalCost: entry.pricingKnown ? round8(entry.totalCost) : null,
+      toolCalls: entry.toolCalls,
+      toolsUsed: [...entry.toolProviders],
+      toolPricingKnown: entry.toolPricingKnown,
+      toolCost: entry.toolPricingKnown ? round8(entry.toolCost) : null,
+      grandTotal: grandKnown ? round8(entry.totalCost + entry.toolCost) : null
     };
   });
 
@@ -181,13 +261,17 @@ export function buildCostSnapshot(records = []) {
   return {
     available: true,
     pricingKnown,
-    calls: records.length,
+    calls: agents.reduce((sum, a) => sum + a.calls, 0),
+    toolCalls: totalToolCalls,
+    toolPricingKnown,
     totalInputTokens,
     totalOutputTokens,
     totalTokens: totalInputTokens + totalOutputTokens,
     totalInputCost: round8(totalInputCost),
     totalOutputCost: round8(totalOutputCost),
     totalCost: round8(totalCost),
+    totalToolCost: toolPricingKnown ? round8(totalToolCost) : null,
+    grandTotal: pricingKnown && toolPricingKnown ? round8(totalCost + totalToolCost) : null,
     totalDurationMs,
     agents,
     mostExpensiveAgent: mostExpensive
@@ -234,6 +318,10 @@ export function buildAnalyticsSummary(runs = []) {
   let totalCost = 0;
   let costRuns = 0;
   let unknownCostRuns = 0;
+  let totalToolCalls = 0;
+  let totalToolCost = 0;
+  let grandRuns = 0;
+  let grandTotalAll = 0;
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   const agentTotals = new Map();
@@ -242,6 +330,8 @@ export function buildAnalyticsSummary(runs = []) {
     const c = run.cost;
     totalInputTokens += c.totalInputTokens || 0;
     totalOutputTokens += c.totalOutputTokens || 0;
+    totalToolCalls += c.toolCalls || 0;
+    if (c.totalToolCost != null) totalToolCost += c.totalToolCost;
 
     const completed = run.status === "approved" || run.status === "completed";
     if (completed && c.totalCost != null) {
@@ -251,6 +341,15 @@ export function buildAnalyticsSummary(runs = []) {
       unknownCostRuns += 1;
     }
 
+    // Grand total (LLM + tool/API) — the real "what did this run cost" number.
+    const grand = c.grandTotal ?? (c.totalCost != null && c.totalToolCost != null
+      ? c.totalCost + c.totalToolCost
+      : null);
+    if (completed && grand != null) {
+      grandTotalAll += grand;
+      grandRuns += 1;
+    }
+
     for (const agent of c.agents || []) {
       const key = agent.agentId || "unknown";
       if (!agentTotals.has(key)) {
@@ -258,17 +357,23 @@ export function buildAnalyticsSummary(runs = []) {
           agentId: key,
           agentName: agent.agentName || key,
           calls: 0,
+          toolCalls: 0,
           totalTokens: 0,
           totalCost: 0,
-          pricingKnown: true
+          toolCost: 0,
+          pricingKnown: true,
+          toolPricingKnown: true
         });
       }
       const a = agentTotals.get(key);
       if (agent.agentName) a.agentName = agent.agentName;
       a.calls += agent.calls || 0;
+      a.toolCalls += agent.toolCalls || 0;
       a.totalTokens += agent.totalTokens || 0;
       if (agent.totalCost != null) a.totalCost += agent.totalCost;
       else a.pricingKnown = false;
+      if (agent.toolCost != null) a.toolCost += agent.toolCost;
+      else if ((agent.toolCalls || 0) > 0) a.toolPricingKnown = false;
     }
   }
 
@@ -279,7 +384,10 @@ export function buildAnalyticsSummary(runs = []) {
       sharePct:
         totalCost > 0 && a.pricingKnown
           ? Number(((a.totalCost / totalCost) * 100).toFixed(1))
-          : null
+          : null,
+      toolCost: a.toolPricingKnown ? round8(a.toolCost) : null,
+      grandTotal:
+        a.pricingKnown && a.toolPricingKnown ? round8(a.totalCost + a.toolCost) : null
     }))
     .sort((a, b) => (b.totalCost || 0) - (a.totalCost || 0));
 
@@ -293,10 +401,15 @@ export function buildAnalyticsSummary(runs = []) {
       runsCountedForAverage: costRuns,
       runsWithUnknownPricing: unknownCostRuns,
       totalCost: round8(totalCost),
+      totalToolCalls,
+      totalToolCost: round8(totalToolCost),
+      grandTotal: round8(totalCost + totalToolCost),
       totalInputTokens,
       totalOutputTokens,
       totalTokens: totalInputTokens + totalOutputTokens,
       avgCostPerRun: costRuns > 0 ? round8(totalCost / costRuns) : 0,
+      // LLM + tool/API combined — what a pipeline really costs on average.
+      avgGrandCostPerRun: grandRuns > 0 ? round8(grandTotalAll / grandRuns) : 0,
       mostExpensiveAgent: mostExpensiveAgent
         ? {
             agentId: mostExpensiveAgent.agentId,

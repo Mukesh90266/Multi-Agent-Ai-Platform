@@ -8,7 +8,8 @@ function AgentCostTable({ agents }) {
           <th>Agent</th>
           <th>LLM Calls</th>
           <th>Tokens</th>
-          <th>Cost</th>
+          <th>LLM $</th>
+          <th>API/Tools</th>
           <th>Share</th>
         </tr>
       </thead>
@@ -24,6 +25,15 @@ function AgentCostTable({ agents }) {
             <td>
               {formatUsd(agent.totalCost)}
               {!agent.pricingKnown && <span className="cost-star">*</span>}
+            </td>
+            <td>
+              {agent.toolCalls > 0 ? (
+                <span className="cost-tool-cell" title={(agent.toolsUsed || []).join(", ")}>
+                  {agent.toolCalls}× · {formatUsd(agent.toolCost)}
+                </span>
+              ) : (
+                "—"
+              )}
             </td>
             <td>
               {agent.sharePct != null ? (
@@ -77,17 +87,23 @@ export default function CostAnalyticsSection({ analytics, mode = "summary" }) {
           {/* Overall strip — totals across runs (read-only summary) */}
           <div className="cost-stat-cards">
             <div className="cost-stat-card">
-              <span className="cost-stat-value">{formatUsd(summary.totalCost)}</span>
-              <span className="cost-stat-label">Total LLM cost</span>
+              <span className="cost-stat-value">{formatUsd(summary.grandTotal ?? summary.totalCost)}</span>
+              <span className="cost-stat-label">
+                Total spend{summary.totalToolCalls > 0
+                  ? ` (LLM ${formatUsd(summary.totalCost)} + tools ${formatUsd(summary.totalToolCost)})`
+                  : ""}
+              </span>
             </div>
             <div className="cost-stat-card">
               <span className="cost-stat-value">{formatTokens(summary.totalTokens)}</span>
               <span className="cost-stat-label">Total tokens</span>
             </div>
             <div className="cost-stat-card">
-              <span className="cost-stat-value">{formatUsd(summary.avgCostPerRun)}</span>
+              <span className="cost-stat-value">
+                {formatUsd(summary.avgGrandCostPerRun ?? summary.avgCostPerRun)}
+              </span>
               <span className="cost-stat-label">
-                Avg / run ({summary.runsCountedForAverage} completed)
+                Avg / run, LLM+tools ({summary.runsCountedForAverage} completed)
               </span>
             </div>
             <div className="cost-stat-card">
@@ -119,8 +135,12 @@ export default function CostAnalyticsSection({ analytics, mode = "summary" }) {
                     <div className="cost-run-meta">
                       <span className={`cost-status ${run.status}`}>{run.status || "—"}</span>
                       <span className="cost-run-chip">
-                        {formatUsd(cost.totalCost)} · {formatTokens(cost.totalTokens)} tokens ·{" "}
-                        {cost.calls || 0} call{cost.calls === 1 ? "" : "s"}
+                        {formatUsd(cost.grandTotal ?? cost.totalCost)}
+                        {" · "}{formatTokens(cost.totalTokens)} tokens
+                        {" · "}{cost.calls || 0} LLM call{cost.calls === 1 ? "" : "s"}
+                        {cost.toolCalls > 0 && (
+                          <> · {cost.toolCalls} tool call{cost.toolCalls === 1 ? "" : "s"} {formatUsd(cost.totalToolCost)}</>
+                        )}
                       </span>
                     </div>
                   </div>

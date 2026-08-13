@@ -55,6 +55,15 @@ export default function CostPanel({ result, loading }) {
               <div><strong>{formatTokens(cost.totalTokens)}</strong> tokens</div>
               <div>{formatTokens(cost.totalInputTokens)} in / {formatTokens(cost.totalOutputTokens)} out</div>
               <div>{cost.calls} LLM call{cost.calls === 1 ? "" : "s"}</div>
+              {cost.toolCalls > 0 && (
+                <div>
+                  <strong>{cost.toolCalls}</strong> tool/API call{cost.toolCalls === 1 ? "" : "s"}
+                  {cost.totalToolCost != null ? ` · ${formatUsd(cost.totalToolCost)}` : ""}
+                </div>
+              )}
+              {cost.grandTotal != null && cost.toolCalls > 0 && (
+                <div><strong>Grand total: {formatUsd(cost.grandTotal)}</strong> (LLM + tools)</div>
+              )}
               <div>{((cost.totalDurationMs || 0) / 1000).toFixed(1)}s LLM time</div>
             </div>
           </div>
@@ -72,7 +81,8 @@ export default function CostPanel({ result, loading }) {
               <tr>
                 <th>Agent</th>
                 <th>Tokens</th>
-                <th>Cost</th>
+                <th>LLM $</th>
+                <th>API/Tools</th>
                 <th>Share</th>
               </tr>
             </thead>
@@ -90,6 +100,18 @@ export default function CostPanel({ result, loading }) {
                   <td>
                     {formatUsd(agent.totalCost)}
                     {!agent.pricingKnown && <span className="cost-star">*</span>}
+                  </td>
+                  <td>
+                    {agent.toolCalls > 0 ? (
+                      <span
+                        className="cost-tool-cell"
+                        title={(agent.toolsUsed || []).join(", ")}
+                      >
+                        {agent.toolCalls}× · {formatUsd(agent.toolCost)}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td>
                     {agent.sharePct != null ? (

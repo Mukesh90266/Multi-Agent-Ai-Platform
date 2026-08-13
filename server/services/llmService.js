@@ -213,10 +213,11 @@ function captureUsage(response, startedMs) {
     const model = response?.model || config.model;
     if (!usage) {
       // Provider omitted usage metadata — record the call, flag tokens unknown.
-      recordUsage({ model, usageKnown: false, durationMs: Date.now() - startedMs });
+      recordUsage({ kind: "llm", model, usageKnown: false, durationMs: Date.now() - startedMs });
       return;
     }
     recordUsage({
+      kind: "llm",
       model,
       inputTokens: usage.prompt_tokens ?? null,
       outputTokens: usage.completion_tokens ?? null,
