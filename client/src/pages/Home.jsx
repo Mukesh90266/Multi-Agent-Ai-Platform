@@ -9,6 +9,7 @@ import PipelineBuilder from "../components/Agents/PipelineBuilder";
 import { RunMetaStrip } from "../components/PipelineGraph/PipelineGraph";
 import PipelineGraphEditor from "../components/PipelineGraph/PipelineGraphEditor";
 import CostPanel from "../components/Cost/CostPanel";
+import CostDashboard from "./CostDashboard";
 import History from "./History";
 import { createAgent, deleteAgent, getAgents, getPipelineStatus, getTools, runPipeline } from "../services/api.js";
 
@@ -687,6 +688,10 @@ export default function Home({ section = "run" }) {
 
   if (section === "history") {
     return <History />;
+  }
+
+  if (section === "cost") {
+    return <CostDashboard />;
   }
 
   if (section === "agents") {

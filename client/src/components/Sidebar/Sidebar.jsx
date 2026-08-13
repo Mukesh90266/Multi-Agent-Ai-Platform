@@ -40,11 +40,20 @@ const ClockIcon = () => (
   </svg>
 );
 
+const CoinIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M14.5 9.5c-.5-.96-1.45-1.5-2.5-1.5-1.38 0-2.5.9-2.5 2s1 1.75 2.5 2c1.5.25 2.5 1 2.5 2s-1.12 2-2.5 2c-1.05 0-2-.54-2.5-1.5" />
+    <line x1="12" y1="6.5" x2="12" y2="17.5" />
+  </svg>
+);
+
 const NAV_ITEMS = [
   { id: "run", label: "Run Pipeline", Icon: PlayIcon },
   { id: "agents", label: "Agent Library", Icon: BoxIcon },
   { id: "builder", label: "Agent Builder", Icon: WrenchIcon },
   { id: "pipeline", label: "Pipeline Builder", Icon: LayersIcon },
+  { id: "cost", label: "Cost Analytics", Icon: CoinIcon },
   { id: "history", label: "History", Icon: ClockIcon }
 ];
 
