@@ -103,7 +103,7 @@ export default function CostAnalyticsSection({ analytics, mode = "summary" }) {
                 {formatUsd(summary.avgGrandCostPerRun ?? summary.avgCostPerRun)}
               </span>
               <span className="cost-stat-label">
-                Avg / run, LLM+tools ({summary.runsCountedForAverage} completed)
+                Avg / run, LLM+tools ({summary.runsCountedForGrandAverage ?? summary.runsCountedForAverage} completed)
               </span>
             </div>
             <div className="cost-stat-card">
@@ -158,8 +158,10 @@ export default function CostAnalyticsSection({ analytics, mode = "summary" }) {
               );
             })}
 
-          {(summary.runsWithoutCost > 0 || summary.runsWithUnknownPricing > 0) && (
+          {(summary.runsWithoutCost > 0 || summary.runsWithUnknownPricing > 0 || summary.runsWithUntrackedToolCost > 0) && (
             <p className="cost-note">
+              {summary.runsWithUntrackedToolCost > 0 &&
+                `${summary.runsWithUntrackedToolCost} older run(s) were saved before tool/API cost tracking — their tool spend is counted as $0 in totals & averages. `}
               {summary.runsWithoutCost > 0 &&
                 `${summary.runsWithoutCost} run(s) have no cost data (demo runs or recorded before tracking). `}
               {summary.runsWithUnknownPricing > 0 &&

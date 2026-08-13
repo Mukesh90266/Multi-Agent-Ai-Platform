@@ -200,8 +200,10 @@ askLLM() ──► provider response.usage ──► per-step usage scope (Async
 - `GET /api/history/cost-analytics` → `{ summary, agentBreakdown, recentRuns }`:
   total cost/tokens, agent-wise cost + share %, most expensive agent, and the
   average cost per run. The average counts only completed/approved runs with
-  known pricing (divide-by-zero safe). Falls back to in-memory session data
-  when MongoDB is not connected.
+  known pricing (divide-by-zero safe). The LLM+tools average covers every such
+  completed run; runs saved before tool-cost tracking contribute their tool
+  spend as $0 and are flagged via `runsWithUntrackedToolCost`. Falls back to
+  in-memory session data when MongoDB is not connected.
 
 ## API Endpoints
 

@@ -316,12 +316,14 @@ export function buildAnalyticsSummary(runs = []) {
   const withoutCost = runs.length - withUsage.length;
 
   let totalCost = 0;
+  let avgLlmSum = 0;
   let costRuns = 0;
   let unknownCostRuns = 0;
   let totalToolCalls = 0;
   let totalToolCost = 0;
   let grandRuns = 0;
   let grandTotalAll = 0;
+  let untrackedToolRuns = 0;
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   const agentTotals = new Map();
@@ -331,23 +333,35 @@ export function buildAnalyticsSummary(runs = []) {
     totalInputTokens += c.totalInputTokens || 0;
     totalOutputTokens += c.totalOutputTokens || 0;
     totalToolCalls += c.toolCalls || 0;
+
+    const llmKnown = c.totalCost != null;
+    if (llmKnown) totalCost += c.totalCost;
     if (c.totalToolCost != null) totalToolCost += c.totalToolCost;
 
-    const completed = run.status === "approved" || run.status === "completed";
-    if (completed && c.totalCost != null) {
-      totalCost += c.totalCost;
-      costRuns += 1;
-    } else if (c.totalCost == null) {
-      unknownCostRuns += 1;
-    }
-
     // Grand total (LLM + tool/API) — the real "what did this run cost" number.
-    const grand = c.grandTotal ?? (c.totalCost != null && c.totalToolCost != null
+    const grand = c.grandTotal ?? (llmKnown && c.totalToolCost != null
       ? c.totalCost + c.totalToolCost
       : null);
-    if (completed && grand != null) {
-      grandTotalAll += grand;
+
+    // Averages count ONLY completed/approved runs with known pricing (spec §10).
+    // The LLM+tools average covers EVERY such completed run. Runs saved before
+    // tool-cost tracking have NO tool fields stored at all — their tool spend is
+    // counted as $0 (most built-in search providers are free) and flagged via
+    // runsWithUntrackedToolCost, instead of silently dropping out of the
+    // average while the label still counted them.
+    const completed = run.status === "approved" || run.status === "completed";
+    if (completed && llmKnown) {
+      avgLlmSum += c.totalCost;
+      costRuns += 1;
+      if (grand != null) {
+        grandTotalAll += grand;
+      } else {
+        grandTotalAll += c.totalCost; // tool spend untracked → assumed $0
+        untrackedToolRuns += 1;
+      }
       grandRuns += 1;
+    } else if (!llmKnown) {
+      unknownCostRuns += 1;
     }
 
     for (const agent of c.agents || []) {
@@ -399,6 +413,8 @@ export function buildAnalyticsSummary(runs = []) {
       runsWithUsage: withUsage.length,
       runsWithoutCost: withoutCost,
       runsCountedForAverage: costRuns,
+      runsCountedForGrandAverage: grandRuns,
+      runsWithUntrackedToolCost: untrackedToolRuns,
       runsWithUnknownPricing: unknownCostRuns,
       totalCost: round8(totalCost),
       totalToolCalls,
@@ -407,7 +423,7 @@ export function buildAnalyticsSummary(runs = []) {
       totalInputTokens,
       totalOutputTokens,
       totalTokens: totalInputTokens + totalOutputTokens,
-      avgCostPerRun: costRuns > 0 ? round8(totalCost / costRuns) : 0,
+      avgCostPerRun: costRuns > 0 ? round8(avgLlmSum / costRuns) : 0,
       // LLM + tool/API combined — what a pipeline really costs on average.
       avgGrandCostPerRun: grandRuns > 0 ? round8(grandTotalAll / grandRuns) : 0,
       mostExpensiveAgent: mostExpensiveAgent
