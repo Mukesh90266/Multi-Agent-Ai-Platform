@@ -65,8 +65,8 @@ export function calculateCost(model, inputTokens, outputTokens) {
 export const TOOL_PRICING = {
   web_search: {
     default: 0,
-    serper: 0.001, // ~$1 per 1,000 queries
-    brave: 0.005, // paid tier ~$5 per 1,000 queries (free tier? set 0 via env)
+    serper: 0.001, // $1.00 per 1,000 (Starter) — verified 2026-08-13 on serper.dev
+    brave: 0.005, // $5.00 per 1,000 Search plan — verified 2026-08-13 (Brave includes $5 free credit monthly)
     duckduckgo_instant: 0,
     duckduckgo_html: 0,
     wikipedia: 0,

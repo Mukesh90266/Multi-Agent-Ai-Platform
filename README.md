@@ -159,6 +159,21 @@ Open `http://localhost:5173`.
 Every LLM call made during a pipeline run is tracked automatically (token usage,
 per-agent cost, whole-run cost) — without changing any agent behavior.
 
+**Rates** (verified against official pricing pages on 2026-08-13):
+
+| Provider | Rate | Source |
+| --- | --- | --- |
+| Groq `llama-3.3-70b-versatile` | $0.59 in / $0.79 out per 1M tokens | groq.com pricing |
+| Groq `llama-3.1-8b-instant` | $0.05 / $0.08 per 1M tokens | groq.com pricing |
+| `web_search` via Serper | $0.001/query (Starter $1/1k) | serper.dev |
+| `web_search` via Brave | $0.005/query (Search plan $5/1k) | brave.com/search/api |
+| `web_search` via DuckDuckGo/Wikipedia | free | — |
+
+Notes: Serper offers volume discounts ($0.75–$0.30 per 1k) and Brave includes
+$5 free credit every month (~1,000 queries) — within free-credit usage the
+dashboard overestimates slightly. Adjust any rate via `LLM_PRICING_OVERRIDES`
+/ `TOOL_PRICING_OVERRIDES` in `server/.env` without touching code.
+
 **How it works**
 
 ```
