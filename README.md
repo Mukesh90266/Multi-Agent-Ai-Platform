@@ -142,6 +142,40 @@ Each agent receives a shared pipeline context containing:
 
 Custom agents do **not** depend on Researcher, Writer, or Editor. They execute according to their saved role, personality, and system prompt.
 
+## Reusable pipeline templates
+
+Any configured pipeline can be saved as a **named template** and reused later
+with a different user input.
+
+- **Save** — the Run Pipeline page has a **Save as Template** button next to
+  Run. It captures the complete pipeline configuration: agent ids and order,
+  dependency connections (root nodes are stored as explicitly independent, so
+  parallel branches stay parallel), and every custom agent's role,
+  personality, system prompt, tools, `requires`/`produces` and id.
+- **Template Library** — a dedicated page lists every saved template with its
+  name, description, agent count, connection count and created/updated dates,
+  with Use Template / Delete actions.
+- **Use Template** — loads the saved configuration into the shared pipeline
+  builder (same graph, same edges). Custom agents that were deleted since the
+  template was saved are restored from the stored configuration; templates
+  whose agents are unrecoverable are rejected with a clear message. After
+  loading, enter any new topic and run — execution goes through the **same**
+  `POST /api/pipeline/run` → `buildRunnablePipeline()` → `runPipeline()` path
+  used by every other run, including dependency-aware parallel execution, the
+  default Writer ↔ Editor loop (stored via `templateId`), tool calling, live
+  output and cost tracking.
+- **Storage** — templates persist in `server/data/pipelineTemplates.json`
+  (same file-based pattern as custom agents), so they survive restarts and
+  page reloads without any database.
+
+```text
+Template
+   ↓  load saved configuration (agentIds + dependencies + agentConfigs)
+Build runnable pipeline  (existing buildRunnablePipeline())
+   ↓
+Existing runPipeline()  →  agents execute  →  live status / output / cost
+```
+
 ## Setup
 
 ```bash
@@ -228,6 +262,58 @@ Create a custom agent.
 #### GET `/api/tools`
 
 Returns the tool registry (id, name, description, parameters) used by Agent Builder and the executor.
+
+### Templates
+
+#### GET `/api/templates`
+
+Lists saved pipeline templates, newest updated first. Each template stores the
+full runnable pipeline configuration (the exact payload `POST /api/pipeline/run`
+accepts) plus `templateId`, `name`, `description`, `createdAt` and `updatedAt`.
+
+#### POST `/api/templates`
+
+Save the current pipeline configuration as a template. Duplicate names are
+allowed (ids are unique). Invalid names, empty pipelines and unknown built-in
+template ids are rejected with a 400.
+
+```json
+{
+  "name": "Market Analysis Pipeline",
+  "description": "Parallel analysts feeding a strategy agent",
+  "pipeline": {
+    "agentIds": ["custom-customer-analyst", "custom-competitor-analyst", "custom-pricing-analyst", "custom-strategy-agent"],
+    "dependencies": {
+      "custom-customer-analyst": [],
+      "custom-competitor-analyst": [],
+      "custom-pricing-analyst": [],
+      "custom-strategy-agent": ["custom-customer-analyst", "custom-competitor-analyst", "custom-pricing-analyst"]
+    },
+    "agentConfigs": [
+      { "id": "custom-competitor-analyst", "type": "custom", "name": "Competitor Analyst",
+        "role": "Maps competitors", "personality": "Skeptical",
+        "systemPrompt": "Analyze the original input independently.", "tools": ["web_search"] }
+    ]
+  }
+}
+```
+
+To reuse a template, send its stored `pipeline` object as the `pipeline` field
+of `POST /api/pipeline/run` with a new topic.
+
+#### GET `/api/templates/:templateId`
+
+Returns one template; 404 when it does not exist.
+
+#### PUT `/api/templates/:templateId`
+
+Replaces a template's name, description and pipeline in place (keeps
+`templateId`/`createdAt`, bumps `updatedAt`). 404 when missing.
+
+#### DELETE `/api/templates/:templateId`
+
+Deletes a template. Deleting a template that does not exist returns
+`deleted: false` instead of an error.
 
 ### Pipelines
 

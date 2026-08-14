@@ -5,3 +5,4 @@ client/.env
 server/logs/iterationLogs.json
 server/output/finalOutput.json
 server/data/customAgents.json
+server/data/pipelineTemplates.json
