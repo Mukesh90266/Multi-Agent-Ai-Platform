@@ -151,15 +151,19 @@ with a different user input.
   Run. It captures the complete pipeline configuration: agent ids and order,
   dependency connections (root nodes are stored as explicitly independent, so
   parallel branches stay parallel), and every custom agent's role,
-  personality, system prompt, tools, `requires`/`produces` and id.
+  personality, system prompt, tools, `requires`/`produces` and id. Connections
+  drawn on the default Researcher → Writer → Editor pipeline are preserved too
+  (the built-in review loop stays attached via `templateId`).
 - **Template Library** — a dedicated page lists every saved template with its
   name, description, agent count, connection count and created/updated dates,
   with Use Template / Delete actions.
 - **Use Template** — loads the saved configuration into the shared pipeline
   builder (same graph, same edges). Custom agents that were deleted since the
   template was saved are restored from the stored configuration; templates
-  whose agents are unrecoverable are rejected with a clear message. After
-  loading, enter any new topic and run — execution goes through the **same**
+  whose agents are unrecoverable are rejected with a clear message. Default
+  templates saved without explicit connections restore the canonical
+  Researcher → Writer → Editor edges. After loading, enter any new topic and
+  run — execution goes through the **same**
   `POST /api/pipeline/run` → `buildRunnablePipeline()` → `runPipeline()` path
   used by every other run, including dependency-aware parallel execution, the
   default Writer ↔ Editor loop (stored via `templateId`), tool calling, live

@@ -42,12 +42,18 @@ function templateAgentCount(template) {
 }
 
 function templateConnectionCount(template) {
-  const dependencies = template?.pipeline?.dependencies;
-  if (!dependencies || typeof dependencies !== "object") return 0;
-  return Object.values(dependencies).reduce(
-    (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
-    0
-  );
+  const pipeline = template?.pipeline || {};
+  const dependencies = pipeline.dependencies;
+  if (dependencies && typeof dependencies === "object") {
+    return Object.values(dependencies).reduce(
+      (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
+      0
+    );
+  }
+  // Default pipeline templates saved without explicit connections still
+  // represent Researcher → Writer → Editor (2 connections).
+  if (pipeline.templateId === "default-rwe") return 2;
+  return 0;
 }
 
 function templateAgentLabels(template) {

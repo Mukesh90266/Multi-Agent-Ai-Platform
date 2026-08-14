@@ -12,6 +12,12 @@ import CostPanel from "../components/Cost/CostPanel";
 import CostDashboard from "./CostDashboard";
 import History from "./History";
 import { createAgent, createTemplate, deleteAgent, deleteTemplate, getAgents, getPipelineStatus, getTemplates, getTools, runPipeline } from "../services/api.js";
+import {
+  buildDependenciesPayload,
+  markIndependentRoots,
+  resolveTemplateEdges,
+  templateAgentIds
+} from "../utils/templateGraph.js";
 import TemplateLibrary from "../components/Templates/TemplateLibrary";
 import SaveTemplateDialog from "../components/Templates/SaveTemplateDialog";
 
@@ -264,75 +270,6 @@ function orderStepsByEdges(steps, edges) {
 
   // Cycle protection: keep the manual order (server would warn/fallback too).
   return ordered.length === steps.length ? ordered : steps;
-}
-
-function buildDependenciesPayload(steps, edges) {
-  const agentByClientId = new Map(steps.map((step) => [step.clientId, step.agentId]));
-  const dependencies = {};
-
-  for (const edge of edges) {
-    const toAgent = agentByClientId.get(edge.to);
-    const fromAgent = agentByClientId.get(edge.from);
-    if (!toAgent || !fromAgent) continue;
-    if (!dependencies[toAgent]) dependencies[toAgent] = [];
-    if (!dependencies[toAgent].includes(fromAgent)) dependencies[toAgent].push(fromAgent);
-  }
-
-  return dependencies;
-}
-
-/**
- * Rebuild graph edges from a template's saved `dependencies` map.
- * References resolve the same way the server does: an exact stepId
- * ("agentId__2" for duplicates) first, then the first step with that
- * agent id. Entries like { agent: [] } (independent roots) produce no
- * edges — their parallel freedom is restored at payload build time.
- */
-function restoreEdgesFromDependencies(steps, dependencies) {
-  if (!dependencies || typeof dependencies !== "object") return [];
-
-  const counts = steps.reduce((map, step) => {
-    map.set(step.agentId, (map.get(step.agentId) || 0) + 1);
-    return map;
-  }, new Map());
-
-  const stepIdByIndex = steps.map((step, index) =>
-    (counts.get(step.agentId) || 1) > 1 ? `${step.agentId}__${index + 1}` : step.agentId
-  );
-
-  const stepByRef = new Map();
-  steps.forEach((step, index) => {
-    const stepId = stepIdByIndex[index];
-    if (!stepByRef.has(stepId)) stepByRef.set(stepId, step);
-    if (!stepByRef.has(step.agentId)) stepByRef.set(step.agentId, step);
-  });
-
-  const edges = [];
-  for (const [toRef, fromRefs] of Object.entries(dependencies)) {
-    const toStep = stepByRef.get(toRef);
-    if (!toStep || !Array.isArray(fromRefs)) continue;
-    for (const fromRef of fromRefs) {
-      const fromStep = stepByRef.get(fromRef);
-      if (!fromStep || fromStep.clientId === toStep.clientId) continue;
-      edges.push({
-        id: `${fromStep.clientId}->${toStep.clientId}`,
-        from: fromStep.clientId,
-        to: toStep.clientId
-      });
-    }
-  }
-
-  return edges;
-}
-
-/** Agent ids stored in a template — explicit list, or the default trio. */
-function templateAgentIds(template) {
-  const pipeline = template?.pipeline || {};
-  if (Array.isArray(pipeline.agentIds) && pipeline.agentIds.length) {
-    return pipeline.agentIds;
-  }
-  if (pipeline.templateId === "default-rwe") return [...DEFAULT_AGENT_IDS];
-  return [];
 }
 
 function createWaitingStatus(steps) {
@@ -662,32 +599,21 @@ export default function Home({ section = "run", onNavigate = null }) {
    * run path (POST /api/pipeline/run → buildRunnablePipeline → runPipeline).
    */
   const buildPipelinePayload = useCallback(() => {
+    // Explicit dependency connections drawn on the graph. Template-loaded
+    // graphs also mark their root nodes (no incoming connections) as
+    // independent so the restored structure keeps its parallel behavior.
+    const dependencies = rootsAreIndependentRef.current
+      ? markIndependentRoots(effectiveSteps, validGraphEdges, graphDependencies)
+      : { ...graphDependencies };
+
     if (isDefaultPipeline) {
-      // Default Researcher → Writer → Editor with its review loop.
-      return { templateId: "default-rwe" };
-    }
-
-    const dependencies = { ...graphDependencies };
-
-    // Template-loaded graphs: nodes with no incoming connections are roots
-    // and are explicitly marked independent (dependencies: { agent: [] }).
-    // Without this, the server's conservative scheduler chains them
-    // sequentially and the saved parallel structure would be lost.
-    if (rootsAreIndependentRef.current) {
-      const indegree = new Map(effectiveSteps.map((step) => [step.clientId, 0]));
-      for (const edge of validGraphEdges) {
-        if (indegree.has(edge.to)) indegree.set(edge.to, indegree.get(edge.to) + 1);
-      }
-      const agentByClientId = new Map(
-        effectiveSteps.map((step) => [step.clientId, step.agentId])
-      );
-      for (const [clientId, degree] of indegree) {
-        if (degree !== 0) continue;
-        const agentId = agentByClientId.get(clientId);
-        if (agentId && dependencies[agentId] === undefined) {
-          dependencies[agentId] = [];
-        }
-      }
+      // Default Researcher → Writer → Editor keeps its built-in review loop
+      // via templateId — AND preserves any explicitly drawn connections
+      // (e.g. Researcher → Writer → Editor) so saved templates restore the
+      // exact graph the user built.
+      return Object.keys(dependencies).length
+        ? { templateId: "default-rwe", agentIds: effectiveAgentIds, dependencies }
+        : { templateId: "default-rwe" };
     }
 
     return {
@@ -884,10 +810,12 @@ export default function Home({ section = "run", onNavigate = null }) {
     resetDisplayedRun();
 
     // Restore the exact pipeline: same agents, same order, same connection
-    // graph (parallel branches stay parallel).
+    // graph (parallel branches stay parallel). Default templates saved
+    // without explicit connections fall back to the canonical
+    // Researcher → Writer → Editor edges.
     const steps = makeStepsFromIds(agentIds);
     setSelectedSteps(steps);
-    setGraphEdges(restoreEdgesFromDependencies(steps, pipeline.dependencies));
+    setGraphEdges(resolveTemplateEdges(template, steps));
     rootsAreIndependentRef.current = true;
     setActiveTemplateId(pipeline.templateId === "default-rwe" ? "default-rwe" : null);
 
