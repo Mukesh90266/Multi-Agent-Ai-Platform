@@ -53,6 +53,7 @@ const NAV_ITEMS = [
   { id: "agents", label: "Agent Library", Icon: BoxIcon },
   { id: "builder", label: "Agent Builder", Icon: WrenchIcon },
   { id: "pipeline", label: "Pipeline Builder", Icon: LayersIcon },
+  { id: "templates", label: "Template Library", Icon: LayersIcon },
   { id: "cost", label: "Cost Analytics", Icon: CoinIcon },
   { id: "history", label: "History", Icon: ClockIcon }
 ];

@@ -1,6 +1,6 @@
 const MAX_PIPELINE_INPUT_LENGTH = 20000;
 
-function validatePipelineRequest(body = {}) {
+export function validatePipelineRequest(body = {}) {
   const pipelineBody = body.pipeline && typeof body.pipeline === "object" ? body.pipeline : {};
   const rawAgentIds = Array.isArray(pipelineBody.agentIds)
     ? pipelineBody.agentIds

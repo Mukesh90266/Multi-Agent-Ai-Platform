@@ -4154,3 +4154,382 @@ body {
   font-size: 11.5px;
   color: #6b7280;
 }
+
+/* ── Reusable Pipeline Templates ─────────────────────────────────── */
+
+/* Run + Save as Template button row */
+.run-actions-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.run-actions-row .run-button {
+  flex: 1;
+  min-width: 200px;
+  width: auto;
+}
+
+.run-button.secondary {
+  background: #ffffff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.run-button.secondary:hover:not(:disabled) {
+  background: #eef2ff;
+  border-color: #a5b4fc;
+}
+
+.run-button.secondary:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+}
+
+.template-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.template-notice-close {
+  background: none;
+  border: none;
+  color: #047857;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.template-notice-close:hover {
+  background: rgba(4, 120, 87, 0.08);
+}
+
+/* Template Library */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.template-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.template-card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.07);
+}
+
+.template-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.template-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.template-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.template-card-titles {
+  min-width: 0;
+}
+
+.template-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.template-card-id {
+  font-size: 11px;
+  color: #9ca3af;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.template-card-desc {
+  font-size: 12.5px;
+  color: #4b5563;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.template-card-agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.template-agent-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 999px;
+  padding: 2px 9px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.template-meta-dot {
+  color: #d1d5db;
+}
+
+.template-card-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.template-card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.template-use-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  border: none;
+  border-radius: 8px;
+  background: #6366f1;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.template-use-btn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.template-use-btn:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+}
+
+.template-use-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.template-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #b91c1c;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.template-delete-btn:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.template-delete-btn:disabled {
+  color: #fca5a5;
+  border-color: #fee2e2;
+  cursor: not-allowed;
+}
+
+.template-delete-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.template-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 60px 24px;
+}
+
+.template-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #eef2ff;
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.template-empty-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.template-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.template-empty-text {
+  max-width: 460px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Save as Template dialog */
+.save-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.save-dialog {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(17, 24, 39, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.save-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.save-dialog-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.save-dialog-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.save-dialog-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.save-dialog-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+.save-dialog-optional {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.save-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.save-dialog-cancel {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save-dialog-cancel:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.save-dialog-cancel:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.save-dialog-submit {
+  flex: 0 0 auto;
+  padding: 0 16px;
+}

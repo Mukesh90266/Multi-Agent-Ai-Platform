@@ -13,7 +13,7 @@ export default function App() {
         {/* Home keeps ALL feature state (agents, pipeline selection, run,
             polling); `section` only changes WHAT is rendered where — no
             logic changes. State survives navigation (no remount). */}
-        <Home section={page} />
+        <Home section={page} onNavigate={setPage} />
       </main>
     </div>
   );

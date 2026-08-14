@@ -7,7 +7,15 @@ const SendIcon = () => (
   </svg>
 );
 
-export default function TopicInput({ onSubmit, disabled, selectedCount = 0, isDefaultPipeline = false }) {
+const LayersIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+    <polyline points="2 17 12 22 22 17" />
+    <polyline points="2 12 12 17 22 12" />
+  </svg>
+);
+
+export default function TopicInput({ onSubmit, onSaveTemplate, disabled, selectedCount = 0, isDefaultPipeline = false }) {
   const [form, setForm] = useState({
     topic: "",
     contentType: "Blog post",
@@ -105,10 +113,24 @@ export default function TopicInput({ onSubmit, disabled, selectedCount = 0, isDe
           </div>
         </div>
 
-        <button type="submit" className="run-button" disabled={disabled || form.topic.trim().length < 3 || selectedCount === 0}>
-          <SendIcon />
-          Run selected pipeline
-        </button>
+        <div className="run-actions-row">
+          <button type="submit" className="run-button" disabled={disabled || form.topic.trim().length < 3 || selectedCount === 0}>
+            <SendIcon />
+            Run selected pipeline
+          </button>
+          {onSaveTemplate && (
+            <button
+              type="button"
+              className="run-button secondary"
+              disabled={disabled || selectedCount === 0}
+              onClick={onSaveTemplate}
+              title="Save the current pipeline configuration as a reusable template"
+            >
+              <LayersIcon />
+              Save as Template
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

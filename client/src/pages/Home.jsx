@@ -11,7 +11,15 @@ import PipelineGraphEditor from "../components/PipelineGraph/PipelineGraphEditor
 import CostPanel from "../components/Cost/CostPanel";
 import CostDashboard from "./CostDashboard";
 import History from "./History";
-import { createAgent, deleteAgent, getAgents, getPipelineStatus, getTools, runPipeline } from "../services/api.js";
+import { createAgent, createTemplate, deleteAgent, deleteTemplate, getAgents, getPipelineStatus, getTemplates, getTools, runPipeline } from "../services/api.js";
+import {
+  buildDependenciesPayload,
+  markIndependentRoots,
+  resolveTemplateEdges,
+  templateAgentIds
+} from "../utils/templateGraph.js";
+import TemplateLibrary from "../components/Templates/TemplateLibrary";
+import SaveTemplateDialog from "../components/Templates/SaveTemplateDialog";
 
 const DEFAULT_AGENT_IDS = ["researcher", "writer", "editor"];
 const CUSTOM_AGENTS_STORAGE_KEY = "multi-agent-platform.customAgents";
@@ -264,21 +272,6 @@ function orderStepsByEdges(steps, edges) {
   return ordered.length === steps.length ? ordered : steps;
 }
 
-function buildDependenciesPayload(steps, edges) {
-  const agentByClientId = new Map(steps.map((step) => [step.clientId, step.agentId]));
-  const dependencies = {};
-
-  for (const edge of edges) {
-    const toAgent = agentByClientId.get(edge.to);
-    const fromAgent = agentByClientId.get(edge.from);
-    if (!toAgent || !fromAgent) continue;
-    if (!dependencies[toAgent]) dependencies[toAgent] = [];
-    if (!dependencies[toAgent].includes(fromAgent)) dependencies[toAgent].push(fromAgent);
-  }
-
-  return dependencies;
-}
-
 function createWaitingStatus(steps) {
   return steps.reduce((status, step) => {
     status[step.stepId] = "waiting";
@@ -286,7 +279,7 @@ function createWaitingStatus(steps) {
   }, {});
 }
 
-export default function Home({ section = "run" }) {
+export default function Home({ section = "run", onNavigate = null }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(null);
@@ -299,8 +292,21 @@ export default function Home({ section = "run" }) {
   const [activeTemplateId, setActiveTemplateId] = useState("default-rwe");
   const [agentStatus, setAgentStatus] = useState({});
 
+  const [templates, setTemplates] = useState(null);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesError, setTemplatesError] = useState(null);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateNotice, setTemplateNotice] = useState(null);
+
   const pollIntervalRef = useRef(null);
   const runIdRef = useRef(null);
+
+  // When a saved template is loaded, root nodes (no incoming connections) are
+  // explicitly marked independent in the run payload so the restored
+  // dependency graph keeps its parallel behavior. Ad-hoc sessions keep the
+  // pre-existing conservative behavior ("no edge → sequential") unchanged.
+  const rootsAreIndependentRef = useRef(false);
 
   const agentsById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
   const validGraphEdges = useMemo(() => {
@@ -323,6 +329,11 @@ export default function Home({ section = "run" }) {
   const effectiveAgentIds = useMemo(
     () => effectiveSteps.map((step) => step.agentId),
     [effectiveSteps]
+  );
+
+  const graphDependencies = useMemo(
+    () => buildDependenciesPayload(effectiveSteps, validGraphEdges),
+    [effectiveSteps, validGraphEdges]
   );
 
   const graphNodes = useMemo(
@@ -544,6 +555,7 @@ export default function Home({ section = "run" }) {
     resetDisplayedRun();
     setSelectedSteps(makeStepsFromIds(DEFAULT_AGENT_IDS));
     setGraphEdges([]);
+    rootsAreIndependentRef.current = false;
     setActiveTemplateId("default-rwe");
   };
 
@@ -575,6 +587,48 @@ export default function Home({ section = "run" }) {
     .map((step) => agentsById.get(step.agentId))
     .filter(isCustomAgent)
     .map((agent) => [agent.id, agent])).values());
+
+  const selectedCustomAgents = useMemo(
+    () => getSelectedCustomAgents(),
+    [agentsById, selectedSteps] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  /**
+   * The complete pipeline configuration for a run — and for a saved template.
+   * Templates store EXACTLY this payload, so loading one reuses the existing
+   * run path (POST /api/pipeline/run → buildRunnablePipeline → runPipeline).
+   */
+  const buildPipelinePayload = useCallback(() => {
+    // Explicit dependency connections drawn on the graph. Template-loaded
+    // graphs also mark their root nodes (no incoming connections) as
+    // independent so the restored structure keeps its parallel behavior.
+    const dependencies = rootsAreIndependentRef.current
+      ? markIndependentRoots(effectiveSteps, validGraphEdges, graphDependencies)
+      : { ...graphDependencies };
+
+    if (isDefaultPipeline) {
+      // Default Researcher → Writer → Editor keeps its built-in review loop
+      // via templateId — AND preserves any explicitly drawn connections
+      // (e.g. Researcher → Writer → Editor) so saved templates restore the
+      // exact graph the user built.
+      return Object.keys(dependencies).length
+        ? { templateId: "default-rwe", agentIds: effectiveAgentIds, dependencies }
+        : { templateId: "default-rwe" };
+    }
+
+    return {
+      agentIds: effectiveAgentIds,
+      ...(Object.keys(dependencies).length ? { dependencies } : {}),
+      agentConfigs: selectedCustomAgents
+    };
+  }, [
+    isDefaultPipeline,
+    graphDependencies,
+    effectiveSteps,
+    effectiveAgentIds,
+    validGraphEdges,
+    selectedCustomAgents
+  ]);
 
   const validateSelectedPipeline = () => {
     const missingSelectedAgents = selectedSteps.filter((step) => !agentsById.has(step.agentId));
@@ -611,23 +665,11 @@ export default function Home({ section = "run" }) {
     try {
       validateSelectedPipeline();
 
-      const selectedCustomAgents = getSelectedCustomAgents();
-
       if (!isDefaultPipeline) {
         await ensureSelectedCustomAgentsSynced();
       }
 
-      const graphDependencies = buildDependenciesPayload(effectiveSteps, validGraphEdges);
-
-      const pipelinePayload = isDefaultPipeline
-        ? { templateId: "default-rwe" }
-        : {
-            agentIds: effectiveAgentIds,
-            ...(Object.keys(graphDependencies).length
-              ? { dependencies: graphDependencies }
-              : {}),
-            agentConfigs: selectedCustomAgents
-          };
+      const pipelinePayload = buildPipelinePayload();
 
       const startRes = await runPipeline({ ...formData, pipeline: pipelinePayload });
 
@@ -680,6 +722,147 @@ export default function Home({ section = "run" }) {
   useEffect(() => {
     return () => clearPolling();
   }, [clearPolling]);
+
+  // ─────────────────────────────────────────────
+  // Template library (save / load / delete). Reuses the exact pipeline
+  // payload the run flow uses — no second execution system.
+  // ─────────────────────────────────────────────
+
+  const refreshTemplates = useCallback(async () => {
+    setTemplatesLoading(true);
+    setTemplatesError(null);
+    try {
+      const data = await getTemplates();
+      if (data.success) {
+        setTemplates(Array.isArray(data.templates) ? data.templates : []);
+      } else {
+        setTemplates([]);
+        setTemplatesError(data.message || "Could not load templates.");
+      }
+    } catch {
+      setTemplates([]);
+      setTemplatesError("Backend unavailable. Saved templates could not be loaded.");
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (section === "templates") refreshTemplates();
+  }, [section, refreshTemplates]);
+
+  const handleSaveTemplate = async ({ name, description }) => {
+    setSavingTemplate(true);
+    try {
+      validateSelectedPipeline();
+
+      // The template stores the full pipeline configuration: agent ids and
+      // order, explicit dependency connections (roots marked independent),
+      // and every custom agent's role, personality, system prompt, tools,
+      // requires/produces — enough to reproduce the run later.
+      const pipeline = buildPipelinePayload();
+      const data = await createTemplate({ name, description, pipeline });
+
+      if (!data.success || !data.template) {
+        throw new Error(data.message || "Could not save the template.");
+      }
+
+      setSaveDialogOpen(false);
+      setTemplates(null); // library reloads next time it is opened
+      setTemplateNotice(
+        `Template "${data.template.name}" saved — find it in the Template Library.`
+      );
+      return data.template;
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleUseTemplate = async (template) => {
+    const pipeline = template?.pipeline || {};
+    const storedConfigs = Array.isArray(pipeline.agentConfigs) ? pipeline.agentConfigs : [];
+    const agentIds = templateAgentIds(template);
+
+    if (!agentIds.length) {
+      setTemplatesError("This template has no agents and cannot be loaded.");
+      return;
+    }
+
+    // Graceful handling for agents deleted since the template was saved:
+    // built-ins always exist, stored configs can be restored, anything else
+    // is reported clearly instead of crashing.
+    const builtInIds = new Set(CLIENT_BUILT_IN_AGENTS.map((agent) => agent.id));
+    const storedConfigIds = new Set(storedConfigs.map((agent) => agent.id));
+    const missingAgents = agentIds.filter(
+      (agentId) =>
+        !builtInIds.has(agentId) &&
+        !agentsById.has(agentId) &&
+        !storedConfigIds.has(agentId)
+    );
+
+    if (missingAgents.length) {
+      setTemplatesError(
+        `Template "${template.name}" references agents that no longer exist and are not part of the template: ${missingAgents.join(", ")}. The template cannot be loaded.`
+      );
+      return;
+    }
+
+    resetDisplayedRun();
+
+    // Restore the exact pipeline: same agents, same order, same connection
+    // graph (parallel branches stay parallel). Default templates saved
+    // without explicit connections fall back to the canonical
+    // Researcher → Writer → Editor edges.
+    const steps = makeStepsFromIds(agentIds);
+    setSelectedSteps(steps);
+    setGraphEdges(resolveTemplateEdges(template, steps));
+    rootsAreIndependentRef.current = true;
+    setActiveTemplateId(pipeline.templateId === "default-rwe" ? "default-rwe" : null);
+
+    if (storedConfigs.length) {
+      // Restore saved agent configurations (role, personality, system prompt,
+      // tools) — including custom agents deleted from the library since the
+      // template was saved.
+      const restoredAgents = mergeAgents(agents, storedConfigs);
+      setAgents(restoredAgents);
+      savePersistedCustomAgents(restoredAgents.filter(isCustomAgent));
+
+      for (const config of storedConfigs) {
+        try {
+          await createAgent(config);
+        } catch {
+          // Kept locally either way; the run payload re-syncs them too.
+        }
+      }
+    }
+
+    setTemplatesError(null);
+    setTemplateNotice(
+      `Template "${template.name}" loaded — enter a new input and run the pipeline.`
+    );
+    onNavigate?.("run");
+  };
+
+  const handleDeleteTemplate = async (template) => {
+    const confirmed = window.confirm(
+      `Delete template "${template.name}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const data = await deleteTemplate(template.templateId);
+      if (!data.success) {
+        throw new Error(data.message || "Could not delete the template.");
+      }
+      setTemplates((prev) =>
+        prev ? prev.filter((entry) => entry.templateId !== template.templateId) : prev
+      );
+    } catch (error) {
+      setTemplatesError(
+        error.response?.data?.message || error.message || "Could not delete the template."
+      );
+    }
+  };
 
   // ─────────────────────────────────────────────
   // Section layouts (UI-only restructure).
@@ -788,6 +971,46 @@ export default function Home({ section = "run" }) {
     );
   }
 
+  if (section === "templates") {
+    return (
+      <div className="page page-templates">
+        <header className="page-header-row">
+          <div>
+            <h1 className="page-title">Template Library</h1>
+            <p className="page-subtitle">
+              Save, reuse and manage named pipeline configurations. Loading a
+              template restores its agents, order, connections and tools — then
+              run it with any new input.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="history-refresh-btn"
+            onClick={() => {
+              setTemplates(null);
+              refreshTemplates();
+            }}
+            disabled={templatesLoading}
+          >
+            Refresh
+          </button>
+        </header>
+        <TemplateLibrary
+          templates={templates}
+          loading={templatesLoading}
+          error={templatesError}
+          onUseTemplate={handleUseTemplate}
+          onDeleteTemplate={handleDeleteTemplate}
+          onRetry={() => {
+            setTemplatesError(null);
+            setTemplates(null);
+            refreshTemplates();
+          }}
+        />
+      </div>
+    );
+  }
+
   // ── Default: "run" dashboard ──
   const graphSteps = result?.pipeline?.steps || localPipelineSteps;
 
@@ -796,6 +1019,7 @@ export default function Home({ section = "run" }) {
       <div className="page-card run-input-card">
         <TopicInput
           onSubmit={runPipelineHandler}
+          onSaveTemplate={() => setSaveDialogOpen(true)}
           disabled={loading || selectedSteps.length === 0}
           selectedCount={selectedSteps.length}
           isDefaultPipeline={isDefaultPipeline}
@@ -804,6 +1028,20 @@ export default function Home({ section = "run" }) {
 
       {pipelineError && (
         <div className="builder-message error page-banner">{pipelineError}</div>
+      )}
+
+      {templateNotice && (
+        <div className="builder-message success page-banner template-notice">
+          <span>{templateNotice}</span>
+          <button
+            type="button"
+            className="template-notice-close"
+            aria-label="Dismiss notice"
+            onClick={() => setTemplateNotice(null)}
+          >
+            ×
+          </button>
+        </div>
       )}
 
       {/* Graph full width on top. */}
@@ -858,6 +1096,13 @@ export default function Home({ section = "run" }) {
           </section>
         </div>
       </div>
+
+      <SaveTemplateDialog
+        open={saveDialogOpen}
+        saving={savingTemplate}
+        onClose={() => setSaveDialogOpen(false)}
+        onSave={handleSaveTemplate}
+      />
     </div>
   );
 }
